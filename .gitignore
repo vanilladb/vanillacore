@@ -8,6 +8,8 @@
 ### Eclipse ###
 .settings/
 .recommenders
+.classpath
+.project
 target/
 
 
