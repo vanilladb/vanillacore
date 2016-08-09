@@ -32,7 +32,11 @@ public class CoreProperties extends PropertiesLoader {
 	
 	@Override
 	protected String getConfigFilePath() {
-		return System.getProperty("org.vanilladb.core.config.file");
+		String path = System.getProperty("org.vanilladb.core.config.file");
+		if (path == null || path.isEmpty()) {
+			path = "properties/org/vanilladb/core/vanilladb.properties";
+		}
+		return path;
 	}
 
 }
