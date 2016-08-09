@@ -91,7 +91,7 @@ public class LogicalStartRecord implements LogRecord {
 
 	@Override
 	public String toString() {
-		return "<LOGICAL　START " + txNum + ">";
+		return "<LOGICAL START " + txNum + ">";
 	}
 
 	@Override
