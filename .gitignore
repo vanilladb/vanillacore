@@ -1,10 +1,4 @@
 
-### Java ###
-*.class
-*.jar
-*.war
-*.ear
-
 ### Eclipse ###
 .settings/
 .recommenders
