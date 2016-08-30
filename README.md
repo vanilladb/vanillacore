@@ -70,11 +70,11 @@ Now you should see a console prompt like:
 SQL> _
 ```
 
-After you enter the SQL console, you may start to give some SQL commands for interaction with the server. VanillaCore supports basic commands defined in SQL-92 standard. To see what excatly commands you can use, please check out [VanillaDB SQL](doc/vanilladb-sql.md) document.
+After you enter the SQL console, you may start to give some SQL commands for interaction with the server. VanillaCore supports basic commands defined in SQL-92 standard. To see what exactly commands you can use, please check out [VanillaDB SQL](doc/vanilladb-sql.md) document.
 
 ## System Configurations
 
-VanillaCore provides some configurable settings. These settings can be found in properties file `vanilladb.properties` which located in `src\main\resources\org\vanilladb\core`. After you complie and package the classes using Maven, the properties file will be copied to `target\properties\org\vanilladb\core`.When a VanillaCore server starts up, it will search the properties file in `properties\org\vanilladb\core` under the same directory. Therefore, if you want to adjust the settings after packaging the classes, you have to modify the one in the `target\properties\org\vanilladb\core`.
+VanillaCore provides some configurable settings. These settings can be found in properties file `vanilladb.properties` which located in `src\main\resources\org\vanilladb\core`. After you compile and package the classes using Maven, the properties file will be copied to `target\properties\org\vanilladb\core`. When a VanillaCore server starts up, it will search the properties file in `properties\org\vanilladb\core` under the same directory. Therefore, if you want to adjust the settings after packaging the classes, you have to modify the one in the `target\properties\org\vanilladb\core`.
 
 We assume that the jar file and the properties files are always in the same directory. If they are not, VanillaCore will use the default values for all settings.
 
@@ -88,7 +88,7 @@ Remember to replace `{path to vanilladb.properties}` to **the path of the file**
 
 ### Modifying Configurations
 
-First, find an editor to open properties file `vanilladb.properties`. Each line in the file is a key-value piar for a configuration. To modify a configuration, just update the value behind `=`.
+First, find an editor to open properties file `vanilladb.properties`. Each line in the file is a key-value pair for a configuration. To modify a configuration, just update the value behind `=`.
 
 ### Commonly Used Configurations
 
