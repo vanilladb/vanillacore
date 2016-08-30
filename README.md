@@ -158,10 +158,10 @@ We have a series of educational slides to make the people who are not familiar w
 
 ## Contact Information
 
-If you have any question, you can either open an issue here or contact [vanilladb@netdb.cs.nthu.edu.tw](vanilladb@netdb.cs.nthu.edu.tw) directly.
+If you have any question, you can either open an issue here or contact [vanilladb@datalab.cs.nthu.edu.tw](vanilladb@datalab.cs.nthu.edu.tw) directly.
 
 ## License
 
-Copyright 2016 vanilladb.org
+Copyright 2016 vanilladb.org contributors
 
-Licensed under the [Apache License](LICENSE)
+Licensed under the [Apache License 2.0](LICENSE)
