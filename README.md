@@ -28,7 +28,7 @@ This project is a maven project. You can compile the source and package the clas
 Running the test cases may take very long time (about 3 minutes in our case). If you want to skip the testing phase, use the this command instead:
 
 ```
-> mvn package --Dmaven.test.skip=true
+> mvn package -Dmaven.test.skip=true
 ```
 
 The jar file will be named as `core-0.2.1.jar` and in the `target` folder of the project.
