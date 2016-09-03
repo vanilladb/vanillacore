@@ -202,7 +202,7 @@ public class TransactionMgr implements TransactionLifecycleListener {
 		}
 
 		// Create a buffer manager
-		BufferMgr bufferMgr = new BufferMgr();
+		BufferMgr bufferMgr = new BufferMgr(txNum);
 
 		// Create a concurrency manager
 		ConcurrencyMgr concurMgr = null;

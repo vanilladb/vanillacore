@@ -15,12 +15,15 @@
  ******************************************************************************/
 package org.vanilladb.core.storage.buffer;
 
-import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.tx.Transaction;
@@ -47,6 +50,7 @@ import org.vanilladb.core.util.CoreProperties;
  * 
  */
 public class BufferMgr implements TransactionLifecycleListener {
+	private static Logger logger = Logger.getLogger(BufferMgr.class.getName());
 	
 	protected static final int BUFFER_POOL_SIZE;
 	private static final long MAX_TIME;
@@ -72,6 +76,11 @@ public class BufferMgr implements TransactionLifecycleListener {
 	protected static List<Thread> waitingThreads = new LinkedList<Thread>();
 
 	private Map<BlockId, PinnedBuffer> pinnedBuffers = new HashMap<BlockId, PinnedBuffer>();
+	private long txNum;
+	
+	public BufferMgr(long txNum) {
+		this.txNum = txNum;
+	}
 
 	@Override
 	public void onTxCommit(Transaction tx) {
@@ -275,7 +284,8 @@ public class BufferMgr implements TransactionLifecycleListener {
 	}
 
 	private void unpinAll(Transaction tx) {
-		Collection<PinnedBuffer> pinnedBuffs = pinnedBuffers.values();
+		// Copy the set of pinned buffers to avoid ConcurrentModificationException
+		Set<PinnedBuffer> pinnedBuffs = new HashSet<PinnedBuffer>(pinnedBuffers.values());
 		if (pinnedBuffs != null) {
 			for (PinnedBuffer pinnedBuff : pinnedBuffs)
 				bufferPool.unpin(pinnedBuff.buffer);
@@ -291,14 +301,25 @@ public class BufferMgr implements TransactionLifecycleListener {
 	 * them.
 	 */
 	private void repin() {
+		if (logger.isLoggable(Level.WARNING))
+			logger.warning("Tx." + txNum + " is re-pinning all buffers");
+		
 		try {
+			// Copy the set of pinned buffers to avoid ConcurrentModificationException
 			List<BlockId> blksToBeRepinned = new LinkedList<BlockId>();
-
-			// Unpin all buffers it has
+			Map<BlockId, Integer> pinCounts = new HashMap<BlockId, Integer>();
+			List<Buffer> buffersToBeUnpinned = new LinkedList<Buffer>();
+			
+			// Record the buffers to be un-pinned and the blocks to be re-pinned
 			for (Entry<BlockId, PinnedBuffer> entry : pinnedBuffers.entrySet()) {
 				blksToBeRepinned.add(entry.getKey());
-				unpin(entry.getValue().buffer);
+				pinCounts.put(entry.getKey(), entry.getValue().pinnedCount);
+				buffersToBeUnpinned.add(entry.getValue().buffer);
 			}
+			
+			// Un-pin all buffers it has
+			for (Buffer buf : buffersToBeUnpinned)
+				unpin(buf);
 
 			// Wait other threads pinning blocks
 			synchronized (bufferPool) {
