@@ -33,7 +33,8 @@ import org.vanilladb.core.storage.tx.Transaction;
  */
 public class BufferMgrConcurrencyTest {
 	
-	private static final String TEST_FILE_NAME = "_tempbuffermgrtest";
+	private static final String TEST_FILE1_NAME = "_tempbufferconmgrtest1";
+	private static final String TEST_FILE2_NAME = "_tempbufferconmgrtest2";
 	
 	private static String result = "";
 	
@@ -48,34 +49,43 @@ public class BufferMgrConcurrencyTest {
 	}
 
 	@Test
-	public void testRepinning() {
+	public void testConcurrentRepinning() {
 		Transaction initTx = VanillaDb.txMgr().newTransaction(
 				Connection.TRANSACTION_SERIALIZABLE, false);
 		
-		// leave only two buffers available in buffer pool
+		// leave 11 buffers available in buffer pool
 		int avail = initTx.bufferMgr().available();
-		for (int i = 0; i < avail - 2; i++) {
-			// leave blocks 0 to 3 for testing
-			BlockId blk = new BlockId(TEST_FILE_NAME, i + 4);
+		for (int i = 0; i < avail - 11; i++) {
+			BlockId blk = new BlockId(TEST_FILE1_NAME, i);
 			initTx.bufferMgr().pin(blk);
 		}
 		
 		// start testing
 		try {
-			TxClientD thD = new TxClientD(0, 1000);
-			thD.start();
-			TxClientE thE = new TxClientE(500, 1500);
-			thE.start();
+			TxClientA a = new TxClientA(0, 1000);
+			a.start();
+			TxClientB b = new TxClientB(500, 1500);
+			b.start();
 			try {
-				thD.join();
-				thE.join();
+				a.join();
+				b.join();
 			} catch (InterruptedException e) {
 			}
-			String expected = "Tx D: pin 1 start\n" + "Tx D: pin 1 end\n"
-					+ "Tx E: pin 2 start\n" + "Tx E: pin 2 end\n"
-					+ "Tx D: pin 3 start\n" + "Tx E: pin 4 start\n"
-					+ "Tx E: pin 4 end\n" + "Tx D: pin 3 end\n";
-			assertEquals("*****TxTest: bad tx history", expected, result);
+			
+			// Generate the expected result
+			StringBuilder expected = new StringBuilder();
+			for (int blkNum = 0; blkNum < 10; blkNum++) {
+				expected.append("Tx A: pin " + blkNum + " start\n");
+				expected.append("Tx A: pin " + blkNum + " end\n");
+			}
+			expected.append("Tx B: pin 10 start\n");
+			expected.append("Tx B: pin 10 end\n");
+			expected.append("Tx A: pin 11 start\n");
+			expected.append("Tx B: pin 12 start\n");
+			expected.append("Tx B: pin 12 end\n");
+			expected.append("Tx A: pin 11 end\n");
+			
+			assertEquals("*****TxTest: bad tx history", expected.toString(), result);
 		} finally {
 			initTx.rollback();
 		}
@@ -86,21 +96,34 @@ public class BufferMgrConcurrencyTest {
 	}
 	
 	abstract class TxClient extends Thread {
+		// TODO: It may be better to use barriers here, instead of using time slicing
 		protected int[] pauses;
 		protected boolean deadlockAborted;
+		
+		private String threadName;
 
-		TxClient(int... pauses) {
+		TxClient(String name, int... pauses) {
+			this.threadName = name;
 			this.pauses = pauses;
 		}
 
 		boolean isDeadlockAborted() {
 			return deadlockAborted;
 		}
+		
+		void pin(Transaction tx, int blkNum) {
+			appendToResult(threadName + ": pin " + blkNum + " start");
+			
+			BlockId blk = new BlockId(TEST_FILE2_NAME, blkNum);
+			tx.bufferMgr().pin(blk);
+			
+			appendToResult(threadName + ": pin " + blkNum + " end");
+		}
 	}
 
-	class TxClientD extends TxClient {
-		TxClientD(int... pauses) {
-			super(pauses);
+	class TxClientA extends TxClient {
+		TxClientA(int... pauses) {
+			super("Tx A", pauses);
 		}
 
 		@Override
@@ -110,19 +133,16 @@ public class BufferMgrConcurrencyTest {
 			try {
 				if (pauses[0] > 0)
 					Thread.sleep(pauses[0]);
-
-				appendToResult("Tx D: pin 1 start");
-				BlockId blk1 = new BlockId(TEST_FILE_NAME, 0);
-				tx.bufferMgr().pin(blk1);
-				appendToResult("Tx D: pin 1 end");
+				
+				// pin 0 ~ 9
+				for (int blkNum = 0; blkNum < 10; blkNum++)
+					pin(tx, blkNum);
 
 				if (pauses[1] > 0)
 					Thread.sleep(pauses[1]);
-
-				appendToResult("Tx D: pin 3 start");
-				BlockId blk3 = new BlockId(TEST_FILE_NAME, 2);
-				tx.bufferMgr().pin(blk3);
-				appendToResult("Tx D: pin 3 end");
+				
+				// pin 11
+				pin(tx, 11);
 			} catch (InterruptedException e) {
 			} finally {
 				tx.rollback();
@@ -130,9 +150,9 @@ public class BufferMgrConcurrencyTest {
 		}
 	}
 
-	class TxClientE extends TxClient {
-		TxClientE(int... pauses) {
-			super(pauses);
+	class TxClientB extends TxClient {
+		TxClientB(int... pauses) {
+			super("Tx B", pauses);
 		}
 
 		@Override
@@ -142,19 +162,15 @@ public class BufferMgrConcurrencyTest {
 			try {
 				if (pauses[0] > 0)
 					Thread.sleep(pauses[0]);
-
-				appendToResult("Tx E: pin 2 start");
-				BlockId blk2 = new BlockId(TEST_FILE_NAME, 1);
-				tx.bufferMgr().pin(blk2);
-				appendToResult("Tx E: pin 2 end");
+				
+				// pin 10
+				pin(tx, 10);
 
 				if (pauses[1] > 0)
 					Thread.sleep(pauses[1]);
-
-				appendToResult("Tx E: pin 4 start");
-				BlockId blk4 = new BlockId(TEST_FILE_NAME, 3);
-				tx.bufferMgr().pin(blk4);
-				appendToResult("Tx E: pin 4 end");
+				
+				// pin 12
+				pin(tx, 12);
 			} catch (InterruptedException e) {
 			} finally {
 				tx.rollback();
