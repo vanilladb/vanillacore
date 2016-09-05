@@ -1,5 +1,6 @@
 # VanillaCore
 
+[![Build Status](https://travis-ci.org/vanilladb/vanillacore.svg?branch=master)](https://travis-ci.org/vanilladb/vanillacore)
 [![GitHub license](https://img.shields.io/badge/license-apache-blue.svg?style=flat)](https://www.apache.org/licenses/LICENSE-2.0)
 
 VanillaCore is a single node, multi-threaded relational database engine that partially supports the SQL-92 standard and offers connectivity via JDBC, embedding, or (Java-based) stored procedures.
