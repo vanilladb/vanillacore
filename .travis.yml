@@ -1,2 +1,5 @@
 language: java
+sudo: required
+before_script:
+  - ulimit -s unlimited
 script: mvn test
