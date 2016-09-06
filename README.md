@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/vanilladb/vanillacore.svg?branch=master)](https://travis-ci.org/vanilladb/vanillacore)
 [![GitHub license](https://img.shields.io/badge/license-apache-blue.svg?style=flat)](https://www.apache.org/licenses/LICENSE-2.0)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.vanilladb/core/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.vanilladb/core)
 
 VanillaCore is a single node, multi-threaded relational database engine that partially supports the SQL-92 standard and offers connectivity via JDBC, embedding, or (Java-based) stored procedures.
 
@@ -157,6 +158,16 @@ We have a series of educational slides to make the people who are not familiar w
 	- Effective buffer utilization (TBA)
 	- Query optimization (TBA)
 
+## Linking via Maven
+
+```xml
+<dependency>
+  <groupId>org.vanilladb</groupId>
+  <artifactId>core</artifactId>
+  <version>0.2.1</version>
+</dependency>
+```
+	
 ## Contact Information
 
 If you have any question, you can either open an issue here or contact [vanilladb@datalab.cs.nthu.edu.tw](vanilladb@datalab.cs.nthu.edu.tw) directly.

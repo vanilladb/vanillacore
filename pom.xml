@@ -15,7 +15,45 @@
 	<packaging>jar</packaging>
 
 	<name>vanillacore</name>
+	<description>The core engine of VanillaDB</description>
 	<url>http://www.vanilladb.org</url>
+
+	<licenses>
+		<license>
+			<name>The Apache Software License, Version 2.0</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+		</license>
+	</licenses>
+
+	<organization>
+		<name>VanillaDB Organization</name>
+		<url>http://www.vanilladb.org</url>
+	</organization>
+
+	<developers>
+		<developer>
+			<name>Shan-Hung Wu</name>
+			<email>shwu@cs.nthu.edu.tw</email>
+		</developer>
+		<developer>
+			<name>Tsai-Yu Feng</name>
+			<email>tyfeng@netdb.cs.nthu.edu.tw</email>
+		</developer>
+		<developer>
+			<name>Yu-Shan Lin</name>
+			<email>yslin@netdb.cs.nthu.edu.tw</email>
+		</developer>
+		<developer>
+			<name>Ching Tsai</name>
+			<email>ctsai@netdb.cs.nthu.edu.tw</email>
+		</developer>
+	</developers>
+
+	<scm>
+		<connection>scm:git:git://github.com/vanilladb/vanillacore.git</connection>
+		<developerConnection>scm:git:ssh://github.com:vanilladb/vanillacore.git</developerConnection>
+		<url>http://github.com/vanilladb/vanillacore/tree/master</url>
+	</scm>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -34,6 +72,18 @@
 			<version>0.1</version>
 		</dependency>
 	</dependencies>
+
+	<!-- For deploying to the central repository -->
+	<distributionManagement>
+		<snapshotRepository>
+			<id>ossrh</id>
+			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+		</snapshotRepository>
+		<repository>
+			<id>ossrh</id>
+			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+		</repository>
+	</distributionManagement>
 
 	<build>
 		<plugins>
@@ -92,20 +142,22 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-source-plugin</artifactId>
+				<version>2.2.1</version>
 				<executions>
 					<execution>
 						<id>attach-sources</id>
 						<goals>
-							<goal>jar</goal>
+							<goal>jar-no-fork</goal>
 						</goals>
 					</execution>
 				</executions>
 			</plugin>
-			
+
 			<!-- Generate JavaDoc -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>2.9.1</version>
 				<executions>
 					<execution>
 						<id>attach-javadocs</id>
@@ -114,6 +166,38 @@
 						</goals>
 					</execution>
 				</executions>
+			</plugin>
+
+			<!-- Signing with GPG keys -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-gpg-plugin</artifactId>
+				<version>1.5</version>
+				<executions>
+					<execution>
+						<id>sign-artifacts</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>sign</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<keyname>vanilladb</keyname>
+				</configuration>
+			</plugin>
+
+			<!-- Deploy to the central repository -->
+			<plugin>
+				<groupId>org.sonatype.plugins</groupId>
+				<artifactId>nexus-staging-maven-plugin</artifactId>
+				<version>1.6.7</version>
+				<extensions>true</extensions>
+				<configuration>
+					<serverId>ossrh</serverId>
+					<nexusUrl>https://oss.sonatype.org/</nexusUrl>
+					<autoReleaseAfterClose>true</autoReleaseAfterClose>
+				</configuration>
 			</plugin>
 
 		</plugins>
