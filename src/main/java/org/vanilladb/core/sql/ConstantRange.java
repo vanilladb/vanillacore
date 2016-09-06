@@ -137,7 +137,7 @@ public abstract class ConstantRange {
 	 * 
 	 * @param c
 	 *            the specified constant
-	 * @param inclusive
+	 * @param incl
 	 *            whether the constant is inclusive
 	 * @return a new range instance with equal or more strict upper bound
 	 */

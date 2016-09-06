@@ -52,7 +52,7 @@ public class SortPlan implements Plan {
 	 *            the plan for the underlying query
 	 * @param sortFields
 	 *            the fields to sort by
-	 * @param sortDir
+	 * @param sortDirs
 	 *            the sort direction
 	 * @param tx
 	 *            the calling transaction

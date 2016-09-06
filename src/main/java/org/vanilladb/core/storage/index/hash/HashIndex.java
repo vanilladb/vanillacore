@@ -119,7 +119,7 @@ public class HashIndex extends Index {
 	 * then opens a {@link RecordFile} on the file corresponding to the bucket.
 	 * The record file for the previous bucket (if any) is closed.
 	 * 
-	 * @see Index#beforeFirst(Constant)
+	 * @see Index#beforeFirst(ConstantRange)
 	 */
 	@Override
 	public void beforeFirst(ConstantRange searchRange) {
@@ -170,7 +170,7 @@ public class HashIndex extends Index {
 	/**
 	 * Inserts a new index record into this index.
 	 * 
-	 * @see Index#insert(Constant, RecordId)
+	 * @see Index#insert(Constant, RecordId, boolean)
 	 */
 	@Override
 	public void insert(Constant key, RecordId dataRecordId, boolean doLogicalLogging) {
@@ -197,7 +197,7 @@ public class HashIndex extends Index {
 	/**
 	 * Deletes the specified index record.
 	 * 
-	 * @see Index#delete(Constant, RecordId)
+	 * @see Index#delete(Constant, RecordId, boolean)
 	 */
 	@Override
 	public void delete(Constant key, RecordId dataRecordId, boolean doLogicalLogging) {

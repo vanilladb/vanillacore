@@ -55,7 +55,7 @@ public class RecordFile implements Record {
 	 * Constructs an object to manage a file of records. If the file does not
 	 * exist, it is created. This method should be called by {@link TableInfo}
 	 * only. To obtain an instance of this class, call
-	 * {@link TableInfo#open(Transaction)} instead.
+	 * {@link TableInfo#open(Transaction, boolean)} instead.
 	 * 
 	 * @param ti
 	 *            the table metadata
@@ -133,7 +133,7 @@ public class RecordFile implements Record {
 
 	/**
 	 * Returns the value of the specified field in the current record. Getter
-	 * should be called after {@link #next()} or {@link #moveToRecordId()}.
+	 * should be called after {@link #next()} or {@link #moveToRecordId(RecordId)}.
 	 * 
 	 * @param fldName
 	 *            the name of the field

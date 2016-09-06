@@ -30,6 +30,8 @@ public class BufferNeeds {
 	 * 
 	 * @param size
 	 *            the size of the output file
+	 * @param tx
+	 *            the tx to execute
 	 * @return the highest number less than the number of available buffers,
 	 *         that is a root of the plan's output size
 	 */
@@ -53,6 +55,8 @@ public class BufferNeeds {
 	 * 
 	 * @param size
 	 *            the size of the output file
+	 * @param tx
+	 *            the tx to execute
 	 * @return the highest number less than the number of available buffers,
 	 *         that is a factor of the plan's output size
 	 */

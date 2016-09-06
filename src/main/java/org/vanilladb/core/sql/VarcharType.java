@@ -67,7 +67,7 @@ public class VarcharType extends Type {
 
 	/**
 	 * Returns the maximum number of bytes required, by following the rule
-	 * specified in {@link VarcharConstant#getBytes}, to encode a
+	 * specified in {@link VarcharConstant#asBytes}, to encode a
 	 * {@link Constant value} of this type.
 	 */
 	@Override

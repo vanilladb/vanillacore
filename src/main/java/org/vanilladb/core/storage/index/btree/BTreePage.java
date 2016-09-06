@@ -164,7 +164,6 @@ public class BTreePage {
 	 *            flag index, starting from 0
 	 * @param val
 	 *            the flag value
-	 * @return the i-th flag
 	 */
 	public void setFlag(int i, long val) {
 		int offset = Page.maxSize(INTEGER) + Page.maxSize(BIGINT) * i;

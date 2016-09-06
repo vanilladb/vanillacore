@@ -58,7 +58,6 @@ public class GroupByPlan extends ReduceRecordsPlan {
 	 * <li>Aggregate values in different groups are distinct</li>
 	 * <li></li>
 	 * </ul>
-	 * </p>
 	 * 
 	 * @param hist
 	 *            the input join distribution of field values

@@ -53,6 +53,8 @@ public class TempTable {
 
 	/**
 	 * Opens a table scan for the temporary table.
+	 * 
+	 * @return the scan for the temporary table
 	 */
 	public UpdateScan open() {
 		return new TableScan(ti, tx);

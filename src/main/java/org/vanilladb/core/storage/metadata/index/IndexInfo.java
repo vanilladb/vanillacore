@@ -44,8 +44,6 @@ public class IndexInfo {
 	 *            the name of the indexed field
 	 * @param idxType
 	 *            the type of the index
-	 * @param tx
-	 *            the calling transaction
 	 */
 	public IndexInfo(String idxName, String tblName, String fldName, int idxType) {
 		if (idxType != IDX_HASH && idxType != IDX_BTREE)

@@ -52,7 +52,6 @@ public class SelectPlan extends ReduceRecordsPlan {
 	 * <li>Distributions of values in different fields are independent with each
 	 * other</li>
 	 * </ul>
-	 * </p>
 	 * 
 	 * @param hist
 	 *            the input join distribution of field values
@@ -102,7 +101,6 @@ public class SelectPlan extends ReduceRecordsPlan {
 	 * <li>Distributions of values in different fields are independent with each
 	 * other</li>
 	 * </ul>
-	 * </p>
 	 * 
 	 * @param hist
 	 *            the input histogram
@@ -172,7 +170,6 @@ public class SelectPlan extends ReduceRecordsPlan {
 	 * <li>Equality selection always finds matching records</li>
 	 * <li>Values in a bucket have the same frequency (uniform frequency)</li>
 	 * </ul>
-	 * </p>
 	 * 
 	 * @param bkt
 	 *            the input bucket
@@ -210,7 +207,6 @@ public class SelectPlan extends ReduceRecordsPlan {
 	 * <li>Distributions of values in different fields are independent with each
 	 * other</li>
 	 * </ul>
-	 * </p>
 	 * 
 	 * @param hist
 	 *            the input histogram
@@ -280,7 +276,6 @@ public class SelectPlan extends ReduceRecordsPlan {
 	 * <li>Distributions of values in different fields are independent with each
 	 * other</li>
 	 * </ul>
-	 * </p>
 	 * 
 	 * @param bkt1
 	 *            the input bucket 1

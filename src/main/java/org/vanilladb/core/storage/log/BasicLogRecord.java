@@ -36,8 +36,8 @@ public class BasicLogRecord {
 	 * 
 	 * @param pg
 	 *            the page containing the log record
-	 * @param currentPos
-	 *            the position of the log record
+	 * @param lsn
+	 *            the sequence number of the log record
 	 */
 	public BasicLogRecord(Page pg, LogSeqNum lsn) {
 		this.pg = pg;

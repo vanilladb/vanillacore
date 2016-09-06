@@ -58,8 +58,6 @@ public class StatMgr {
 	 * Creates the statistics manager. The initial statistics are calculated by
 	 * traversing the entire database.
 	 * 
-	 * @param tblMgr
-	 *            the table manager
 	 * @param tx
 	 *            the startup transaction
 	 */

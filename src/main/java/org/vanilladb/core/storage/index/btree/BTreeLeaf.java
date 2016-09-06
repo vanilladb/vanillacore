@@ -152,8 +152,8 @@ public class BTreeLeaf {
 	 *            the data file name
 	 * @param blk
 	 *            a block ID
-	 * @param ti
-	 *            the metadata of the B-tree leaf file
+	 * @param keyType
+	 *            the type of the search key
 	 * @param searchRange
 	 *            the range of search keys
 	 * @param tx

@@ -160,7 +160,7 @@ public class BTreeIndex extends Index {
 	 * new leaf page. If the root node splits, then {@link BTreeDir#makeNewRoot}
 	 * is called.
 	 * 
-	 * @see Index#insert(Constant, RecordId)
+	 * @see Index#insert(Constant, RecordId, boolean)
 	 */
 	@Override
 	public void insert(Constant key, RecordId dataRecordId, boolean doLogicalLogging) {
@@ -205,7 +205,7 @@ public class BTreeIndex extends Index {
 	 * directory to find the leaf page containing that record; then it deletes
 	 * the record from the page. F
 	 * 
-	 * @see Index#delete(Constant, RecordId)
+	 * @see Index#delete(Constant, RecordId, boolean)
 	 */
 	@Override
 	public void delete(Constant key, RecordId dataRecordId, boolean doLogicalLogging) {

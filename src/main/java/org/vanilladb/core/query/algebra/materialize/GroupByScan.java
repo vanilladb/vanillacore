@@ -34,7 +34,7 @@ public class GroupByScan implements Scan {
 	/**
 	 * Creates a groupby scan, given a grouped table scan.
 	 * 
-	 * @param ss
+	 * @param s
 	 *            the sorted scan
 	 * @param groupFlds
 	 *            the fields to group by. Can be empty, which means that all

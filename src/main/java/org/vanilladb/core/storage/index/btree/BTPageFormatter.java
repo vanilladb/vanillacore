@@ -40,8 +40,8 @@ public class BTPageFormatter extends PageFormatter {
 	/**
 	 * Creates a formatter.
 	 * 
-	 * @param ti
-	 *            the index's metadata
+	 * @param sch
+	 *            the schema of the page
 	 * @param flags
 	 *            the page's flag values
 	 */

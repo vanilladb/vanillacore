@@ -39,7 +39,7 @@ public class TempRecordPage extends RecordPage {
 	/**
 	 * Insert records to TempRecordFile for sorting, at most one block long
 	 * 
-	 * @param s
+	 * @param s the source scan
 	 * @return true if another record is inserted false if block is full of
 	 *         records
 	 */
@@ -60,10 +60,9 @@ public class TempRecordPage extends RecordPage {
 	/**
 	 * Copy sorted records to UpdateScan
 	 * 
-	 * @param s
+	 * @param s the target scan
 	 * @return true if still record in TempRecordPage
 	 */
-
 	public boolean copyToScan(UpdateScan s) {
 		if (!this.next())
 			return false;
@@ -84,7 +83,6 @@ public class TempRecordPage extends RecordPage {
 	 * @param sortFlds
 	 * @param sortDirs
 	 */
-
 	public void sortbyselection(List<String> sortFlds, List<Integer> sortDirs) {
 		moveToId(-1);
 		int i = 0;
@@ -106,7 +104,6 @@ public class TempRecordPage extends RecordPage {
 	 * @param sortDirs
 	 * @return the id of smallest record
 	 */
-
 	private int findSmallestFrom(int startId, List<String> sortFlds,
 			List<Integer> sortDirs) {
 		int minId = startId;

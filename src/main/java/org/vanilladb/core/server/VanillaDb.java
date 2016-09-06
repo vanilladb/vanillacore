@@ -47,8 +47,12 @@ import org.vanilladb.core.util.Profiler;
  * be initialized by the method {@link #init(String) init} before use. The
  * methods {@link #initFileMgr(String) initFileMgr},
  * {@link #initFileAndLogMgr(String) initFileAndLogMgr},
- * {@link #initFileLogAndBufferMgr(String) initFileLogAndBufferMgr}, and
- * {@link #initCatalogMgr(boolean, Transaction) initCatalogMgr} provide limited
+ * {@link #initTaskMgr() initTaskMgr},
+ * {@link #initTxMgr() initTxMgr},
+ * {@link #initCatalogMgr(boolean, Transaction) initCatalogMgr},
+ * {@link #initStatMgr(Transaction) initStatMgr},
+ * {@link #initSPFactory() initSPFactory}, and
+ * {@link #initCheckpointingTask() initCheckpointingTask} provide limited
  * initialization, and are useful for debugging purposes.
  */
 public class VanillaDb {

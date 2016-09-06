@@ -79,9 +79,7 @@ public interface LogRecord {
 	LogSeqNum getLSN();
 
 	/**
-	 * Undoes the operation encoded by this log record. The log record types for
-	 * which this method does anything interesting are {@link SetValueRecord},
-	 * {@link IndexDeleteRecord} and {@link IndexInsertRecord} .
+	 * Undoes the operation encoded by this log record.
 	 * 
 	 * @param tx
 	 *            the transaction that is performing the undo.
@@ -91,7 +89,7 @@ public interface LogRecord {
 	/**
 	 * Redoes the operation encoded by this log record.
 	 * 
-	 * @param txNum
+	 * @param tx
 	 *            the transaction that is performing the redo.
 	 */
 	void redo(Transaction tx);

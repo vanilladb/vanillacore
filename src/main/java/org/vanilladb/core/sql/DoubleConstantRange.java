@@ -40,7 +40,6 @@ public class DoubleConstantRange extends ConstantRange {
 	 *            the higher bound. <code>null</code> means unbound.
 	 * @param highIncl
 	 *            whether the higher bound is inclusive
-	 * @return a new instance
 	 */
 	public DoubleConstantRange(Double low, boolean lowIncl, Double high,
 			boolean highIncl) {

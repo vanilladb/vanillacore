@@ -53,7 +53,7 @@ public class RecordFormatter extends PageFormatter {
 	 * numeric field is given a value of 0, and each string field is given a
 	 * value of "".
 	 * 
-	 * @see org.vanilladb.core.storage.buffer.PageFormatter#format(org.vanilladb.core.storage.file.Page)
+	 * @see org.vanilladb.core.storage.buffer.PageFormatter#format(org.vanilladb.core.storage.buffer.Buffer)
 	 */
 	@Override
 	public void format(Buffer buf) {

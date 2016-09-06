@@ -70,7 +70,6 @@ public class Bucket {
 	/**
 	 * Returns the estimated number of distinct values within the overlap of
 	 * this instance's range and the specified range.
-	 * 
 	 * <p>
 	 * Assumes that:
 	 * <ul>
@@ -79,7 +78,6 @@ public class Bucket {
 	 * <li>Values are uniformly distributed within this instance's range if
 	 * percentiles are not provided.</li>
 	 * </ul>
-	 * </p>
 	 * 
 	 * @param range
 	 *            the specified range

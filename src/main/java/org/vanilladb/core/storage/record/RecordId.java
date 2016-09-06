@@ -29,8 +29,8 @@ public class RecordId {
 	 * Creates a record ID for the record having the specified ID in the
 	 * specified block.
 	 * 
-	 * @param blkNum
-	 *            the block number where the record lives
+	 * @param blk
+	 *            the block id where the record lives
 	 * @param id
 	 *            the record's ID
 	 */

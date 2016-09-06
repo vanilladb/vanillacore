@@ -25,14 +25,12 @@ import java.util.TreeSet;
 /**
  * A histogram that, for each field of a table, approximates the distribution of
  * values using {@link Bucket buckets}.
- * 
  * <p>
  * Assumes that, for each field:
  * <ul>
  * <li>Sets of records in different buckets are disjoint.</li>
  * <li>Sets of values in different buckets are disjoint.</li>
  * </ul>
- * </p>
  */
 public class Histogram {
 	private Map<String, Collection<Bucket>> dists;

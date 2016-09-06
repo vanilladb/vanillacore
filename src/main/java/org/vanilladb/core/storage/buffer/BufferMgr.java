@@ -32,7 +32,7 @@ import org.vanilladb.core.util.CoreProperties;
 
 /**
  * The publicly-accessible buffer manager. A buffer manager wraps a
- * {@link BasicBufferMgr} instance, and provides the same methods. The
+ * {@link BufferPoolMgr} instance, and provides the same methods. The
  * difference is that the methods {@link #pin(BlockId)} and
  * {@link #pinNew(String, PageFormatter)} will never return false and null
  * respectively. If no buffers are currently available, then the calling thread
@@ -40,8 +40,7 @@ import org.vanilladb.core.util.CoreProperties;
  * list when a buffer becomes available. If a thread has been waiting for a
  * buffer for an excessive amount of time (currently, 10 seconds) then repins
  * all currently holding blocks by the calling transaction. Buffer manager
- * implements {@link TransactionStartListener} and
- * {@link TransactionLifecycleListener} for the purpose of unpinning buffers
+ * implements {@link TransactionLifecycleListener} for the purpose of unpinning buffers
  * when transaction commit/rollback/recovery.
  * 
  * <p>
@@ -104,8 +103,6 @@ public class BufferMgr implements TransactionLifecycleListener {
 	 * 
 	 * @param blk
 	 *            a block ID
-	 * @param txNum
-	 *            the calling transaction id
 	 * @return the buffer pinned to that block
 	 */
 	public Buffer pin(BlockId blk) {
@@ -177,8 +174,6 @@ public class BufferMgr implements TransactionLifecycleListener {
 	 *            the name of the file
 	 * @param fmtr
 	 *            the formatter used to initialize the page
-	 * @param txNum
-	 *            the calling transaction id
 	 * @return the buffer pinned to that block
 	 */
 	public Buffer pinNew(String fileName, PageFormatter fmtr) {

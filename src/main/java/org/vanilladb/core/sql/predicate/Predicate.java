@@ -63,7 +63,6 @@ public class Predicate {
 	 * 
 	 * @param t
 	 *            the term to conjunct with
-	 * @return this predicate
 	 */
 	public void conjunctWith(Term t) {
 		terms.add(t);

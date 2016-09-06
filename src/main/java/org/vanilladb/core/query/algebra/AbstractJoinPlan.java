@@ -28,7 +28,6 @@ public abstract class AbstractJoinPlan extends ReduceRecordsPlan {
 	/**
 	 * Returns a histogram that, for each field, approximates the value
 	 * distribution of the join of the specified histograms.
-	 * 
 	 * <p>
 	 * Assumes that:
 	 * <ul>
@@ -39,7 +38,6 @@ public abstract class AbstractJoinPlan extends ReduceRecordsPlan {
 	 * <li>Distributions of values in different fields are independent with each
 	 * other</li>
 	 * </ul>
-	 * </p>
 	 * 
 	 * @param hist1
 	 *            the left-hand histogram

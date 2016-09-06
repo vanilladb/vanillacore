@@ -44,9 +44,8 @@ public class Transaction {
 	 * Creates a new transaction and associates it with a recovery manager and a
 	 * concurrency manager. This constructor depends on the file, log, and
 	 * buffer managers from {@link VanillaDb}, which are created during system
-	 * initialization. Thus this constructor cannot be called until either
-	 * {@link VanillaDb#init(String)} or
-	 * {@link VanillaDb#initFileLogAndBufferMgr(String)} or is called first.
+	 * initialization. Thus this constructor cannot be called until
+	 * {@link VanillaDb#init(String)} is called first.
 	 */
 	public Transaction(TransactionMgr txMgr, TransactionLifecycleListener concurMgr,
 			TransactionLifecycleListener recoveryMgr, TransactionLifecycleListener bufferMgr,

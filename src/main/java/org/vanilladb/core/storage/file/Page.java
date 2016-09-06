@@ -97,8 +97,7 @@ public class Page {
 	 * {@link VanillaDb#fileMgr()}. That object is created during system
 	 * initialization. Thus this constructor cannot be called until either
 	 * {@link VanillaDb#init(String)} or {@link VanillaDb#initFileMgr(String)}
-	 * or {@link VanillaDb#initFileAndLogMgr(String)} or
-	 * {@link VanillaDb#initFileLogAndBufferMgr(String)} is called first.
+	 * or {@link VanillaDb#initFileAndLogMgr(String)} is called first.
 	 */
 	public Page() {
 	}

@@ -292,8 +292,6 @@ public class RecordPage implements Record {
 
 	/**
 	 * Print all Slot IN_USE or EMPTY, for debugging
-	 * 
-	 * @return void
 	 */
 	public void runAllSlot() {
 		moveToId(0);

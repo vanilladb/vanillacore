@@ -171,7 +171,6 @@ public class VarcharConstantRange extends ConstantRange {
 	 *            the higher bound. <code>null</code> means unbound.
 	 * @param highIncl
 	 *            whether the higher bound is inclusive
-	 * @return a new instance
 	 */
 	public VarcharConstantRange(String low, boolean lowIncl, String high,
 			boolean highIncl) {
