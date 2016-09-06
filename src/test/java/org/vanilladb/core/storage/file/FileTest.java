@@ -28,6 +28,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.vanilladb.core.server.ServerInit;
@@ -63,6 +64,12 @@ public class FileTest {
 
 		if (logger.isLoggable(Level.INFO))
 			logger.info("BEGIN FILE TEST");
+	}
+	
+	@AfterClass
+	public static void finish() {
+		if (logger.isLoggable(Level.INFO))
+			logger.info("FINISH FILE TEST");
 	}
 
 	@After

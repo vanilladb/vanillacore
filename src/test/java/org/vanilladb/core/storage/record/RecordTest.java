@@ -68,13 +68,17 @@ public class RecordTest {
 		schema.addField("deptid", BIGINT);
 		ti1 = new TableInfo(tableName1, schema);
 		ti2 = new TableInfo(tableName2, schema);
+		
 		if (logger.isLoggable(Level.INFO))
 			logger.info("BEGIN RECORD TEST");
 	}
 	
 	@AfterClass
-	public static void clean() {
+	public static void finish() {
 		RecoveryMgr.enableLogging(true);
+		
+		if (logger.isLoggable(Level.INFO))
+			logger.info("FINISH RECORD TEST");
 	}
 	
 	@After

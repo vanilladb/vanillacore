@@ -16,6 +16,8 @@
 package org.vanilladb.core.storage.index.btree;
 
 import java.sql.Connection;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -34,6 +36,7 @@ import org.vanilladb.core.storage.tx.recovery.RecoveryMgr;
 import junit.framework.Assert;
 
 public class BTreePageTest {
+	private static Logger logger = Logger.getLogger(BTreePageTest.class.getName());
 	
 	// the file starting with "_temp" will be deleted during initialization
 	private static String FILE_PREFIX = "_test" + System.currentTimeMillis() + "_";
@@ -57,6 +60,9 @@ public class BTreePageTest {
 		ServerInit.init(BTreePageTest.class);
 		RecoveryMgr.enableLogging(false);
 		
+		if (logger.isLoggable(Level.INFO))
+			logger.info("BEGIN BTREE PAGE TEST");
+		
 		Transaction tx = VanillaDb.txMgr().newTransaction(
 				Connection.TRANSACTION_SERIALIZABLE, false);
 		
@@ -68,8 +74,11 @@ public class BTreePageTest {
 	}
 	
 	@AfterClass
-	public static void clean() {
+	public static void finish() {
 		RecoveryMgr.enableLogging(true);
+		
+		if (logger.isLoggable(Level.INFO))
+			logger.info("FINISH BTREE PAGE TEST");
 	}
 	
 	@Before

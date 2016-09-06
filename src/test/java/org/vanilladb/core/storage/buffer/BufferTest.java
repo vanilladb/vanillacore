@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.vanilladb.core.server.ServerInit;
@@ -43,8 +44,15 @@ public class BufferTest {
 	@BeforeClass
 	public static void init() {
 		ServerInit.init(BufferTest.class);
+		
 		if (logger.isLoggable(Level.INFO))
 			logger.info("BEGIN BUFFER TEST");
+	}
+	
+	@AfterClass
+	public static void finish() {
+		if (logger.isLoggable(Level.INFO))
+			logger.info("FINISH BUFFER TEST");
 	}
 	
 	@Test

@@ -29,6 +29,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -51,8 +52,8 @@ import org.vanilladb.core.storage.tx.Transaction;
 import org.vanilladb.core.util.BarrierStartRunner;
 
 public class RecoveryBasicTest {
-
 	private static Logger logger = Logger.getLogger(RecoveryBasicTest.class.getName());
+	
 	private static String fileName = "recoverybasictest.0";
 	private static String dataTableName = "recoverybasictest";
 	private static CatalogMgr md;
@@ -78,7 +79,12 @@ public class RecoveryBasicTest {
 
 		if (logger.isLoggable(Level.INFO))
 			logger.info("BEGIN RECOVERY TEST");
-
+	}
+	
+	@AfterClass
+	public static void finish() {
+		if (logger.isLoggable(Level.INFO))
+			logger.info("FINISH RECOVERY TEST");
 	}
 
 	@Before

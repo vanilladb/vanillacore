@@ -18,7 +18,10 @@ package org.vanilladb.core.storage.buffer;
 import static org.junit.Assert.assertEquals;
 
 import java.sql.Connection;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -32,6 +35,7 @@ import org.vanilladb.core.storage.tx.Transaction;
  * {@link VanillaDb#BUFFER_SIZE}.
  */
 public class BufferMgrConcurrencyTest {
+	private static Logger logger = Logger.getLogger(BufferMgrConcurrencyTest.class.getName());
 	
 	private static final String TEST_FILE1_NAME = "_tempbufferconmgrtest1";
 	private static final String TEST_FILE2_NAME = "_tempbufferconmgrtest2";
@@ -41,6 +45,15 @@ public class BufferMgrConcurrencyTest {
 	@BeforeClass
 	public static void init() {
 		ServerInit.init(BufferMgrConcurrencyTest.class);
+		
+		if (logger.isLoggable(Level.INFO))
+			logger.info("BEGIN BUFFER MGR CONCURRENCY TEST");
+	}
+	
+	@AfterClass
+	public static void finish() {
+		if (logger.isLoggable(Level.INFO))
+			logger.info("FINISH BUFFER MGR CONCURRENCY TEST");
 	}
 	
 	@Before

@@ -24,6 +24,7 @@ import java.sql.Connection;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -56,6 +57,12 @@ public class TxTest {
 
 		if (logger.isLoggable(Level.INFO))
 			logger.info("BEGIN TX TEST");
+	}
+	
+	@AfterClass
+	public static void finish() {
+		if (logger.isLoggable(Level.INFO))
+			logger.info("FINISH TX TEST");
 	}
 
 	@Before

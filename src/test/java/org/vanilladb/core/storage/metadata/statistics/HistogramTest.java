@@ -25,7 +25,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.vanilladb.core.query.algebra.AbstractJoinPlan;
 import org.vanilladb.core.query.algebra.ProductPlan;
@@ -53,6 +57,19 @@ import org.vanilladb.core.sql.predicate.Predicate;
 import org.vanilladb.core.sql.predicate.Term;
 
 public class HistogramTest {
+	private static Logger logger = Logger.getLogger(HistogramTest.class.getName());
+	
+	@BeforeClass
+	public static void init() {
+		if (logger.isLoggable(Level.INFO))
+			logger.info("BEGIN HISTOGRAM TEST");
+	}
+	
+	@AfterClass
+	public static void finish() {
+		if (logger.isLoggable(Level.INFO))
+			logger.info("FINISH HISTOGRAM TEST");
+	}
 
 	public static Schema schema12() {
 		Schema sch = new Schema();

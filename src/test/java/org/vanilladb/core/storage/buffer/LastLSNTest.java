@@ -15,6 +15,10 @@
  ******************************************************************************/
 package org.vanilladb.core.storage.buffer;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.vanilladb.core.server.ServerInit;
@@ -30,6 +34,7 @@ import org.vanilladb.core.storage.log.LogSeqNum;
 import junit.framework.Assert;
 
 public class LastLSNTest {
+	private static Logger logger = Logger.getLogger(LastLSNTest.class.getName());
 	
 	private static final String TEST_FILE_NAME = "last_lsn_test";
 	
@@ -47,6 +52,15 @@ public class LastLSNTest {
 	@BeforeClass
 	public static void init() {
 		ServerInit.init(LastLSNTest.class);
+		
+		if (logger.isLoggable(Level.INFO))
+			logger.info("BEGIN LAST LSN TEST");
+	}
+	
+	@AfterClass
+	public static void finish() {
+		if (logger.isLoggable(Level.INFO))
+			logger.info("FINISH LAST LSN TEST");
 	}
 	
 	@Test

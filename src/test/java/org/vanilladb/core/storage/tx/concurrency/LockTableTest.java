@@ -20,6 +20,7 @@ import static org.junit.Assert.fail;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -55,7 +56,13 @@ public class LockTableTest {
 		// Initialize LockTable
 		lockTbl = new LockTable();
 		if (logger.isLoggable(Level.INFO))
-			logger.info("BEGIN LOCK TABLE_ONLY TEST");
+			logger.info("BEGIN LOCK TABLE TEST");
+	}
+	
+	@AfterClass
+	public static void finish() {
+		if (logger.isLoggable(Level.INFO))
+			logger.info("FINISH LOCK TABLE TEST");
 	}
 
 	@Before

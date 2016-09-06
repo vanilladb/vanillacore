@@ -61,7 +61,7 @@ public class HashIndexTest {
 		md = VanillaDb.catalogMgr();
 
 		if (logger.isLoggable(Level.INFO))
-			logger.info("BEGIN HASHINDEX TEST");
+			logger.info("BEGIN HASH INDEX TEST");
 
 		Transaction tx = VanillaDb.txMgr().newTransaction(
 				Connection.TRANSACTION_SERIALIZABLE, false);
@@ -78,8 +78,11 @@ public class HashIndexTest {
 	}
 	
 	@AfterClass
-	public static void clean() {
+	public static void finish() {
 		RecoveryMgr.enableLogging(true);
+		
+		if (logger.isLoggable(Level.INFO))
+			logger.info("FINISH HASH INDEX TEST");
 	}
 	
 	@Before

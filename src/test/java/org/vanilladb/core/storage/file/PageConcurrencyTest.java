@@ -17,7 +17,11 @@ package org.vanilladb.core.storage.file;
 
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.vanilladb.core.sql.BigIntConstant;
 import org.vanilladb.core.sql.Constant;
@@ -27,9 +31,22 @@ import org.vanilladb.core.util.BarrierStartRunner;
 import junit.framework.Assert;
 
 public class PageConcurrencyTest {
+	private static Logger logger = Logger.getLogger(PageConcurrencyTest.class.getName());
 
 	private static final int CLIENT_COUNT = 10;
 	private static final int ITERATION_COUNT = 1000;
+	
+	@BeforeClass
+	public static void init() {
+		if (logger.isLoggable(Level.INFO))
+			logger.info("BEGIN PAGE CONCURRENCY TEST");
+	}
+	
+	@AfterClass
+	public static void finish() {
+		if (logger.isLoggable(Level.INFO))
+			logger.info("FINISH PAGE CONCURRENCY TEST");
+	}
 
 	@Test
 	public void testConcurrentSet() {

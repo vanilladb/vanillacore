@@ -28,6 +28,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -55,6 +56,12 @@ public class CatalogTest {
 
 		if (logger.isLoggable(Level.INFO))
 			logger.info("BEGIN CATALOG TEST");
+	}
+	
+	@AfterClass
+	public static void finish() {
+		if (logger.isLoggable(Level.INFO))
+			logger.info("FINISH CATALOG TEST");
 	}
 	
 	@Before

@@ -17,7 +17,10 @@ package org.vanilladb.core.storage.buffer;
 
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.vanilladb.core.server.ServerInit;
@@ -27,6 +30,7 @@ import org.vanilladb.core.util.BarrierStartRunner;
 import junit.framework.Assert;
 
 public class BufferPoolConcurrencyTest {
+	private static Logger logger = Logger.getLogger(BufferPoolConcurrencyTest.class.getName());
 
 	private static final int CLIENT_COUNT_PER_BUFFER = 100;
 	private static final int BUFFER_COUNT = 100;
@@ -37,6 +41,15 @@ public class BufferPoolConcurrencyTest {
 	@BeforeClass
 	public static void init() {
 		ServerInit.init(BufferPoolConcurrencyTest.class);
+		
+		if (logger.isLoggable(Level.INFO))
+			logger.info("BEGIN BUFFER POOL CONCURRENCY TEST");
+	}
+	
+	@AfterClass
+	public static void finish() {
+		if (logger.isLoggable(Level.INFO))
+			logger.info("FINISH BUFFER POOL CONCURRENCY TEST");
 	}
 
 	@Test

@@ -67,7 +67,7 @@ public class BTreeIndexTest {
 		catMgr = VanillaDb.catalogMgr();
 
 		if (logger.isLoggable(Level.INFO))
-			logger.info("BEGIN BTREEINDEX TEST");
+			logger.info("BEGIN BTREE INDEX TEST");
 
 		Transaction tx = VanillaDb.txMgr().newTransaction(
 				Connection.TRANSACTION_SERIALIZABLE, false);
@@ -85,8 +85,11 @@ public class BTreeIndexTest {
 	}
 	
 	@AfterClass
-	public static void clean() {
+	public static void finish() {
 		RecoveryMgr.enableLogging(true);
+		
+		if (logger.isLoggable(Level.INFO))
+			logger.info("FINISH BTREE INDEX TEST");
 	}
 
 	@Before
