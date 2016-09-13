@@ -130,29 +130,29 @@ Please checkout our [VanillaDB SQL](doc/vanilladb-sql.md) document.
 
 We have a series of educational slides to make the people who are not familiar with database internal architecture understand how a database works. Here is the outline of the our slides:
 
-- [Background](http://www.vanilladb.org/slides/Background.pdf)
+- [Background](http://www.vanilladb.org/slides/core/Background.pdf)
 	- Why relational database systems? ER- and relational-models, transactions and logical schema design and normal forms, etc.
-- [Architecture overview and interfaces](http://www.vanilladb.org/slides/Architecture_and_Interfaces.pdf)
+- [Architecture overview and interfaces](http://www.vanilladb.org/slides/core/Architecture_and_Interfaces.pdf)
 	- Client-server interfaces, embedding, storage interfaces, etc.
 - Query engine
-	- [Server, threads and JDBC](http://www.vanilladb.org/slides/Server_and_Threads.pdf)
+	- [Server, threads and JDBC](http://www.vanilladb.org/slides/core/Server_and_Threads.pdf)
 		- Threads v.s. connections v.s. transactions, thread-local v.s. thread-safe components, etc.
-	- [Query Processing](http://www.vanilladb.org/slides/Query_Processing.pdf)
+	- [Query Processing](http://www.vanilladb.org/slides/core/Query_Processing.pdf)
 		- SQL parsing and validation, planning, algebra, plan/scan trees, etc.
 - Storage
-	- [Data access and file management](http://www.vanilladb.org/slides/Data_Access_and_File_Management.pdf)
+	- [Data access and file management](http://www.vanilladb.org/slides/core/Data_Access_and_File_Management.pdf)
 		- Block-level v.s. file-level access, O_DIRECT on Linux, etc.
-	- [Memory management](http://www.vanilladb.org/slides/Memory_Management.pdf)
+	- [Memory management](http://www.vanilladb.org/slides/core/Memory_Management.pdf)
 		- Buffering user data, write-ahead-logging (WAL), log caching, etc.
-	- [Record](http://www.vanilladb.org/slides/Record_Management.pdf) and [metadata management](http://www.vanilladb.org/slides/Metadata_Management.pdf)
+	- [Record](http://www.vanilladb.org/slides/core/Record_Management.pdf) and [metadata management](http://www.vanilladb.org/slides/core/Metadata_Management.pdf)
 		- Physical schema design, efficient buffer utilization, etc.
 - Transaction management
-	- [Concurrency](http://www.vanilladb.org/slides/Transaction_Concurrency.pdf)
+	- [Concurrency](http://www.vanilladb.org/slides/core/Transaction_Concurrency.pdf)
 		- Strict Two-Phase Locking (S2PL), deadlock detection/avoidance, lock granularity, phantom, isolation levels, etc.
-	- [Recovery](http://www.vanilladb.org/slides/Transaction_Recovery.pdf)
+	- [Recovery](http://www.vanilladb.org/slides/core/Transaction_Recovery.pdf)
 		- Physical logging, transaction rollback, UNDO-only recovery, UNDO-REDO recovery, logical logging, physiological logging, ARIES, checkpointing, etc.
 - Efficient query processing
-	- [Indexing](http://www.vanilladb.org/slides/Indexing.pdf)
+	- [Indexing](http://www.vanilladb.org/slides/core/Indexing.pdf)
 		- Hash and B-tree indexing, index locking, etc.
 	- Materialization and sorting (TBA)
 	- Effective buffer utilization (TBA)
@@ -167,7 +167,7 @@ We have a series of educational slides to make the people who are not familiar w
   <version>0.2.1</version>
 </dependency>
 ```
-	
+
 ## Contact Information
 
 If you have any question, you can either open an issue here or contact [vanilladb@datalab.cs.nthu.edu.tw](vanilladb@datalab.cs.nthu.edu.tw) directly.
