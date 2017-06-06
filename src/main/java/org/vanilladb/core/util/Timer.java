@@ -20,9 +20,26 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public class TxComponentTimer {
+public class Timer {
 
-	private static final boolean PRINT_COUNTS = false;
+	private static final String EXE_TIME_KEY = "Execution Time";
+
+	private static final ThreadLocal<Timer> LOCAL_TIMER = 
+			new ThreadLocal<Timer>() {
+		@Override
+		protected Timer initialValue() {
+			return new Timer();
+		}
+	};
+
+	/**
+	 * Get the timer local to this thread.
+	 * 
+	 * @return
+	 */
+	public static Timer getLocalTimer() {
+		return LOCAL_TIMER.get();
+	}
 
 	private static class SubTimer {
 		private long start = 0, startTimes = 0, totalTime = 0, count = 0;
@@ -52,14 +69,13 @@ public class TxComponentTimer {
 	}
 
 	private Map<Object, SubTimer> subTimers = new HashMap<Object, SubTimer>();
+	// We want to preserve the order of creating timers so that
+	// we use a list to record the order.
 	private List<Object> componenents = new LinkedList<Object>();
-	private Object[] metadata;
-	private long executionStart, executionTime = 0;
 
-	private long txNum;
-
-	public TxComponentTimer(long txNum) {
-		this.txNum = txNum;
+	public void reset() {
+		subTimers.clear();
+		componenents.clear();
 	}
 
 	public void startComponentTimer(Object component) {
@@ -78,18 +94,6 @@ public class TxComponentTimer {
 			timer.stopTimer();
 	}
 
-	public long getComponentCount(Object component) {
-		return subTimers.get(component).getCount();
-	}
-
-	public void startExecution() {
-		executionStart = System.nanoTime();
-	}
-
-	public void stopExecution() {
-		executionTime = (System.nanoTime() - executionStart) / 1000;
-	}
-
 	public long getComponentTime(Object component) {
 		SubTimer timer = subTimers.get(component);
 		if (timer == null)
@@ -97,40 +101,42 @@ public class TxComponentTimer {
 		return timer.getTotalTime();
 	}
 
+	public long getComponentCount(Object component) {
+		return subTimers.get(component).getCount();
+	}
+
+	public List<Object> getComponents() {
+		return new LinkedList<Object>(componenents);
+	}
+
+	public void startExecution() {
+		startComponentTimer(EXE_TIME_KEY);
+	}
+
+	public void stopExecution() {
+		stopComponentTimer(EXE_TIME_KEY);
+	}
+
 	public long getExecutionTime() {
-		return executionTime;
+		return getComponentTime(EXE_TIME_KEY);
 	}
-
-	public long getTransactionNumber() {
-		return txNum;
-	}
-
-	public Object getMetadata() {
-		return metadata;
-	}
-
-	public void setMetadata(Object[] m) {
-		this.metadata = m;
+	
+	public void addToGlobalStatistics() {
+		TimerStatistics.add(this);
 	}
 
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 
-		if (!componenents.isEmpty()) {
-			sb.append("===== Profile for Tx." + txNum + " =====\n");
-			for (Object com : componenents) {
-				sb.append(String.format("%-40s: %d us", com, subTimers.get(com)
-						.getTotalTime()));
-				if (PRINT_COUNTS) {
-					sb.append(String.format(", with %d counts",
-							subTimers.get(com).getCount()));
-				}
-				sb.append("\n");
+		sb.append("==============================\n");
+		for (Object com : componenents) {
+			if (!com.equals("Execution Time")) {
+				sb.append(String.format("%-40s: %d us, with %d counts\n", com, subTimers.get(com).getTotalTime(),
+						subTimers.get(com).getCount()));
 			}
-			sb.append(String.format("%-40s: %d us\n", "Execution Time:",
-					executionTime));
-			sb.append("==============================\n");
 		}
+		sb.append(String.format("%-40s: %d us\n", EXE_TIME_KEY, subTimers.get(EXE_TIME_KEY).getTotalTime()));
+		sb.append("==============================\n");
 
 		return sb.toString();
 	}
