@@ -147,9 +147,6 @@ public class VanillaDb {
 		// initialize the statistics manager to build the histogram
 		initStatMgr(initTx);
 
-		// initialize SP Factory
-		initSPFactory();
-
 		// commit the initializing transaction
 		initTx.commit();
 
@@ -235,23 +232,6 @@ public class VanillaDb {
 	 */
 	public static void initStatMgr(Transaction tx) {
 		statMgr = new StatMgr(tx);
-	}
-
-	/**
-	 * Initializes a store procedure factory for creating stored procedures.
-	 */
-	public static void initSPFactory() {
-		Class<?> spFactoryCls = CoreProperties.getLoader().getPropertyAsClass(
-				VanillaDb.class.getName() + ".SP_FACTORY",
-				SampleStoredProcedureFactory.class,
-				StoredProcedureFactory.class);
-		if (spFactoryCls != null) {
-			try {
-				spFactory = (StoredProcedureFactory) spFactoryCls.newInstance();
-			} catch (InstantiationException | IllegalAccessException e) {
-				e.printStackTrace();
-			}
-		}
 	}
 
 	/**
