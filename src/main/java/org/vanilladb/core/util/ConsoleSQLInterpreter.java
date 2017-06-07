@@ -44,13 +44,14 @@ public class ConsoleSQLInterpreter {
 				System.out.print("\nSQL> ");
 				String cmd = br.readLine().trim();
 				System.out.println();
+
+				String [] str = cmd.split(" ");
+				String cmdf = str[0].toUpperCase();	
+
 				if (cmd.startsWith("exit") || cmd.startsWith("EXIT"))
 					break;
-				else if (cmd.startsWith("select")
-						|| cmd.startsWith("SELECT")
-						|| (cmd.startsWith("explain") || cmd
-								.startsWith("EXPLAIN")))
-					doQuery(cmd);
+				else if (cmdf.startsWith("SELECT")|| cmdf.startsWith("EXPLAIN"))
+					doQuery(cmd,cmdf);
 				else
 					doUpdate(cmd);
 			}
@@ -66,7 +67,7 @@ public class ConsoleSQLInterpreter {
 		}
 	}
 
-	private static void doQuery(String cmd) {
+	private static void doQuery(String cmd,String cmdf) {
 		try {
 			Statement stmt = conn.createStatement();
 			ResultSet rs = stmt.executeQuery(cmd);
@@ -79,7 +80,7 @@ public class ConsoleSQLInterpreter {
 				int width = md.getColumnDisplaySize(i);
 				totalwidth += width;
 				String fmt = "%" + width + "s";
-				if (cmd.startsWith("explain") || cmd.startsWith("EXPLAIN"))
+				if (cmdf.startsWith("EXPLAIN"))
 					System.out.format("%s", md.getColumnName(i));
 				else
 					System.out.format(fmt, md.getColumnName(i));
@@ -88,7 +89,7 @@ public class ConsoleSQLInterpreter {
 			System.out.println();
 			for (int i = 0; i < totalwidth; i++)
 				System.out.print("-");
-			if (!cmd.startsWith("explain") && !cmd.startsWith("EXPLAIN"))
+			if (!cmdf.startsWith("EXPLAIN"))
 				System.out.println();
 
 			rs.beforeFirst();
