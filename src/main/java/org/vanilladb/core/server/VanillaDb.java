@@ -47,19 +47,11 @@ import org.vanilladb.core.util.Profiler;
  * be initialized by the method {@link #init(String) init} before use. The
  * methods {@link #initFileMgr(String) initFileMgr},
  * {@link #initFileAndLogMgr(String) initFileAndLogMgr},
- * {@link #initTaskMgr() initTaskMgr},
- * {@link #initTxMgr() initTxMgr},
- * {@link #initCatalogMgr(boolean, Transaction) initCatalogMgr},
- * {@link #initStatMgr(Transaction) initStatMgr},
- * {@link #initSPFactory() initSPFactory}, and
- * {@link #initCheckpointingTask() initCheckpointingTask} provide limited
+ * {@link #initFileLogAndBufferMgr(String) initFileLogAndBufferMgr}, and
+ * {@link #initCatalogMgr(boolean, Transaction) initCatalogMgr} provide limited
  * initialization, and are useful for debugging purposes.
  */
 public class VanillaDb {
-
-	public static enum BufferMgrType {
-		DefaultBufferMgr, DummyBufferMgr
-	};
 
 	// Logger
 	private static Logger logger = Logger.getLogger(VanillaDb.class.getName());
@@ -91,7 +83,7 @@ public class VanillaDb {
 	 *            the name of the database directory
 	 */
 	public static void init(String dirName) {
-		init(dirName, BufferMgrType.DefaultBufferMgr);
+		init(dirName, new SampleStoredProcedureFactory());
 	}
 
 	/**
@@ -99,16 +91,19 @@ public class VanillaDb {
 	 * 
 	 * @param dirName
 	 *            the name of the database directory
-	 * @param bufferType
-	 *            the type of the buffer manager for storage engine
+	 * @param factory
+	 *            the stored procedure factory for generating stored procedures
 	 */
-	public static void init(String dirName, BufferMgrType bufferType) {
+	public static void init(String dirName, StoredProcedureFactory factory) {
 
 		if (inited) {
 			if (logger.isLoggable(Level.WARNING))
 				logger.warning("discarding duplicated init request");
 			return;
 		}
+		
+		// Set the stored procedure factory
+		spFactory = factory;
 
 		/*
 		 * Note: We read properties file here before, but we moved it to a
