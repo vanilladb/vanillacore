@@ -26,6 +26,11 @@ public class CreateTableData {
 
 	/**
 	 * Saves the table name and schema.
+	 * 
+	 * @param tblName
+	 *            the name of the new table
+	 * @param schema
+	 *            the schema of the new table
 	 */
 	public CreateTableData(String tblName, Schema schema) {
 		this.tblName = tblName;

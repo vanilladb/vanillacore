@@ -19,14 +19,17 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 
 public class JdbcStartUp {
-	
+
 	public static String RMI_REG_NAME = "vanilladb-jdbc";
 
 	/**
 	 * Starts up the JDBC driver in server side by binding the remote driver
 	 * object to local registry.
 	 * 
+	 * @param port
+	 *            the network port for the server
 	 * @throws Exception
+	 *             if the registry could not be exported
 	 */
 	public static void startUp(int port) throws Exception {
 		// create a registry specific for the server on the default port
