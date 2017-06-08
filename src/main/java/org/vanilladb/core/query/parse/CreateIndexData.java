@@ -24,9 +24,17 @@ public class CreateIndexData {
 
 	/**
 	 * Saves the index type, table and field names of the specified index.
+	 * 
+	 * @param idxName
+	 *            the name of the index
+	 * @param tblName
+	 *            the name of the indexed table
+	 * @param fldName
+	 *            the name of the indexed field
+	 * @param idxType
+	 *            the type of the index
 	 */
-	public CreateIndexData(String idxName, String tblName, String fldName,
-			int idxType) {
+	public CreateIndexData(String idxName, String tblName, String fldName, int idxType) {
 		this.idxName = idxName;
 		this.tblName = tblName;
 		this.fldName = fldName;

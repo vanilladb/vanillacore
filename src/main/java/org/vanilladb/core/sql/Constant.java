@@ -24,7 +24,7 @@ import static java.sql.Types.VARCHAR;
  * An abstract class that denotes a value of a supported {@link Type type}.
  */
 public abstract class Constant implements Comparable<Constant> {
-	// Optimization: Materialize the each type of constant with defual value 
+	// Optimization: Materialize the each type of constant with defual value
 	private static final Constant defaultInteger = new IntegerConstant(0);
 	private static final Constant defaultBigInt = new BigIntConstant(0);
 	private static final Constant defaultDouble = new DoubleConstant(0);
@@ -52,8 +52,7 @@ public abstract class Constant implements Comparable<Constant> {
 		case (VARCHAR):
 			return new VarcharConstant(val, type);
 		}
-		throw new UnsupportedOperationException("Unspported SQL type: "
-				+ type.getSqlType());
+		throw new UnsupportedOperationException("Unspported SQL type: " + type.getSqlType());
 	}
 
 	/**
@@ -76,8 +75,7 @@ public abstract class Constant implements Comparable<Constant> {
 		case (VARCHAR):
 			return defaultVarchar;
 		}
-		throw new UnsupportedOperationException("Unspported SQL type: "
-				+ type.getSqlType());
+		throw new UnsupportedOperationException("Unspported SQL type: " + type.getSqlType());
 	}
 
 	/**
@@ -112,6 +110,8 @@ public abstract class Constant implements Comparable<Constant> {
 	 * Casts this constant to the specified type. Does not support casting from
 	 * a string constant to a numeric constant.
 	 * 
+	 * @param type
+	 *            the type the caller intends to cast to
 	 * @return the constant casted to the specified type
 	 */
 	public abstract Constant castTo(Type type);

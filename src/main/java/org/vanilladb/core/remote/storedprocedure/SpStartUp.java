@@ -23,11 +23,14 @@ public class SpStartUp {
 	 * Starts up the stored procedure call driver in server side by binding the
 	 * remote driver object to local registry.
 	 * 
+	 * @param port
+	 *            the network port for the server
 	 * @throws Exception
+	 *             if the registry could not be exported
 	 */
-	public static void startUp() throws Exception {
+	public static void startUp(int port) throws Exception {
 		// create a registry specific for the server on the default port
-		Registry reg = LocateRegistry.createRegistry(1099);
+		Registry reg = LocateRegistry.createRegistry(port);
 
 		// and post the server entry in it
 		RemoteDriver d = new RemoteDriverImpl();

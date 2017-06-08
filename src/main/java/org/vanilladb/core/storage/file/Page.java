@@ -62,30 +62,31 @@ public class Page {
 	 */
 	public static final int BLOCK_SIZE;
 	static {
-		BLOCK_SIZE = CoreProperties.getLoader().getPropertyAsInteger(
-				Page.class.getName() + ".BLOCK_SIZE", 4096);
+		BLOCK_SIZE = CoreProperties.getLoader().getPropertyAsInteger(Page.class.getName() + ".BLOCK_SIZE", 4096);
 	}
 
 	/**
 	 * Calculates the maximum number of bytes required to store a value of a
 	 * particular {@link Type type} in disk.
 	 * 
+	 * @param type
+	 *            the specified type
 	 * @return the number of bytes required
 	 */
 	public static int maxSize(Type type) {
-		return type.isFixedSize() ? type.maxSize() : ByteHelper.INT_SIZE
-				+ type.maxSize();
+		return type.isFixedSize() ? type.maxSize() : ByteHelper.INT_SIZE + type.maxSize();
 	}
 
 	/**
 	 * Calculates the number of bytes required to store a {@link Constant
 	 * constant} in disk.
 	 * 
+	 * @param val
+	 *            the specified value
 	 * @return the number of bytes required
 	 */
 	public static int size(Constant val) {
-		return val.getType().isFixedSize() ? val.size() : ByteHelper.INT_SIZE
-				+ val.size();
+		return val.getType().isFixedSize() ? val.size() : ByteHelper.INT_SIZE + val.size();
 	}
 
 	private IoBuffer contents = IoAllocator.newIoBuffer(BLOCK_SIZE);

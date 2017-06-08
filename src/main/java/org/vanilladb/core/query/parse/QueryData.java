@@ -38,12 +38,27 @@ public class QueryData {
 	private boolean isExplain;
 
 	/**
-	 * Saves the field and table list and predicate.
+	 * Saves the information of a SQL query.
+	 * 
+	 * @param isExplain
+	 *            if the query is an explain statement
+	 * @param projFields
+	 *            a collection of field names
+	 * @param tables
+	 *            a collection of table names
+	 * @param pred
+	 *            the query predicate
+	 * @param groupFields
+	 *            a collection of grouping field names
+	 * @param aggFn
+	 *            a collection of aggregation functions
+	 * @param sortFields
+	 *            a list of field names for sorting
+	 * @param sortDirs
+	 *            a list of sort directions
 	 */
-	public QueryData(boolean isExplain, Set<String> projFields,
-			Set<String> tables, Predicate pred, Set<String> groupFields,
-			Set<AggregationFn> aggFn, List<String> sortFields,
-			List<Integer> sortDirs) {
+	public QueryData(boolean isExplain, Set<String> projFields, Set<String> tables, Predicate pred,
+			Set<String> groupFields, Set<AggregationFn> aggFn, List<String> sortFields, List<Integer> sortDirs) {
 		this.isExplain = isExplain;
 		this.projFields = projFields;
 		this.tables = tables;
@@ -85,7 +100,7 @@ public class QueryData {
 	/**
 	 * Returns the fields used to sort the query result.
 	 * 
-	 * @return a list of field names
+	 * @return a list of field names for sorting
 	 */
 	public List<String> sortFields() {
 		return sortFields;
