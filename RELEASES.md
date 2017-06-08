@@ -3,16 +3,16 @@
 
 ## Refactoring
 
-- Remove the old interface for initializing VanillaDb ([#9])
-- Make VanillaDb accept a StoredProcedureFactory as a parameter during initialization ([#9], [#10])
+- Removed the old interface for initializing VanillaDb ([#9])
+- Maked VanillaDb accept a StoredProcedureFactory as a parameter during initialization ([#9], [#10])
 
 ## Enhancements
 
-- Add a debug tool, `org.vanilladb.core.util.Timer`, in order to record the running time in given components for a thread ([#9])
+- Added a debug tool, `org.vanilladb.core.util.Timer`, in order to record the running time in given components for a thread ([#9])
 
 ## Bug Fixes
 
-- Make `SQLIntepretor` case insensitive to `SELECT` and `EXPLAIN` ([#8])
+- Maked `SQLIntepretor` case insensitive to `SELECT` and `EXPLAIN` ([#8])
 
 [#8]: https://github.com/vanilladb/vanillacore/pull/8
 [#9]: https://github.com/vanilladb/vanillacore/pull/9
