@@ -164,7 +164,7 @@ We have a series of educational slides to make the people who are not familiar w
 <dependency>
   <groupId>org.vanilladb</groupId>
   <artifactId>core</artifactId>
-  <version>0.2.1</version>
+  <version>0.2.2</version>
 </dependency>
 ```
 

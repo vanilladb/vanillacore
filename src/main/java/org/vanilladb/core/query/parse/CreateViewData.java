@@ -24,6 +24,11 @@ public class CreateViewData {
 
 	/**
 	 * Saves the view name and its definition.
+	 * 
+	 * @param viewName
+	 *            the name of the new view
+	 * @param qryData
+	 *            the query data of the view definition
 	 */
 	public CreateViewData(String viewName, QueryData qryData) {
 		this.viewName = viewName;

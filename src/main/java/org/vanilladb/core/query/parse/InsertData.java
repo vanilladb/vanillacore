@@ -29,6 +29,13 @@ public class InsertData {
 
 	/**
 	 * Saves the table name and the field and value lists.
+	 * 
+	 * @param tblName
+	 *            the name of the affected table
+	 * @param fields
+	 *            a list of field names
+	 * @param vals
+	 *            a list of Constant values.
 	 */
 	public InsertData(String tblName, List<String> fields, List<Constant> vals) {
 		this.tblName = tblName;

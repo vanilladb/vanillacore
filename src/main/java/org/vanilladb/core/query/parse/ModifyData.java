@@ -33,9 +33,15 @@ public class ModifyData {
 	/**
 	 * Saves the table name, the modified field and its new value, and the
 	 * predicate.
+	 * 
+	 * @param tblName
+	 *            the name of the affected table
+	 * @param fldVals
+	 *            the list of names of the target fields
+	 * @param pred
+	 *            the modification predicate
 	 */
-	public ModifyData(String tblName, Map<String, Expression> fldVals,
-			Predicate pred) {
+	public ModifyData(String tblName, Map<String, Expression> fldVals, Predicate pred) {
 		this.tblName = tblName;
 		this.fldVals = fldVals;
 		this.pred = pred;
@@ -53,7 +59,7 @@ public class ModifyData {
 	/**
 	 * Returns the fields whose values will be modified
 	 * 
-	 * @return the a list of names of the target fields
+	 * @return the list of names of the target fields
 	 */
 	public Collection<String> targetFields() {
 		return new ArrayList<String>(fldVals.keySet());

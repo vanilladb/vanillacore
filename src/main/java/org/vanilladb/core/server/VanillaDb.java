@@ -50,16 +50,11 @@ import org.vanilladb.core.util.Profiler;
  * {@link #initTaskMgr() initTaskMgr},
  * {@link #initTxMgr() initTxMgr},
  * {@link #initCatalogMgr(boolean, Transaction) initCatalogMgr},
- * {@link #initStatMgr(Transaction) initStatMgr},
- * {@link #initSPFactory() initSPFactory}, and
+ * {@link #initStatMgr(Transaction) initStatMgr}, and
  * {@link #initCheckpointingTask() initCheckpointingTask} provide limited
  * initialization, and are useful for debugging purposes.
  */
 public class VanillaDb {
-
-	public static enum BufferMgrType {
-		DefaultBufferMgr, DummyBufferMgr
-	};
 
 	// Logger
 	private static Logger logger = Logger.getLogger(VanillaDb.class.getName());
@@ -91,7 +86,7 @@ public class VanillaDb {
 	 *            the name of the database directory
 	 */
 	public static void init(String dirName) {
-		init(dirName, BufferMgrType.DefaultBufferMgr);
+		init(dirName, new SampleStoredProcedureFactory());
 	}
 
 	/**
@@ -99,16 +94,19 @@ public class VanillaDb {
 	 * 
 	 * @param dirName
 	 *            the name of the database directory
-	 * @param bufferType
-	 *            the type of the buffer manager for storage engine
+	 * @param factory
+	 *            the stored procedure factory for generating stored procedures
 	 */
-	public static void init(String dirName, BufferMgrType bufferType) {
+	public static void init(String dirName, StoredProcedureFactory factory) {
 
 		if (inited) {
 			if (logger.isLoggable(Level.WARNING))
 				logger.warning("discarding duplicated init request");
 			return;
 		}
+		
+		// Set the stored procedure factory
+		spFactory = factory;
 
 		/*
 		 * Note: We read properties file here before, but we moved it to a
@@ -151,9 +149,6 @@ public class VanillaDb {
 
 		// initialize the statistics manager to build the histogram
 		initStatMgr(initTx);
-
-		// initialize SP Factory
-		initSPFactory();
 
 		// commit the initializing transaction
 		initTx.commit();
@@ -240,23 +235,6 @@ public class VanillaDb {
 	 */
 	public static void initStatMgr(Transaction tx) {
 		statMgr = new StatMgr(tx);
-	}
-
-	/**
-	 * Initializes a store procedure factory for creating stored procedures.
-	 */
-	public static void initSPFactory() {
-		Class<?> spFactoryCls = CoreProperties.getLoader().getPropertyAsClass(
-				VanillaDb.class.getName() + ".SP_FACTORY",
-				SampleStoredProcedureFactory.class,
-				StoredProcedureFactory.class);
-		if (spFactoryCls != null) {
-			try {
-				spFactory = (StoredProcedureFactory) spFactoryCls.newInstance();
-			} catch (InstantiationException | IllegalAccessException e) {
-				e.printStackTrace();
-			}
-		}
 	}
 
 	/**

@@ -26,6 +26,11 @@ public class DeleteData {
 
 	/**
 	 * Saves the table name and predicate.
+	 * 
+	 * @param tblName
+	 *            the name of the affected table
+	 * @param pred
+	 *            the deletion predicate
 	 */
 	public DeleteData(String tblName, Predicate pred) {
 		this.tblName = tblName;

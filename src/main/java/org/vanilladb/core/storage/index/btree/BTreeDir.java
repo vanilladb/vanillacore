@@ -44,7 +44,7 @@ public class BTreeDir {
 	static final String SCH_KEY = "key", SCH_CHILD = "child";
 
 	static int NUM_FLAGS = 1;
-	
+
 	private static final String FILENAME_POSTFIX = "_dir.idx";
 
 	public static void insertASlot(Transaction tx, String indexFileName, Type keyType, long blkNum, int slotId) {
@@ -70,7 +70,7 @@ public class BTreeDir {
 		// Close the directory
 		dir.close();
 	}
-	
+
 	public static String getFileName(String indexName) {
 		return indexName + FILENAME_POSTFIX;
 	}
@@ -146,9 +146,10 @@ public class BTreeDir {
 	 * 
 	 * @param searchKey
 	 *            the search key
-	 * 
 	 * @param leafFileName
 	 *            the file name of the B-tree leaf file
+	 * @param purpose
+	 *            the purpose of searching (defined in BTreeIndex)
 	 * @return the BlockId of the leaf block containing that search key
 	 */
 	public BlockId search(Constant searchKey, String leafFileName, int purpose) {
@@ -179,8 +180,7 @@ public class BTreeDir {
 		// check that the content is the root block
 		if (currentPage.currentBlk().number() != 0) {
 			currentPage.close();
-			currentPage = new BTreePage(new BlockId(currentPage.currentBlk().fileName(), 0),
-					NUM_FLAGS, schema, tx);
+			currentPage = new BTreePage(new BlockId(currentPage.currentBlk().fileName(), 0), NUM_FLAGS, schema, tx);
 		}
 		Constant firstval = getKey(currentPage, 0);
 		long level = getLevelFlag(currentPage);
@@ -203,7 +203,7 @@ public class BTreeDir {
 		long newBlkNum = currentPage.split(splitPos, new long[] { getLevelFlag(currentPage) });
 		return new DirEntry(splitVal, newBlkNum);
 	}
-	
+
 	public int getNumRecords() {
 		return currentPage.getNumRecords();
 	}
@@ -365,13 +365,13 @@ public class BTreeDir {
 		} else
 			return -1;
 	}
-	
+
 	private void insert(int slot, Constant val, long blkNum) {
 		// Insert an entry to the page
 		tx.recoveryMgr().logIndexPageInsertion(currentPage.currentBlk().fileName(), false, keyType,
 				currentPage.currentBlk().number(), slot);
 		currentPage.insert(slot);
-		
+
 		currentPage.setVal(slot, SCH_KEY, val);
 		currentPage.setVal(slot, SCH_CHILD, new BigIntConstant(blkNum));
 	}

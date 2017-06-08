@@ -22,6 +22,7 @@ import java.util.List;
 import org.vanilladb.core.query.algebra.Scan;
 import org.vanilladb.core.query.algebra.UpdateScan;
 import org.vanilladb.core.sql.Constant;
+import org.vanilladb.core.sql.RecordComparator;
 import org.vanilladb.core.sql.Schema;
 import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.metadata.TableInfo;
@@ -39,7 +40,8 @@ public class TempRecordPage extends RecordPage {
 	/**
 	 * Insert records to TempRecordFile for sorting, at most one block long
 	 * 
-	 * @param s the source scan
+	 * @param s
+	 *            the source scan
 	 * @return true if another record is inserted false if block is full of
 	 *         records
 	 */
@@ -60,7 +62,8 @@ public class TempRecordPage extends RecordPage {
 	/**
 	 * Copy sorted records to UpdateScan
 	 * 
-	 * @param s the target scan
+	 * @param s
+	 *            the target scan
 	 * @return true if still record in TempRecordPage
 	 */
 	public boolean copyToScan(UpdateScan s) {
@@ -78,10 +81,13 @@ public class TempRecordPage extends RecordPage {
 	}
 
 	/**
-	 * Selection sort
+	 * Selection sort. The values of sort directions are defined in
+	 * {@link RecordComparator}.
 	 * 
 	 * @param sortFlds
+	 *            the list of sorted fields
 	 * @param sortDirs
+	 *            the list of sorting directions
 	 */
 	public void sortbyselection(List<String> sortFlds, List<Integer> sortDirs) {
 		moveToId(-1);
@@ -104,8 +110,7 @@ public class TempRecordPage extends RecordPage {
 	 * @param sortDirs
 	 * @return the id of smallest record
 	 */
-	private int findSmallestFrom(int startId, List<String> sortFlds,
-			List<Integer> sortDirs) {
+	private int findSmallestFrom(int startId, List<String> sortFlds, List<Integer> sortDirs) {
 		int minId = startId;
 		moveToId(startId);
 		while (super.next()) {
@@ -129,8 +134,7 @@ public class TempRecordPage extends RecordPage {
 		}
 	}
 
-	private int compareRecords(int id1, int id2, List<String> sortFlds,
-			List<Integer> sortDirs) {
+	private int compareRecords(int id1, int id2, List<String> sortFlds, List<Integer> sortDirs) {
 		for (int i = 0; i < sortFlds.size(); i++) {
 			int dir = sortDirs.get(i);
 			String fldName = sortFlds.get(i);
