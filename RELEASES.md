@@ -1,11 +1,14 @@
 
 # Version 0.2.2 (2017-06-08)
 
-## Enhancements
+## Refactoring
 
 - Remove the old interface for initializing VanillaDb ([#9])
 - Make VanillaDb accept a StoredProcedureFactory as a parameter during initialization ([#9], [#10])
-- Add a debug tool, Timer, in order to record the running time in given components for a thread ([#9])
+
+## Enhancements
+
+- Add a debug tool, `org.vanilladb.core.util.Timer`, in order to record the running time in given components for a thread ([#9])
 
 ## Bug Fixes
 
