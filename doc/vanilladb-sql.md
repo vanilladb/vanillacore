@@ -63,7 +63,7 @@ Other restrictions:
 ```
 <UpdateCmd>         := <Insert> | <Delete> | <Modify> | <Create> | <Drop>
 <Create>            := <CreateTable> | <CreateView> | <CreateIndex>
-<Drop>              := <DropIndex>
+<Drop>              := <DropTable> | <DropView> | <DropIndex>
 <Insert>            := INSERT INTO IdTok ( <FieldList> )
                        VALUES ( <ConstantList> )
 <FieldList>         := <Field> [ , <Field> ]
@@ -74,10 +74,12 @@ Other restrictions:
 <ModifyExpression>  := <Expression> | <BinaryArithmeticExpression>
 <ModifyTermList>    := <Field> = <ModifyExpression> [ , <ModifyTermList> ]
 <CreateTable>       := CREATE TABLE IdTok ( <FieldDefs> )
+<DropTable>         := DROP TABLE IdTok
 <FieldDefs>         := <FieldDef> [ , <FieldDef> ]
 <FieldDef>          := IdTock <TypeDef>
 <TypeDef>           := INT | LONG | DOUBLE | VARCHAR ( NumericTok )
 <CreateView>        := CREATE VIEW IdTok AS <Query>
+<DropView>          := DROP VIEW IdTok
 <CreateIndex>       := CREATE INDEX IdTok ON IdTok ( <Field> )
 <DropIndex>         := DROP INDEX IdTok
 ```
