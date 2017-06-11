@@ -146,8 +146,10 @@ public class TableMgr {
 	 *            the transaction creating the table
 	 */
 	public void dropTable(String tblName, Transaction tx) {
-		if (tblName != TCAT_TBLNAME && tblName != FCAT_TBLNAME)
-			formatFileHeader(tblName, tx);
+		// Remove the file
+		RecordFile rf = getTableInfo(tblName, tx).open(tx, true);
+		rf.remove();
+
 		// Optimization: remove from the TableInfo map
 		tiMap.remove(tblName);
 
