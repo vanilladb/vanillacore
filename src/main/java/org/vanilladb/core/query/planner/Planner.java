@@ -19,8 +19,10 @@ import org.vanilladb.core.query.algebra.Plan;
 import org.vanilladb.core.query.parse.CreateIndexData;
 import org.vanilladb.core.query.parse.CreateTableData;
 import org.vanilladb.core.query.parse.CreateViewData;
-import org.vanilladb.core.query.parse.DeleteData;
+import org.vanilladb.core.query.parse.DropTableData;
+import org.vanilladb.core.query.parse.DropViewData;
 import org.vanilladb.core.query.parse.DropIndexData;
+import org.vanilladb.core.query.parse.DeleteData;
 import org.vanilladb.core.query.parse.InsertData;
 import org.vanilladb.core.query.parse.ModifyData;
 import org.vanilladb.core.query.parse.Parser;
@@ -91,6 +93,12 @@ public class Planner {
 		} else if (obj.getClass().equals(CreateIndexData.class)) {
 			Verifier.verifyCreateIndexData((CreateIndexData) obj, tx);
 			return uPlanner.executeCreateIndex((CreateIndexData) obj, tx);
+		} else if (obj.getClass().equals(DropTableData.class)) {
+			Verifier.verifyDropTableData((DropTableData) obj, tx);
+			return uPlanner.executeDropTable((DropTableData) obj, tx);
+		} else if (obj.getClass().equals(DropViewData.class)) {
+			Verifier.verifyDropViewData((DropViewData) obj, tx);
+			return uPlanner.executeDropView((DropViewData) obj, tx);
 		} else if (obj.getClass().equals(DropIndexData.class)) {
 			Verifier.verifyDropIndexData((DropIndexData) obj, tx);
 			return uPlanner.executeDropIndex((DropIndexData) obj, tx);

@@ -592,10 +592,26 @@ public class Parser {
 
 	private Object drop() {
 		lex.eatKeyword("drop");
-		if (lex.matchKeyword("index"))
+		if (lex.matchKeyword("table"))
+			return dropTable();
+		else if (lex.matchKeyword("view"))
+			return dropView();
+		else if (lex.matchKeyword("index"))
 			return dropIndex();
 		else
 			throw new UnsupportedOperationException();
+	}
+
+	private DropTableData dropTable() {
+		lex.eatKeyword("table");
+		String tblname = lex.eatId();
+		return new DropTableData(tblname);
+	}
+
+	private DropViewData dropView() {
+		lex.eatKeyword("view");
+		String viewname = lex.eatId();
+		return new DropViewData(viewname);
 	}
 
 	private DropIndexData dropIndex() {

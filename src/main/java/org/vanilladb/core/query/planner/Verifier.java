@@ -23,8 +23,10 @@ import java.util.Set;
 import org.vanilladb.core.query.parse.CreateIndexData;
 import org.vanilladb.core.query.parse.CreateTableData;
 import org.vanilladb.core.query.parse.CreateViewData;
-import org.vanilladb.core.query.parse.DeleteData;
+import org.vanilladb.core.query.parse.DropTableData;
+import org.vanilladb.core.query.parse.DropViewData;
 import org.vanilladb.core.query.parse.DropIndexData;
+import org.vanilladb.core.query.parse.DeleteData;
 import org.vanilladb.core.query.parse.InsertData;
 import org.vanilladb.core.query.parse.ModifyData;
 import org.vanilladb.core.query.parse.Parser;
@@ -191,6 +193,14 @@ public class Verifier {
 						+ fld + "' is too long; see the properties file ");
 	}
 
+	public static void verifyDropTableData(DropTableData data, Transaction tx) {
+		// examine table name
+		TableInfo ti = VanillaDb.catalogMgr().getTableInfo(data.tableName(), tx);
+		if (ti == null)
+			throw new BadSemanticException("table " + data.tableName()
+					+ " does not exist");
+	}
+
 	public static void verifyCreateIndexData(CreateIndexData data,
 			Transaction tx) {
 		// examine table name
@@ -215,8 +225,7 @@ public class Verifier {
 					+ " has already been indexed");
 	}
 
-	public static void verifyDropIndexData(DropIndexData data,
-			Transaction tx) {
+	public static void verifyDropIndexData(DropIndexData data, Transaction tx) {
 	}
 
 	public static void verifyCreateViewData(CreateViewData data, Transaction tx) {
@@ -226,6 +235,13 @@ public class Verifier {
 
 		// examine query data
 		verifyQueryData(data.viewDefData(), tx);
+	}
+
+	public static void verifyDropViewData(DropViewData data, Transaction tx) {
+		// examine view name
+		if (VanillaDb.catalogMgr().getViewDef(data.viewName(), tx) == null)
+			throw new BadSemanticException("view " + data.viewName()
+					+ " does not exist");
 	}
 
 	private static boolean matchFieldAndConstant(Schema sch, String field,

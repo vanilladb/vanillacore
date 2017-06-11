@@ -37,12 +37,20 @@ public class CatalogMgr {
 		tblMgr.createTable(tblName, sch, tx);
 	}
 
+	public void dropTable(String tblName, Transaction tx) {
+		tblMgr.dropTable(tblName, tx);
+	}
+
 	public TableInfo getTableInfo(String tblName, Transaction tx) {
 		return tblMgr.getTableInfo(tblName, tx);
 	}
 
 	public void createView(String viewName, String viewDef, Transaction tx) {
 		viewMgr.createView(viewName, viewDef, tx);
+	}
+
+	public void dropView(String viewName, Transaction tx) {
+		viewMgr.dropView(viewName, tx);
 	}
 
 	public String getViewDef(String viewName, Transaction tx) {

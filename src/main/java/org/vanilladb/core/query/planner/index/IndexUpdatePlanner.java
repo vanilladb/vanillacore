@@ -28,8 +28,10 @@ import org.vanilladb.core.query.algebra.index.IndexSelectPlan;
 import org.vanilladb.core.query.parse.CreateIndexData;
 import org.vanilladb.core.query.parse.CreateTableData;
 import org.vanilladb.core.query.parse.CreateViewData;
-import org.vanilladb.core.query.parse.DeleteData;
+import org.vanilladb.core.query.parse.DropTableData;
+import org.vanilladb.core.query.parse.DropViewData;
 import org.vanilladb.core.query.parse.DropIndexData;
+import org.vanilladb.core.query.parse.DeleteData;
 import org.vanilladb.core.query.parse.InsertData;
 import org.vanilladb.core.query.parse.ModifyData;
 import org.vanilladb.core.query.planner.UpdatePlanner;
@@ -219,6 +221,18 @@ public class IndexUpdatePlanner implements UpdatePlanner {
 	public int executeCreateIndex(CreateIndexData data, Transaction tx) {
 		VanillaDb.catalogMgr().createIndex(data.indexName(), data.tableName(),
 				data.fieldName(), data.indexType(), tx);
+		return 0;
+	}
+
+	@Override
+	public int executeDropTable(DropTableData data, Transaction tx) {
+		VanillaDb.catalogMgr().dropTable(data.tableName(), tx);
+		return 0;
+	}
+
+	@Override
+	public int executeDropView(DropViewData data, Transaction tx) {
+		VanillaDb.catalogMgr().dropView(data.viewName(), tx);
 		return 0;
 	}
 

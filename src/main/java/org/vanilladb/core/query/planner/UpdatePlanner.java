@@ -18,8 +18,10 @@ package org.vanilladb.core.query.planner;
 import org.vanilladb.core.query.parse.CreateIndexData;
 import org.vanilladb.core.query.parse.CreateTableData;
 import org.vanilladb.core.query.parse.CreateViewData;
-import org.vanilladb.core.query.parse.DeleteData;
+import org.vanilladb.core.query.parse.DropTableData;
+import org.vanilladb.core.query.parse.DropViewData;
 import org.vanilladb.core.query.parse.DropIndexData;
+import org.vanilladb.core.query.parse.DeleteData;
 import org.vanilladb.core.query.parse.InsertData;
 import org.vanilladb.core.query.parse.ModifyData;
 import org.vanilladb.core.storage.tx.Transaction;
@@ -101,6 +103,30 @@ public interface UpdatePlanner {
 	 * @return the number of affected records
 	 */
 	int executeCreateIndex(CreateIndexData data, Transaction tx);
+
+	/**
+	 * Executes the specified drop table statement, and returns the number of
+	 * affected records.
+	 * 
+	 * @param data
+	 *            the parsed representation of the drop table statement
+	 * @param tx
+	 *            the calling transaction
+	 * @return the number of affected records
+	 */
+	int executeDropTable(DropTableData data, Transaction tx);
+
+	/**
+	 * Executes the specified drop view statement, and returns the number of
+	 * affected records.
+	 * 
+	 * @param data
+	 *            the parsed representation of the drop view statement
+	 * @param tx
+	 *            the calling transaction
+	 * @return the number of affected records
+	 */
+	int executeDropView(DropViewData data, Transaction tx);
 
 	/**
 	 * Executes the specified drop index statement, and returns the number of

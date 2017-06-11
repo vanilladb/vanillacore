@@ -138,6 +138,41 @@ public class TableMgr {
 	}
 
 	/**
+	 * Remove a table with the specified name.
+	 * 
+	 * @param tblName
+	 *            the name of the new table
+	 * @param tx
+	 *            the transaction creating the table
+	 */
+	public void dropTable(String tblName, Transaction tx) {
+		if (tblName != TCAT_TBLNAME && tblName != FCAT_TBLNAME)
+			formatFileHeader(tblName, tx);
+		// Optimization: remove from the TableInfo map
+		tiMap.remove(tblName);
+
+		// remove the record from tblcat
+		RecordFile tcatfile = tcatInfo.open(tx, true);
+		tcatfile.beforeFirst();
+		while (tcatfile.next()) {
+			if (tcatfile.getVal(TCAT_TBLNAME).equals(new VarcharConstant(tblName))) {
+				tcatfile.delete();
+				break;
+			}
+		}
+		tcatfile.close();
+
+		// remove all records whose field FCAT_TBLNAME equals to tblName from fldcat
+		RecordFile fcatfile = fcatInfo.open(tx, true);
+		fcatfile.beforeFirst();
+		while (fcatfile.next()) {
+			if (fcatfile.getVal(FCAT_TBLNAME).equals(new VarcharConstant(tblName)))
+				fcatfile.delete();
+		}
+		fcatfile.close();
+	}
+
+	/**
 	 * Retrieves the metadata for the specified table out of the catalog.
 	 * 
 	 * @param tblName
