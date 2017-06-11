@@ -26,6 +26,7 @@ import org.vanilladb.core.query.parse.CreateIndexData;
 import org.vanilladb.core.query.parse.CreateTableData;
 import org.vanilladb.core.query.parse.CreateViewData;
 import org.vanilladb.core.query.parse.DeleteData;
+import org.vanilladb.core.query.parse.DropIndexData;
 import org.vanilladb.core.query.parse.InsertData;
 import org.vanilladb.core.query.parse.ModifyData;
 import org.vanilladb.core.server.VanillaDb;
@@ -104,6 +105,12 @@ public class BasicUpdatePlanner implements UpdatePlanner {
 	public int executeCreateIndex(CreateIndexData data, Transaction tx) {
 		VanillaDb.catalogMgr().createIndex(data.indexName(), data.tableName(),
 				data.fieldName(), data.indexType(), tx);
+		return 0;
+	}
+
+	@Override
+	public int executeDropIndex(DropIndexData data, Transaction tx) {
+		VanillaDb.catalogMgr().dropIndex(data.indexName(), tx);
 		return 0;
 	}
 }

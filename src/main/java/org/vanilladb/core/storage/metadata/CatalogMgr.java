@@ -54,6 +54,10 @@ public class CatalogMgr {
 		idxMgr.createIndex(idxName, tblName, fldName, indexType, tx);
 	}
 
+	public void dropIndex(String idxName, Transaction tx) {
+		idxMgr.dropIndex(idxName, tx);
+	}
+
 	public Map<String, IndexInfo> getIndexInfo(String tblName, Transaction tx) {
 		return idxMgr.getIndexInfo(tblName, tx);
 	}

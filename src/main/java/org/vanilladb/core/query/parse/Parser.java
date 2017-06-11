@@ -412,6 +412,8 @@ public class Parser {
 			return modify();
 		else if (lex.matchKeyword("create"))
 			return create();
+		else if (lex.matchKeyword("drop"))
+			return drop();
 		else
 			throw new UnsupportedOperationException();
 	}
@@ -580,5 +582,23 @@ public class Parser {
 		lex.eatDelim(')');
 		return new CreateIndexData(idxname, tblname, fldname,
 				DEFAULT_INDEX_TYPE);
+	}
+
+	/*
+	 * Method for parsing various drop commands.
+	 */
+
+	private Object drop() {
+		lex.eatKeyword("drop");
+		if (lex.matchKeyword("index"))
+			return dropIndex();
+		else
+			throw new UnsupportedOperationException();
+	}
+
+	private DropIndexData dropIndex() {
+		lex.eatKeyword("index");
+		String idxname = lex.eatId();
+		return new DropIndexData(idxname);
 	}
 }

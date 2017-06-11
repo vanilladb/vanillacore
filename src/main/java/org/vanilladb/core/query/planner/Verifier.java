@@ -24,6 +24,7 @@ import org.vanilladb.core.query.parse.CreateIndexData;
 import org.vanilladb.core.query.parse.CreateTableData;
 import org.vanilladb.core.query.parse.CreateViewData;
 import org.vanilladb.core.query.parse.DeleteData;
+import org.vanilladb.core.query.parse.DropIndexData;
 import org.vanilladb.core.query.parse.InsertData;
 import org.vanilladb.core.query.parse.ModifyData;
 import org.vanilladb.core.query.parse.Parser;
@@ -210,8 +211,12 @@ public class Verifier {
 		Map<String, IndexInfo> indexInfoes = VanillaDb.catalogMgr().getIndexInfo(
 				tableName, tx);
 		if (indexInfoes.containsKey(fieldName))
-			throw new BadSemanticException("field" + fieldName
+			throw new BadSemanticException("field " + fieldName
 					+ " has already been indexed");
+	}
+
+	public static void verifyDropIndexData(DropIndexData data,
+			Transaction tx) {
 	}
 
 	public static void verifyCreateViewData(CreateViewData data, Transaction tx) {

@@ -22,6 +22,7 @@ import static org.vanilladb.core.storage.metadata.TableMgr.MAX_NAME;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.vanilladb.core.query.planner.BadSemanticException;
 import org.vanilladb.core.sql.IntegerConstant;
 import org.vanilladb.core.sql.Schema;
 import org.vanilladb.core.sql.VarcharConstant;
@@ -144,5 +145,36 @@ public class IndexMgr {
 		rf.close();
 		iiMap.put(tblName, result);
 		return result;
+	}
+
+	/**
+	 * Remove an index of the specified type for the specified field. A unique
+	 * ID is assigned to this index, and its information is stored in the idxcat
+	 * table.
+	 * 
+	 * @param idxName
+	 *            the name of the index
+	 * @param tx
+	 *            the calling transaction
+	 */
+	public void dropIndex(String idxName, Transaction tx) {
+		String tblname = null, fldname = null;
+		RecordFile rf = ti.open(tx, true);
+		rf.beforeFirst();
+		while (rf.next()) {
+			if (rf.getVal(ICAT_IDXNAME).equals(new VarcharConstant(idxName))) {
+				tblname = (String) rf.getVal(ICAT_TBLNAME).asJavaVal();
+				fldname = (String) rf.getVal(ICAT_FLDNAME).asJavaVal();
+				rf.delete();
+			}
+		}
+		rf.close();
+
+		// update index info map
+		Map<String, IndexInfo> result;
+		if (tblname != null && (result = iiMap.get(tblname)) != null && fldname != null)
+			result.remove(fldname);
+		else
+			throw new BadSemanticException("index " + idxName + " does not exist");
 	}
 }

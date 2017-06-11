@@ -20,6 +20,7 @@ import org.vanilladb.core.query.parse.CreateIndexData;
 import org.vanilladb.core.query.parse.CreateTableData;
 import org.vanilladb.core.query.parse.CreateViewData;
 import org.vanilladb.core.query.parse.DeleteData;
+import org.vanilladb.core.query.parse.DropIndexData;
 import org.vanilladb.core.query.parse.InsertData;
 import org.vanilladb.core.query.parse.ModifyData;
 import org.vanilladb.core.query.parse.Parser;
@@ -90,6 +91,9 @@ public class Planner {
 		} else if (obj.getClass().equals(CreateIndexData.class)) {
 			Verifier.verifyCreateIndexData((CreateIndexData) obj, tx);
 			return uPlanner.executeCreateIndex((CreateIndexData) obj, tx);
+		} else if (obj.getClass().equals(DropIndexData.class)) {
+			Verifier.verifyDropIndexData((DropIndexData) obj, tx);
+			return uPlanner.executeDropIndex((DropIndexData) obj, tx);
 		} else
 			throw new UnsupportedOperationException();
 	}
