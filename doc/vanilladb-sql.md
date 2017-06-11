@@ -28,9 +28,9 @@ Other restrictions:
 <Field>         := IdTok
 <Constant>      := StrTok | NumericTok
 <Expression>    := <Field> | <Constant>
-<BinaryArithmeticExpression>	:=
+<BinaryArithmeticExpression>    :=
                                 ADD(<Expression>, <Expression>) |
-                        		SUB(<Expression>, <Expression>) |
+                                SUB(<Expression>, <Expression>) |
                                 MUL(<Expression>, <Expression>) |
                                 DIV(<Expression>, <Expression>)
 <Term>  :=
@@ -61,8 +61,9 @@ Other restrictions:
 ### Updates
 
 ```
-<UpdateCmd>         := <Insert> | <Delete> | <Modify> | <Create>
+<UpdateCmd>         := <Insert> | <Delete> | <Modify> | <Create> | <Drop>
 <Create>            := <CreateTable> | <CreateView> | <CreateIndex>
+<Drop>              := <DropIndex>
 <Insert>            := INSERT INTO IdTok ( <FieldList> )
                        VALUES ( <ConstantList> )
 <FieldList>         := <Field> [ , <Field> ]
@@ -78,4 +79,5 @@ Other restrictions:
 <TypeDef>           := INT | LONG | DOUBLE | VARCHAR ( NumericTok )
 <CreateView>        := CREATE VIEW IdTok AS <Query>
 <CreateIndex>       := CREATE INDEX IdTok ON IdTok ( <Field> )
+<DropIndex>         := DROP INDEX IdTok
 ```
