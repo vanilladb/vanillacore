@@ -515,8 +515,10 @@ public class Parser {
 			return createTable();
 		else if (lex.matchKeyword("view"))
 			return createView();
-		else
+		else if (lex.matchKeyword("index"))
 			return createIndex();
+		else
+			throw new UnsupportedOperationException();
 	}
 
 	private CreateTableData createTable() {
