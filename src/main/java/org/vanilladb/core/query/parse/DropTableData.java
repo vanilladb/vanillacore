@@ -15,8 +15,6 @@
  ******************************************************************************/
 package org.vanilladb.core.query.parse;
 
-import org.vanilladb.core.sql.Schema;
-
 /**
  * Data for the SQL <em>drop table</em> statement.
  */

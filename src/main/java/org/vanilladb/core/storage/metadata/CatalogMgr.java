@@ -18,6 +18,7 @@ package org.vanilladb.core.storage.metadata;
 import java.util.Map;
 
 import org.vanilladb.core.sql.Schema;
+import org.vanilladb.core.storage.index.Index;
 import org.vanilladb.core.storage.metadata.index.IndexInfo;
 import org.vanilladb.core.storage.metadata.index.IndexMgr;
 import org.vanilladb.core.storage.tx.Transaction;
@@ -68,5 +69,9 @@ public class CatalogMgr {
 
 	public Map<String, IndexInfo> getIndexInfo(String tblName, Transaction tx) {
 		return idxMgr.getIndexInfo(tblName, tx);
+	}
+
+	public IndexInfo getIndexInfoByName(String idxName, Transaction tx) {
+		return idxMgr.getIndexInfoByName(idxName, tx);
 	}
 }

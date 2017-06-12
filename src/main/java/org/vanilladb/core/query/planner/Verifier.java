@@ -226,6 +226,10 @@ public class Verifier {
 	}
 
 	public static void verifyDropIndexData(DropIndexData data, Transaction tx) {
+		// examine index name
+		if (VanillaDb.catalogMgr().getIndexInfoByName(data.indexName(), tx) == null)
+			throw new BadSemanticException("index " + data.indexName()
+					+ " does not exist");
 	}
 
 	public static void verifyCreateViewData(CreateViewData data, Transaction tx) {

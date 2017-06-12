@@ -108,6 +108,7 @@ public class RecordFile implements Record {
 
 	/**
 	 * Remove the record file.
+	 * TODO: handle the concurrency issues that might happen
 	 */
 	public void remove() {
 		close();

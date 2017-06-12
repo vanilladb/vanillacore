@@ -22,10 +22,10 @@ import static org.vanilladb.core.storage.metadata.TableMgr.MAX_NAME;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.vanilladb.core.query.planner.BadSemanticException;
 import org.vanilladb.core.sql.IntegerConstant;
 import org.vanilladb.core.sql.Schema;
 import org.vanilladb.core.sql.VarcharConstant;
+import org.vanilladb.core.storage.index.Index;
 import org.vanilladb.core.storage.metadata.TableInfo;
 import org.vanilladb.core.storage.metadata.TableMgr;
 import org.vanilladb.core.storage.record.RecordFile;
@@ -148,6 +148,43 @@ public class IndexMgr {
 	}
 
 	/**
+	 * Returns the requested index info object with the given index name.
+	 * 
+	 * @param idxName
+	 *            the name of the index
+	 * @param tx
+	 *            the calling transaction
+	 * @return an IndexInfo object
+	 */
+	public IndexInfo getIndexInfoByName(String idxName, Transaction tx) {
+		IndexInfo ii = null;
+
+		// search the index catalog table for the index
+		RecordFile rf = ti.open(tx, true);
+		rf.beforeFirst();
+		while (rf.next()) {
+			if (rf.getVal(ICAT_IDXNAME).equals(new VarcharConstant(idxName))) {
+				String tblname = (String) rf.getVal(ICAT_TBLNAME).asJavaVal();
+				String fldname = (String) rf.getVal(ICAT_FLDNAME).asJavaVal();
+				int idxtype = (Integer) rf.getVal(ICAT_IDXTYPE).asJavaVal();
+				ii = new IndexInfo(idxName, tblname, fldname, idxtype);
+
+				// update index info map
+				Map<String, IndexInfo> result = iiMap.get(tblname);
+				if (result == null) {
+					result = new HashMap<String, IndexInfo>();
+					iiMap.put(tblname, result);
+				}
+				result.put(fldname, ii);
+				break;
+			}
+		}
+		rf.close();
+
+		return ii;
+	}
+
+	/**
 	 * Remove an index of the specified type for the specified field. A unique
 	 * ID is assigned to this index, and its information is stored in the idxcat
 	 * table.
@@ -166,6 +203,7 @@ public class IndexMgr {
 				tblname = (String) rf.getVal(ICAT_TBLNAME).asJavaVal();
 				fldname = (String) rf.getVal(ICAT_FLDNAME).asJavaVal();
 				rf.delete();
+				break;
 			}
 		}
 		rf.close();
@@ -174,7 +212,5 @@ public class IndexMgr {
 		Map<String, IndexInfo> result;
 		if (tblname != null && (result = iiMap.get(tblname)) != null && fldname != null)
 			result.remove(fldname);
-		else
-			throw new BadSemanticException("index " + idxName + " does not exist");
 	}
 }
