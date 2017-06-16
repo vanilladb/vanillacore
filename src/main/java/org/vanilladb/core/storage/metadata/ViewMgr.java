@@ -62,6 +62,17 @@ class ViewMgr {
 		rf.close();
 	}
 
+	public void dropView(String vName, Transaction tx) {
+		TableInfo ti = tblMgr.getTableInfo(VCAT, tx);
+		RecordFile rf = ti.open(tx, true);
+		rf.beforeFirst();
+		while (rf.next()) {
+			if (rf.getVal(VCAT_VNAME).equals(new VarcharConstant(vName)))
+				rf.delete();
+		}
+		rf.close();
+	}
+
 	public String getViewDef(String vName, Transaction tx) {
 		String result = null;
 		TableInfo ti = tblMgr.getTableInfo(VCAT, tx);

@@ -412,6 +412,8 @@ public class Parser {
 			return modify();
 		else if (lex.matchKeyword("create"))
 			return create();
+		else if (lex.matchKeyword("drop"))
+			return drop();
 		else
 			throw new UnsupportedOperationException();
 	}
@@ -513,8 +515,10 @@ public class Parser {
 			return createTable();
 		else if (lex.matchKeyword("view"))
 			return createView();
-		else
+		else if (lex.matchKeyword("index"))
 			return createIndex();
+		else
+			throw new UnsupportedOperationException();
 	}
 
 	private CreateTableData createTable() {
@@ -580,5 +584,39 @@ public class Parser {
 		lex.eatDelim(')');
 		return new CreateIndexData(idxname, tblname, fldname,
 				DEFAULT_INDEX_TYPE);
+	}
+
+	/*
+	 * Method for parsing various drop commands.
+	 */
+
+	private Object drop() {
+		lex.eatKeyword("drop");
+		if (lex.matchKeyword("table"))
+			return dropTable();
+		else if (lex.matchKeyword("view"))
+			return dropView();
+		else if (lex.matchKeyword("index"))
+			return dropIndex();
+		else
+			throw new UnsupportedOperationException();
+	}
+
+	private DropTableData dropTable() {
+		lex.eatKeyword("table");
+		String tblname = lex.eatId();
+		return new DropTableData(tblname);
+	}
+
+	private DropViewData dropView() {
+		lex.eatKeyword("view");
+		String viewname = lex.eatId();
+		return new DropViewData(viewname);
+	}
+
+	private DropIndexData dropIndex() {
+		lex.eatKeyword("index");
+		String idxname = lex.eatId();
+		return new DropIndexData(idxname);
 	}
 }

@@ -107,6 +107,15 @@ public class RecordFile implements Record {
 	}
 
 	/**
+	 * Remove the record file.
+	 * TODO: handle the concurrency issues that might happen
+	 */
+	public void remove() {
+		close();
+		VanillaDb.fileMgr().delete(fileName);
+	}
+
+	/**
 	 * Positions the current record so that a call to method next will wind up
 	 * at the first record.
 	 */

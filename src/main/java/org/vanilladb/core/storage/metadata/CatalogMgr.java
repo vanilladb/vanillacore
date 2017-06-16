@@ -18,6 +18,7 @@ package org.vanilladb.core.storage.metadata;
 import java.util.Map;
 
 import org.vanilladb.core.sql.Schema;
+import org.vanilladb.core.storage.index.Index;
 import org.vanilladb.core.storage.metadata.index.IndexInfo;
 import org.vanilladb.core.storage.metadata.index.IndexMgr;
 import org.vanilladb.core.storage.tx.Transaction;
@@ -37,12 +38,20 @@ public class CatalogMgr {
 		tblMgr.createTable(tblName, sch, tx);
 	}
 
+	public void dropTable(String tblName, Transaction tx) {
+		tblMgr.dropTable(tblName, tx);
+	}
+
 	public TableInfo getTableInfo(String tblName, Transaction tx) {
 		return tblMgr.getTableInfo(tblName, tx);
 	}
 
 	public void createView(String viewName, String viewDef, Transaction tx) {
 		viewMgr.createView(viewName, viewDef, tx);
+	}
+
+	public void dropView(String viewName, Transaction tx) {
+		viewMgr.dropView(viewName, tx);
 	}
 
 	public String getViewDef(String viewName, Transaction tx) {
@@ -54,7 +63,15 @@ public class CatalogMgr {
 		idxMgr.createIndex(idxName, tblName, fldName, indexType, tx);
 	}
 
+	public void dropIndex(String idxName, Transaction tx) {
+		idxMgr.dropIndex(idxName, tx);
+	}
+
 	public Map<String, IndexInfo> getIndexInfo(String tblName, Transaction tx) {
 		return idxMgr.getIndexInfo(tblName, tx);
+	}
+
+	public IndexInfo getIndexInfoByName(String idxName, Transaction tx) {
+		return idxMgr.getIndexInfoByName(idxName, tx);
 	}
 }

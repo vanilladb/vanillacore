@@ -189,7 +189,7 @@ public class Lexer {
 
 	private void initKeywords() {
 		keywords = Arrays.asList("select", "from", "where", "and", "insert",
-				"into", "values", "delete", "update", "set", "create", "table",
+				"into", "values", "delete", "drop", "update", "set", "create", "table",
 				"int", "double", "varchar", "view", "as", "index", "on",
 				"long", "order", "by", "asc", "desc", "sum", "count", "avg",
 				"min", "max", "distinct", "group", "add", "sub", "mul", "div",
