@@ -99,25 +99,27 @@ public class GroupByPlan extends ReduceRecordsPlan {
 			for (AggregationFn aggFn : aggFns) {
 				String argFld = aggFn.argumentFieldName();
 				String fld = aggFn.fieldName();
+				Collection<Bucket> dist = hist.buckets(argFld);
+				if (dist.isEmpty())
+					continue;
 				if (aggFn.getClass().equals(SumFn.class))
 					gbHist.addBucket(fld,
-							sumBucket(hist.buckets(argFld), numGroups));
+							sumBucket(dist, numGroups));
 				else if (aggFn.getClass().equals(AvgFn.class))
 					gbHist.addBucket(fld,
-							avgBucket(hist.buckets(argFld), numGroups));
+							avgBucket(dist, numGroups));
 				else if (aggFn.getClass().equals(CountFn.class))
 					gbHist.addBucket(fld,
-							countBucket(hist.buckets(argFld), numGroups));
+							countBucket(dist, numGroups));
 				else if (aggFn.getClass().equals(DistinctCountFn.class))
-					gbHist.addBucket(
-							fld,
-							distinctCountBucket(hist.buckets(argFld), numGroups));
+					gbHist.addBucket(fld,
+							distinctCountBucket(dist, numGroups));
 				else if (aggFn.getClass().equals(MinFn.class))
 					gbHist.addBucket(fld,
-							minBucket(hist.buckets(argFld), numGroups));
+							minBucket(dist, numGroups));
 				else if (aggFn.getClass().equals(MaxFn.class))
 					gbHist.addBucket(fld,
-							maxBucket(hist.buckets(argFld), numGroups));
+							maxBucket(dist, numGroups));
 				else
 					throw new UnsupportedOperationException();
 			}
