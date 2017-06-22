@@ -47,9 +47,8 @@ public class BTreeDir {
 
 	private static final String FILENAME_POSTFIX = "_dir.idx";
 
-	public static void insertASlot(Transaction tx, String indexFileName, Type keyType, long blkNum, int slotId) {
+	public static void insertASlot(Transaction tx, BlockId blk, Type keyType, int slotId) {
 		// Open the specified directory
-		BlockId blk = new BlockId(indexFileName, blkNum);
 		BTreeDir dir = new BTreeDir(blk, keyType, tx);
 
 		// Insert the specified slot
@@ -59,9 +58,8 @@ public class BTreeDir {
 		dir.close();
 	}
 
-	public static void deleteASlot(Transaction tx, String indexFileName, Type keyType, long blkNum, int slotId) {
+	public static void deleteASlot(Transaction tx, BlockId blk, Type keyType, int slotId) {
 		// Open the specified directory
-		BlockId blk = new BlockId(indexFileName, blkNum);
 		BTreeDir dir = new BTreeDir(blk, keyType, tx);
 
 		// Delete the specified slot
@@ -368,8 +366,7 @@ public class BTreeDir {
 
 	private void insert(int slot, Constant val, long blkNum) {
 		// Insert an entry to the page
-		tx.recoveryMgr().logIndexPageInsertion(currentPage.currentBlk().fileName(), false, keyType,
-				currentPage.currentBlk().number(), slot);
+		tx.recoveryMgr().logIndexPageInsertion(currentPage.currentBlk(), false, keyType, slot);
 		currentPage.insert(slot);
 
 		currentPage.setVal(slot, SCH_KEY, val);
