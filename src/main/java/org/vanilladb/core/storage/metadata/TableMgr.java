@@ -21,10 +21,12 @@ import static org.vanilladb.core.sql.Type.VARCHAR;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.IntegerConstant;
 import org.vanilladb.core.sql.Schema;
 import org.vanilladb.core.sql.Type;
 import org.vanilladb.core.sql.VarcharConstant;
+import org.vanilladb.core.storage.metadata.index.IndexInfo;
 import org.vanilladb.core.storage.record.RecordFile;
 import org.vanilladb.core.storage.tx.Transaction;
 import org.vanilladb.core.util.CoreProperties;
@@ -172,6 +174,11 @@ public class TableMgr {
 				fcatfile.delete();
 		}
 		fcatfile.close();
+
+		// remove corresponding indices
+		Map<String, IndexInfo> tblindex = VanillaDb.catalogMgr().getIndexInfo(tblName, tx);
+		for (IndexInfo ii : tblindex.values())
+			VanillaDb.catalogMgr().dropIndex(ii.indexName(), tx);
 	}
 
 	/**
