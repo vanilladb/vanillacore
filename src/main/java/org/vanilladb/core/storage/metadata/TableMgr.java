@@ -18,7 +18,9 @@ package org.vanilladb.core.storage.metadata;
 import static org.vanilladb.core.sql.Type.INTEGER;
 import static org.vanilladb.core.sql.Type.VARCHAR;
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 import org.vanilladb.core.server.VanillaDb;
@@ -179,6 +181,12 @@ public class TableMgr {
 		Map<String, IndexInfo> tblindex = VanillaDb.catalogMgr().getIndexInfo(tblName, tx);
 		for (IndexInfo ii : tblindex.values())
 			VanillaDb.catalogMgr().dropIndex(ii.indexName(), tx);
+
+		// remove corresponding views
+		Collection<String> vnames = VanillaDb.catalogMgr().getViewNameByTable(tblName, tx);
+		Iterator<String> vnameiter = vnames.iterator();
+		while (vnameiter.hasNext())
+			VanillaDb.catalogMgr().dropView(vnameiter.next(), tx);
 	}
 
 	/**
