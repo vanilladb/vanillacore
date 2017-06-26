@@ -31,8 +31,8 @@ public class SetValueClr extends SetValueRecord implements CompesationLogRecord 
 
 	private LogSeqNum undoNextLSN;
 
-	public SetValueClr(long txNum, BlockId blk, int offset, Constant val, Constant newVal, LogSeqNum undoNextLSN) {
-		super(txNum, blk, offset, val, newVal);
+	public SetValueClr(long compTxNum, BlockId blk, int offset, Constant val, Constant newVal, LogSeqNum undoNextLSN) {
+		super(compTxNum, blk, offset, val, newVal);
 		this.undoNextLSN = undoNextLSN;
 	}
 

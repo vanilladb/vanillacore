@@ -58,10 +58,9 @@ public class BTreeLeaf {
 	
 	private static final String FILENAME_POSTFIX = "_leaf.idx";
 	
-	public static void insertASlot(Transaction tx, String indexFileName, Type keyType,
-			long blkNum, int slotId) {
+	public static void insertASlot(Transaction tx, BlockId blk, Type keyType, int slotId) {
 		// Open the specified leaf
-		BTreeLeaf dir = new BTreeLeaf(indexFileName, keyType, blkNum, tx);
+		BTreeLeaf dir = new BTreeLeaf(blk, keyType, tx);
 
 		// Insert the specified slot
 		dir.currentPage.insert(slotId);
@@ -70,10 +69,9 @@ public class BTreeLeaf {
 		dir.close();
 	}
 	
-	public static void deleteASlot(Transaction tx, String indexFileName, Type keyType,
-			long blkNum, int slotId) {
+	public static void deleteASlot(Transaction tx, BlockId blk, Type keyType, int slotId) {
 		// Open the specified leaf
-		BTreeLeaf dir = new BTreeLeaf(indexFileName, keyType, blkNum, tx);
+		BTreeLeaf dir = new BTreeLeaf(blk, keyType, tx);
 
 		// Delete the specified slot
 		dir.currentPage.delete(slotId);
@@ -180,14 +178,13 @@ public class BTreeLeaf {
 	 * @param blkNum
 	 * @param tx
 	 */
-	private BTreeLeaf(String indexFileName, Type keyType, long blkNum, Transaction tx) {
+	private BTreeLeaf(BlockId blk, Type keyType, Transaction tx) {
 		this.dataFileName = null;
 		this.schema = schema(keyType);
 		this.keyType = keyType;
 		this.searchRange = null;
 		this.tx = tx;
-		this.currentPage = new BTreePage(new BlockId(indexFileName, blkNum),
-				NUM_FLAGS, schema, tx);
+		this.currentPage = new BTreePage(blk, NUM_FLAGS, schema, tx);
 		ccMgr = tx.concurrencyMgr();
 	}
 
@@ -454,8 +451,7 @@ public class BTreeLeaf {
 	
 	private void insert(int slot, Constant val, RecordId rid) {
 		// Insert an entry to the page
-		tx.recoveryMgr().logIndexPageInsertion(currentPage.currentBlk().fileName(), false, keyType,
-				currentPage.currentBlk().number(), slot);
+		tx.recoveryMgr().logIndexPageInsertion(currentPage.currentBlk(), false, keyType, slot);
 		currentPage.insert(slot);
 		
 		currentPage.setVal(slot, SCH_KEY, val);
@@ -465,8 +461,7 @@ public class BTreeLeaf {
 	
 	private void delete(int slot) {
 		// Delete an entry of the page
-		tx.recoveryMgr().logIndexPageDeletion(currentPage.currentBlk().fileName(), false, keyType,
-				currentPage.currentBlk().number(), slot);
+		tx.recoveryMgr().logIndexPageDeletion(currentPage.currentBlk(), false, keyType, slot);
 		currentPage.delete(slot);
 	}
 }

@@ -23,6 +23,7 @@ import org.vanilladb.core.sql.BigIntConstant;
 import org.vanilladb.core.sql.Constant;
 import org.vanilladb.core.sql.IntegerConstant;
 import org.vanilladb.core.sql.Type;
+import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.log.BasicLogRecord;
 import org.vanilladb.core.storage.log.LogSeqNum;
 import org.vanilladb.core.storage.tx.Transaction;
@@ -30,9 +31,9 @@ import org.vanilladb.core.storage.tx.Transaction;
 public class IndexPageInsertClr extends IndexPageInsertRecord implements CompesationLogRecord {
 	private LogSeqNum undoNextLSN;
 
-	public IndexPageInsertClr(long txNum, String indexName, boolean isDirPage, Type keyType, long blkNum, int slotId,
-			LogSeqNum undoNextLSN) {
-		super(txNum, indexName, isDirPage, keyType, blkNum, slotId);
+	public IndexPageInsertClr(long compTxNum, BlockId indexBlkId, boolean isDirPage,
+			Type keyType, int slotId, LogSeqNum undoNextLSN) {
+		super(compTxNum, indexBlkId, isDirPage, keyType, slotId);
 		this.undoNextLSN = undoNextLSN;
 
 	}
