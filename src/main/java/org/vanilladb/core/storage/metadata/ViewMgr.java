@@ -91,7 +91,7 @@ class ViewMgr {
 		return result;
 	}
 
-	public Collection<String> getViewNameByTable(String tblName, Transaction tx) {
+	public Collection<String> getViewNamesByTable(String tblName, Transaction tx) {
 		Collection<String> result = new LinkedList();
 
 		TableInfo ti = tblMgr.getTableInfo(VCAT, tx);

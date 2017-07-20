@@ -178,12 +178,12 @@ public class TableMgr {
 		fcatfile.close();
 
 		// remove corresponding indices
-		Map<String, IndexInfo> tblindex = VanillaDb.catalogMgr().getIndexInfo(tblName, tx);
-		for (IndexInfo ii : tblindex.values())
+		Map<String, IndexInfo> tblIndex = VanillaDb.catalogMgr().getIndexInfo(tblName, tx);
+		for (IndexInfo ii : tblIndex.values())
 			VanillaDb.catalogMgr().dropIndex(ii.indexName(), tx);
 
 		// remove corresponding views
-		Collection<String> vnames = VanillaDb.catalogMgr().getViewNameByTable(tblName, tx);
+		Collection<String> vnames = VanillaDb.catalogMgr().getViewNamesByTable(tblName, tx);
 		Iterator<String> vnameiter = vnames.iterator();
 		while (vnameiter.hasNext())
 			VanillaDb.catalogMgr().dropView(vnameiter.next(), tx);
