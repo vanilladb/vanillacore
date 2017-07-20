@@ -91,6 +91,8 @@ class ViewMgr {
 		return result;
 	}
 
+	// XXX: This makes the storage engine depend on the query engine.
+	// We may have to come out a better method.
 	public Collection<String> getViewNamesByTable(String tblName, Transaction tx) {
 		Collection<String> result = new LinkedList();
 
