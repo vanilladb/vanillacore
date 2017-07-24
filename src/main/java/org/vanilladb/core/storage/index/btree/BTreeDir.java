@@ -25,6 +25,9 @@ import org.vanilladb.core.sql.Constant;
 import org.vanilladb.core.sql.Schema;
 import org.vanilladb.core.sql.Type;
 import org.vanilladb.core.storage.file.BlockId;
+import org.vanilladb.core.storage.index.SearchKey;
+import org.vanilladb.core.storage.index.SearchKeyType;
+import org.vanilladb.core.storage.index.btree.BTreeIndex.SearchPurpose;
 import org.vanilladb.core.storage.tx.Transaction;
 import org.vanilladb.core.storage.tx.concurrency.ConcurrencyMgr;
 import org.vanilladb.core.storage.tx.concurrency.LockAbortException;
@@ -47,7 +50,7 @@ public class BTreeDir {
 
 	private static final String FILENAME_POSTFIX = "_dir.idx";
 
-	public static void insertASlot(Transaction tx, BlockId blk, Type keyType, int slotId) {
+	public static void insertASlot(Transaction tx, BlockId blk, SearchKeyType keyType, int slotId) {
 		// Open the specified directory
 		BTreeDir dir = new BTreeDir(blk, keyType, tx);
 
@@ -58,7 +61,7 @@ public class BTreeDir {
 		dir.close();
 	}
 
-	public static void deleteASlot(Transaction tx, BlockId blk, Type keyType, int slotId) {
+	public static void deleteASlot(Transaction tx, BlockId blk, SearchKeyType keyType, int slotId) {
 		// Open the specified directory
 		BTreeDir dir = new BTreeDir(blk, keyType, tx);
 
@@ -72,18 +75,23 @@ public class BTreeDir {
 	public static String getFileName(String indexName) {
 		return indexName + FILENAME_POSTFIX;
 	}
+	
+	static String keyFieldName(int index) {
+		return SCH_KEY + index;
+	}
 
 	/**
 	 * Returns the schema of the B-tree directory records.
 	 * 
-	 * @param fldType
+	 * @param keyType
 	 *            the type of the indexed field
 	 * 
 	 * @return the schema of the index records
 	 */
-	static Schema schema(Type fldType) {
+	static Schema schema(SearchKeyType keyType) {
 		Schema sch = new Schema();
-		sch.addField(SCH_KEY, fldType);
+		for (int i = 0; i < keyType.length(); i++)
+			sch.addField(keyFieldName(i), keyType.get(i));
 		sch.addField(SCH_CHILD, BIGINT);
 		return sch;
 	}
@@ -96,15 +104,18 @@ public class BTreeDir {
 		p.setFlag(0, val);
 	}
 
-	static Constant getKey(BTreePage p, int slot) {
-		return p.getVal(slot, SCH_KEY);
+	static SearchKey getKey(BTreePage p, int slot, int keyLen) {
+		Constant[] vals = new Constant[keyLen];
+		for (int i = 0; i < keyLen; i++)
+			vals[i] = p.getVal(slot, keyFieldName(i));
+		return new SearchKey(vals);
 	}
 
 	static long getChildBlockNumber(BTreePage p, int slot) {
 		return (Long) p.getVal(slot, SCH_CHILD).asJavaVal();
 	}
 
-	private Type keyType;
+	private SearchKeyType keyType;
 	private Schema schema;
 	private Transaction tx;
 	private ConcurrencyMgr ccMgr;
@@ -122,7 +133,7 @@ public class BTreeDir {
 	 * @param tx
 	 *            the calling transaction
 	 */
-	BTreeDir(BlockId blk, Type keyType, Transaction tx) {
+	BTreeDir(BlockId blk, SearchKeyType keyType, Transaction tx) {
 		this.keyType = keyType;
 		this.tx = tx;
 		this.schema = schema(keyType);
@@ -150,12 +161,12 @@ public class BTreeDir {
 	 *            the purpose of searching (defined in BTreeIndex)
 	 * @return the BlockId of the leaf block containing that search key
 	 */
-	public BlockId search(Constant searchKey, String leafFileName, int purpose) {
-		if (purpose == BTreeIndex.READ)
+	public BlockId search(SearchKey searchKey, String leafFileName, SearchPurpose purpose) {
+		if (purpose == SearchPurpose.READ)
 			return searchForRead(searchKey, leafFileName);
-		else if (purpose == BTreeIndex.INSERT)
+		else if (purpose == SearchPurpose.INSERT)
 			return searchForInsert(searchKey, leafFileName);
-		else if (purpose == BTreeIndex.DELETE)
+		else if (purpose == SearchPurpose.DELETE)
 			return searchForDelete(searchKey, leafFileName);
 		else
 			throw new UnsupportedOperationException();
@@ -175,16 +186,18 @@ public class BTreeDir {
 	 *            the directory entry to be added as a child of the new root
 	 */
 	public void makeNewRoot(DirEntry e) {
-		// check that the content is the root block
+		// makes sure it is opening the root block
 		if (currentPage.currentBlk().number() != 0) {
 			currentPage.close();
-			currentPage = new BTreePage(new BlockId(currentPage.currentBlk().fileName(), 0), NUM_FLAGS, schema, tx);
+			currentPage = new BTreePage(new BlockId(currentPage.currentBlk().fileName(), 0),
+					NUM_FLAGS, schema, tx);
 		}
-		Constant firstval = getKey(currentPage, 0);
+		
+		SearchKey firstKey = getKey(currentPage, 0, keyType.length());
 		long level = getLevelFlag(currentPage);
 		// transfer all records to the new block
 		long newBlkNum = currentPage.split(0, new long[] { level });
-		DirEntry oldRootEntry = new DirEntry(firstval, newBlkNum);
+		DirEntry oldRootEntry = new DirEntry(firstKey, newBlkNum);
 		insert(oldRootEntry);
 		insert(e);
 		setLevelFlag(currentPage, level + 1);
@@ -197,7 +210,7 @@ public class BTreeDir {
 			return null;
 		// split full page
 		int splitPos = currentPage.getNumRecords() / 2;
-		Constant splitVal = getKey(currentPage, splitPos);
+		SearchKey splitVal = getKey(currentPage, splitPos, keyType.length());
 		long newBlkNum = currentPage.split(splitPos, new long[] { getLevelFlag(currentPage) });
 		return new DirEntry(splitVal, newBlkNum);
 	}
@@ -206,7 +219,7 @@ public class BTreeDir {
 		return currentPage.getNumRecords();
 	}
 
-	private BlockId searchForInsert(Constant searchKey, String leafFileName) {
+	private BlockId searchForInsert(SearchKey searchKey, String leafFileName) {
 		// search from root to level 0
 		dirsMayBeUpdated = new ArrayList<BlockId>();
 		BlockId parentBlk = currentPage.currentBlk();
@@ -248,7 +261,7 @@ public class BTreeDir {
 		}
 	}
 
-	private BlockId searchForDelete(Constant searchKey, String leafFileName) {
+	private BlockId searchForDelete(SearchKey searchKey, String leafFileName) {
 		// search from root to level 0
 		BlockId parentBlk = currentPage.currentBlk();
 		try {
@@ -284,7 +297,7 @@ public class BTreeDir {
 		}
 	}
 
-	private BlockId searchForRead(Constant searchKey, String leafFileName) {
+	private BlockId searchForRead(SearchKey searchKey, String leafFileName) {
 		// search from root to level 0
 		BlockId parentBlk = currentPage.currentBlk();
 		try {
@@ -320,9 +333,9 @@ public class BTreeDir {
 		}
 	}
 
-	private long findChildBlockNumber(Constant searchKey) {
+	private long findChildBlockNumber(SearchKey searchKey) {
 		int slot = findSlotBefore(searchKey);
-		if (getKey(currentPage, slot + 1).equals(searchKey))
+		if (getKey(currentPage, slot + 1, keyType.length()).equals(searchKey))
 			slot++;
 		return getChildBlockNumber(currentPage, slot);
 	}
@@ -334,7 +347,7 @@ public class BTreeDir {
 	 *            the search key
 	 * @return the position before where the search key goes
 	 */
-	private int findSlotBefore(Constant searchKey) {
+	private int findSlotBefore(SearchKey searchKey) {
 		/*
 		 * int slot = 0; while (slot < contents.getNumRecords() &&
 		 * getKey(contents, slot).compareTo(searchKey) < 0) slot++; return slot
@@ -346,7 +359,8 @@ public class BTreeDir {
 
 		if (endSlot >= 0) {
 			while (middleSlot != startSlot) {
-				if (getKey(currentPage, middleSlot).compareTo(searchKey) < 0)
+				if (getKey(currentPage, middleSlot, keyType.length())
+						.compareTo(searchKey) < 0)
 					startSlot = middleSlot;
 				else
 					endSlot = middleSlot;
@@ -354,9 +368,10 @@ public class BTreeDir {
 				middleSlot = (startSlot + endSlot) / 2;
 			}
 
-			if (getKey(currentPage, endSlot).compareTo(searchKey) < 0)
+			if (getKey(currentPage, endSlot, keyType.length()).compareTo(searchKey) < 0)
 				return endSlot;
-			else if (getKey(currentPage, startSlot).compareTo(searchKey) < 0)
+			else if (getKey(currentPage, startSlot, keyType.length())
+					.compareTo(searchKey) < 0)
 				return startSlot;
 			else
 				return startSlot - 1;
@@ -364,12 +379,13 @@ public class BTreeDir {
 			return -1;
 	}
 
-	private void insert(int slot, Constant val, long blkNum) {
+	private void insert(int slot, SearchKey key, long blkNum) {
 		// Insert an entry to the page
 		tx.recoveryMgr().logIndexPageInsertion(currentPage.currentBlk(), false, keyType, slot);
 		currentPage.insert(slot);
 
-		currentPage.setVal(slot, SCH_KEY, val);
+		for (int i = 0; i < keyType.length(); i++)
+			currentPage.setVal(slot, keyFieldName(i), key.get(i));
 		currentPage.setVal(slot, SCH_CHILD, new BigIntConstant(blkNum));
 	}
 }
