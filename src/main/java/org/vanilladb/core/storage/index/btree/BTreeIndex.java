@@ -21,10 +21,12 @@ import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.Constant;
 import org.vanilladb.core.sql.ConstantRange;
 import org.vanilladb.core.sql.Schema;
-import org.vanilladb.core.sql.Type;
 import org.vanilladb.core.storage.buffer.Buffer;
 import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.index.Index;
+import org.vanilladb.core.storage.index.SearchKey;
+import org.vanilladb.core.storage.index.SearchKeyType;
+import org.vanilladb.core.storage.index.SearchRange;
 import org.vanilladb.core.storage.metadata.index.IndexInfo;
 import org.vanilladb.core.storage.record.RecordId;
 import org.vanilladb.core.storage.tx.Transaction;
@@ -35,7 +37,8 @@ import org.vanilladb.core.storage.tx.concurrency.LockAbortException;
  * A B-tree implementation of {@link Index}.
  */
 public class BTreeIndex extends Index {
-	protected static final int READ = 1, INSERT = 2, DELETE = 3;
+	
+	protected static enum SearchPurpose { READ, INSERT, DELETE };
 
 	private IndexInfo ii;
 	private Transaction tx;
@@ -44,13 +47,13 @@ public class BTreeIndex extends Index {
 	private BTreeLeaf leaf = null;
 	private BlockId rootBlk;
 	private String dataFileName;
-	private Type keyType;
+	private SearchKeyType keyType;
 
 	private List<BlockId> dirsMayBeUpdated;
 
-	public static long searchCost(Type fldType, long totRecs, long matchRecs) {
-		int dirRpb = Buffer.BUFFER_SIZE / BTreePage.slotSize(BTreeDir.schema(fldType));
-		int leafRpb = Buffer.BUFFER_SIZE / BTreePage.slotSize(BTreeLeaf.schema(fldType));
+	public static long searchCost(SearchKeyType keyType, long totRecs, long matchRecs) {
+		int dirRpb = Buffer.BUFFER_SIZE / BTreePage.slotSize(BTreeDir.schema(keyType));
+		int leafRpb = Buffer.BUFFER_SIZE / BTreePage.slotSize(BTreeLeaf.schema(keyType));
 		long leafs = (int) Math.ceil((double) totRecs / leafRpb);
 		long matchLeafs = (int) Math.ceil((double) matchRecs / leafRpb);
 		return (long) Math.ceil(Math.log(leafs) / Math.log(dirRpb)) + matchLeafs;
@@ -63,33 +66,33 @@ public class BTreeIndex extends Index {
 	 * 
 	 * @param ii
 	 *            the information of this index
-	 * @param fldType
+	 * @param keyType
 	 *            the type of the indexed field
 	 * @param tx
 	 *            the calling transaction
 	 */
-	public BTreeIndex(IndexInfo ii, Type fldType, Transaction tx) {
+	public BTreeIndex(IndexInfo ii, SearchKeyType keyType, Transaction tx) {
 		this.ii = ii;
 		this.dataFileName = ii.tableName() + ".tbl";
 		this.tx = tx;
-		ccMgr = tx.concurrencyMgr();
-		keyType = fldType;
+		this.ccMgr = tx.concurrencyMgr();
+		this.keyType = keyType;
 		
 		// Initialize the first leaf block (if it needed)
 		leafFileName = BTreeLeaf.getFileName(ii.indexName());
 		if (fileSize(leafFileName) == 0)
-			appendBlock(leafFileName, BTreeLeaf.schema(fldType), new long[] { -1, -1 });
+			appendBlock(leafFileName, BTreeLeaf.schema(keyType), new long[] { -1, -1 });
 
 		// Initialize the first directory block (if it needed)
 		dirFileName = BTreeDir.getFileName(ii.indexName());
 		rootBlk = new BlockId(dirFileName, 0);
 		if (fileSize(dirFileName) == 0)
-			appendBlock(dirFileName, BTreeDir.schema(fldType), new long[] { 0 });
+			appendBlock(dirFileName, BTreeDir.schema(keyType), new long[] { 0 });
 		
 		// Insert an initial directory entry (if it needed)
-		BTreeDir rootDir = new BTreeDir(rootBlk, fldType, tx);
+		BTreeDir rootDir = new BTreeDir(rootBlk, keyType, tx);
 		if (rootDir.getNumRecords() == 0)
-			rootDir.insert(new DirEntry(keyType.minValue(), 0));
+			rootDir.insert(new DirEntry(keyType.getMin(), 0));
 		rootDir.close();
 	}
 
@@ -122,11 +125,11 @@ public class BTreeIndex extends Index {
 	 * @see Index#beforeFirst
 	 */
 	@Override
-	public void beforeFirst(ConstantRange searchRange) {
+	public void beforeFirst(SearchRange searchRange) {
 		if (!searchRange.isValid())
 			return;
 
-		search(searchRange, READ);
+		search(searchRange, SearchPurpose.READ);
 	}
 
 	/**
@@ -163,12 +166,12 @@ public class BTreeIndex extends Index {
 	 * @see Index#insert(Constant, RecordId, boolean)
 	 */
 	@Override
-	public void insert(Constant key, RecordId dataRecordId, boolean doLogicalLogging) {
+	public void insert(SearchKey key, RecordId dataRecordId, boolean doLogicalLogging) {
 		if (tx.isReadOnly())
 			throw new UnsupportedOperationException();
 
 		// search leaf block for insertion
-		search(ConstantRange.newInstance(key), INSERT);
+		search(new SearchRange(key), SearchPurpose.INSERT);
 		DirEntry newEntry = leaf.insert(dataRecordId);
 		leaf.close();
 		if (newEntry == null)
@@ -208,11 +211,11 @@ public class BTreeIndex extends Index {
 	 * @see Index#delete(Constant, RecordId, boolean)
 	 */
 	@Override
-	public void delete(Constant key, RecordId dataRecordId, boolean doLogicalLogging) {
+	public void delete(SearchKey key, RecordId dataRecordId, boolean doLogicalLogging) {
 		if (tx.isReadOnly())
 			throw new UnsupportedOperationException();
 
-		search(ConstantRange.newInstance(key), DELETE);
+		search(new SearchRange(key), SearchPurpose.DELETE);
 		
 		// log the logical operation starts
 		if (doLogicalLogging)
@@ -242,17 +245,14 @@ public class BTreeIndex extends Index {
 		dirsMayBeUpdated = null;
 	}
 
-	private void search(ConstantRange searchRange, int purpose) {
+	private void search(SearchRange searchRange, SearchPurpose purpose) {
 		close();
 		BlockId leafblk;
 		BTreeDir root = new BTreeDir(rootBlk, keyType, tx);
-		if (!searchRange.hasLowerBound())
-			leafblk = root.search(keyType.minValue(), leafFileName, purpose);
-		else
-			leafblk = root.search(searchRange.low(), leafFileName, purpose);
+		leafblk = root.search(searchRange.getMin(), leafFileName, purpose);
 
 		// get the dir list for update
-		if (purpose == INSERT)
+		if (purpose == SearchPurpose.INSERT)
 			dirsMayBeUpdated = root.dirsMayBeUpdated();
 		root.close();
 
