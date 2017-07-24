@@ -19,7 +19,6 @@ import static org.vanilladb.core.sql.Type.BIGINT;
 import static org.vanilladb.core.sql.Type.INTEGER;
 import static org.vanilladb.core.sql.Type.VARCHAR;
 
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 

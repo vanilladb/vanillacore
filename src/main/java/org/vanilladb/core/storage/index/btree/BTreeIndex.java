@@ -19,7 +19,6 @@ import java.util.List;
 
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.Constant;
-import org.vanilladb.core.sql.ConstantRange;
 import org.vanilladb.core.sql.Schema;
 import org.vanilladb.core.storage.buffer.Buffer;
 import org.vanilladb.core.storage.file.BlockId;
@@ -199,8 +198,8 @@ public class BTreeIndex extends Index {
 		
 		// log the logical operation ends
 		if (doLogicalLogging)
-			tx.recoveryMgr().logIndexInsertionEnd(ii.tableName(), ii.fieldName(),
-					key, dataRecordId.block().number(), dataRecordId.id());
+			tx.recoveryMgr().logIndexInsertionEnd(ii.indexName(), key,
+					dataRecordId.block().number(), dataRecordId.id());
 	}
 
 	/**
@@ -225,8 +224,8 @@ public class BTreeIndex extends Index {
 		
 		// log the logical operation ends
 		if (doLogicalLogging)
-			tx.recoveryMgr().logIndexDeletionEnd(ii.tableName(), ii.fieldName(),
-					key, dataRecordId.block().number(), dataRecordId.id());
+			tx.recoveryMgr().logIndexDeletionEnd(ii.indexName(), key,
+					dataRecordId.block().number(), dataRecordId.id());
 	}
 
 	/**

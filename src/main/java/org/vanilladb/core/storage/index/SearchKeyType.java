@@ -28,6 +28,10 @@ public class SearchKeyType {
 		}
 	}
 	
+	public SearchKeyType(Type[] types) {
+		this.types = Arrays.copyOf(types, types.length);
+	}
+	
 	public int length() {
 		return types.length;
 	}

@@ -18,8 +18,6 @@ package org.vanilladb.core.storage.index.hash;
 import static org.vanilladb.core.sql.Type.BIGINT;
 import static org.vanilladb.core.sql.Type.INTEGER;
 
-import java.util.concurrent.CopyOnWriteArrayList;
-
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.BigIntConstant;
 import org.vanilladb.core.sql.Constant;
@@ -201,8 +199,8 @@ public class HashIndex extends Index {
 		
 		// log the logical operation ends
 		if (doLogicalLogging)
-			tx.recoveryMgr().logIndexInsertionEnd(ii.tableName(), ii.fieldName(),
-					key, dataRecordId.block().number(), dataRecordId.id());
+			tx.recoveryMgr().logIndexInsertionEnd(ii.indexName(), key,
+					dataRecordId.block().number(), dataRecordId.id());
 	}
 
 	/**
@@ -228,8 +226,8 @@ public class HashIndex extends Index {
 		
 		// log the logical operation ends
 		if (doLogicalLogging)
-			tx.recoveryMgr().logIndexDeletionEnd(ii.tableName(), ii.fieldName(),
-					key, dataRecordId.block().number(), dataRecordId.id());
+			tx.recoveryMgr().logIndexDeletionEnd(ii.indexName(), key,
+					dataRecordId.block().number(), dataRecordId.id());
 	}
 
 	/**

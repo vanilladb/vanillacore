@@ -28,9 +28,10 @@ import java.util.Set;
 
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.Constant;
-import org.vanilladb.core.sql.Type;
 import org.vanilladb.core.storage.buffer.Buffer;
 import org.vanilladb.core.storage.file.BlockId;
+import org.vanilladb.core.storage.index.SearchKey;
+import org.vanilladb.core.storage.index.SearchKeyType;
 import org.vanilladb.core.storage.log.LogSeqNum;
 import org.vanilladb.core.storage.tx.Transaction;
 import org.vanilladb.core.storage.tx.TransactionLifecycleListener;
@@ -200,13 +201,13 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 			return null;
 	}
 
-	public LogSeqNum logIndexInsertionEnd(String tblName, String fldName,
-			Constant searchKey, long recordBlockNum, int recordSlotId) {
+	public LogSeqNum logIndexInsertionEnd(String indexName, SearchKey searchKey,
+			long recordBlockNum, int recordSlotId) {
 		if (enableLogging) {
 			if (this.logicalStartLSN == null)
 				throw new RuntimeException(
 						"Logical start LSN is null (in logIndexInsertionEnd)");
-			LogSeqNum lsn = new IndexInsertEndRecord(txNum, tblName, fldName,
+			LogSeqNum lsn = new IndexInsertEndRecord(txNum, indexName,
 					searchKey, recordBlockNum, recordSlotId,
 					this.logicalStartLSN).writeToLog();
 			this.logicalStartLSN = null;
@@ -215,13 +216,13 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 			return null;
 	}
 
-	public LogSeqNum logIndexDeletionEnd(String tblName, String fldName,
-			Constant searchKey, long recordBlockNum, int recordSlotId) {
+	public LogSeqNum logIndexDeletionEnd(String indexName, SearchKey searchKey,
+			long recordBlockNum, int recordSlotId) {
 		if (enableLogging) {
 			if (this.logicalStartLSN == null)
 				throw new RuntimeException(
 						"Logical start LSN is null (in logIndexDeletionEnd)");
-			LogSeqNum lsn = new IndexDeleteEndRecord(txNum, tblName, fldName,
+			LogSeqNum lsn = new IndexDeleteEndRecord(txNum, indexName,
 					searchKey, recordBlockNum, recordSlotId,
 					this.logicalStartLSN).writeToLog();
 			this.logicalStartLSN = null;
@@ -231,7 +232,7 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 	}
 
 	public LogSeqNum logIndexPageInsertion(BlockId indexBlkId, boolean isDirPage,
-			Type keyType, int slotId) {
+			SearchKeyType keyType, int slotId) {
 		if (enableLogging) {
 			return new IndexPageInsertRecord(txNum, indexBlkId, isDirPage,
 					keyType, slotId).writeToLog();
@@ -240,7 +241,7 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 	}
 
 	public LogSeqNum logIndexPageDeletion(BlockId indexBlkId, boolean isDirPage,
-			Type keyType, int slotId) {
+			SearchKeyType keyType, int slotId) {
 		if (enableLogging) {
 			return new IndexPageDeleteRecord(txNum, indexBlkId, isDirPage,
 					keyType, slotId).writeToLog();
@@ -248,8 +249,8 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 			return null;
 	}
 
-	public LogSeqNum logIndexPageInsertionClr(long compTxNum, BlockId indexBlkId, boolean isDirPage,
-			Type keyType, int slotId, LogSeqNum undoNextLSN) {
+	public LogSeqNum logIndexPageInsertionClr(long compTxNum, BlockId indexBlkId,
+			boolean isDirPage, SearchKeyType keyType, int slotId, LogSeqNum undoNextLSN) {
 		if (enableLogging) {
 			return new IndexPageInsertClr(compTxNum, indexBlkId, isDirPage,
 					keyType, slotId, undoNextLSN).writeToLog();
@@ -257,8 +258,8 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 			return null;
 	}
 
-	public LogSeqNum logIndexPageDeletionClr(long compTxNum, BlockId indexBlkId, boolean isDirPage,
-			Type keyType, int slotId, LogSeqNum undoNextLSN) {
+	public LogSeqNum logIndexPageDeletionClr(long compTxNum, BlockId indexBlkId,
+			boolean isDirPage, SearchKeyType keyType, int slotId, LogSeqNum undoNextLSN) {
 		if (enableLogging) {
 			return new IndexPageDeleteClr(compTxNum, indexBlkId, isDirPage,
 					keyType, slotId, undoNextLSN).writeToLog();
