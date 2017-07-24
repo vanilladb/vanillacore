@@ -15,9 +15,6 @@
  ******************************************************************************/
 package org.vanilladb.core.storage.index;
 
-import org.vanilladb.core.sql.Constant;
-import org.vanilladb.core.sql.ConstantRange;
-import org.vanilladb.core.sql.Type;
 import org.vanilladb.core.storage.index.btree.BTreeIndex;
 import org.vanilladb.core.storage.index.hash.HashIndex;
 import org.vanilladb.core.storage.metadata.index.IndexInfo;
