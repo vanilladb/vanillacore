@@ -29,10 +29,6 @@ import org.vanilladb.core.storage.tx.Transaction;
  * type-agnostic methods.
  */
 public abstract class Index {
-	/**
-	 * A supported index type.
-	 */
-	public static final int IDX_HASH = 0, IDX_BTREE = 1;
 
 	/**
 	 * Estimates the number of block accesses required to find all index records
@@ -53,21 +49,21 @@ public abstract class Index {
 	 *            the number of matching records
 	 * @return the estimated the number of block accesses
 	 */
-	public static long searchCost(int idxType, Type fldType, long totRecs,
+	public static long searchCost(IndexType idxType, SearchKeyType keyType, long totRecs,
 			long matchRecs) {
-		if (idxType == IDX_HASH)
-			return HashIndex.searchCost(fldType, totRecs, matchRecs);
-		else if (idxType == IDX_BTREE)
-			return BTreeIndex.searchCost(fldType, totRecs, matchRecs);
+		if (idxType == IndexType.HASH)
+			return HashIndex.searchCost(keyType, totRecs, matchRecs);
+		else if (idxType == IndexType.BTREE)
+			return BTreeIndex.searchCost(keyType, totRecs, matchRecs);
 		else
 			throw new IllegalArgumentException("unsupported index type");
 	}
 
-	public static Index newInstance(IndexInfo ii, Type fldType, Transaction tx) {
-		if (ii.indexType() == IDX_HASH)
-			return new HashIndex(ii, fldType, tx);
-		else if (ii.indexType() == IDX_BTREE)
-			return new BTreeIndex(ii, fldType, tx);
+	public static Index newInstance(IndexInfo ii, SearchKeyType keyType, Transaction tx) {
+		if (ii.indexType() == IndexType.HASH)
+			return new HashIndex(ii, keyType, tx);
+		else if (ii.indexType() == IndexType.BTREE)
+			return new BTreeIndex(ii, keyType, tx);
 		else
 			throw new IllegalArgumentException("unsupported index type");
 	}
@@ -79,7 +75,7 @@ public abstract class Index {
 	 * @param searchRange
 	 *            the range of search keys
 	 */
-	public abstract void beforeFirst(ConstantRange searchRange);
+	public abstract void beforeFirst(SearchRange searchRange);
 
 	/**
 	 * Moves the index to the next record matching the search range specified in
@@ -105,7 +101,7 @@ public abstract class Index {
 	 * @param dataRecordId
 	 *            the data record ID in the new index record.
 	 */
-	public abstract void insert(Constant key, RecordId dataRecordId, boolean doLogicalLogging);
+	public abstract void insert(SearchKey key, RecordId dataRecordId, boolean doLogicalLogging);
 
 	/**
 	 * Deletes the index record having the specified key and data record ID.
@@ -115,7 +111,7 @@ public abstract class Index {
 	 * @param dataRecordId
 	 *            the data record ID of the deleted index record
 	 */
-	public abstract void delete(Constant key, RecordId dataRecordId, boolean doLogicalLogging);
+	public abstract void delete(SearchKey key, RecordId dataRecordId, boolean doLogicalLogging);
 
 	/**
 	 * Closes the index.
