@@ -15,29 +15,26 @@
  ******************************************************************************/
 package org.vanilladb.core.query.parse;
 
+import java.util.List;
+
+import org.vanilladb.core.storage.index.IndexType;
+
 /**
  * The parser for the <em>create index</em> statement.
  */
 public class CreateIndexData {
-	private String idxName, tblName, fldName;
-	private int idxType;
+	private String idxName, tblName;
+	private List<String> fldNames;
+	private IndexType idxType;
 
 	/**
 	 * Saves the index type, table and field names of the specified index.
-	 * 
-	 * @param idxName
-	 *            the name of the index
-	 * @param tblName
-	 *            the name of the indexed table
-	 * @param fldName
-	 *            the name of the indexed field
-	 * @param idxType
-	 *            the type of the index
 	 */
-	public CreateIndexData(String idxName, String tblName, String fldName, int idxType) {
+	public CreateIndexData(String idxName, String tblName, List<String> fldNames,
+			IndexType idxType) {
 		this.idxName = idxName;
 		this.tblName = tblName;
-		this.fldName = fldName;
+		this.fldNames = fldNames;
 		this.idxType = idxType;
 	}
 
@@ -60,12 +57,12 @@ public class CreateIndexData {
 	}
 
 	/**
-	 * Returns the name of the indexed field.
+	 * Returns the list of names of the indexed fields.
 	 * 
-	 * @return the name of the indexed field
+	 * @return the list of names of the indexed fields
 	 */
-	public String fieldName() {
-		return fldName;
+	public List<String> fieldNames() {
+		return fldNames;
 	}
 
 	/**
@@ -73,7 +70,7 @@ public class CreateIndexData {
 	 * 
 	 * @return the type of the index
 	 */
-	public int indexType() {
+	public IndexType indexType() {
 		return idxType;
 	}
 }
