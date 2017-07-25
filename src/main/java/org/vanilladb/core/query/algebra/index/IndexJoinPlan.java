@@ -15,7 +15,7 @@
  ******************************************************************************/
 package org.vanilladb.core.query.algebra.index;
 
-import java.util.List;
+import java.util.Map;
 
 import org.vanilladb.core.query.algebra.AbstractJoinPlan;
 import org.vanilladb.core.query.algebra.Plan;
@@ -37,7 +37,7 @@ public class IndexJoinPlan extends AbstractJoinPlan {
 	private Plan p1;
 	private TablePlan tp2;
 	private IndexInfo ii;
-	private List<String> lhsJoinFields, rhsJoinFields;
+	private Map<String, String> joinFields; // <LHS field -> RHS field>
 	private Schema schema = new Schema();
 	private Transaction tx;
 	private Histogram hist;
@@ -57,20 +57,21 @@ public class IndexJoinPlan extends AbstractJoinPlan {
 	 *            the calling transaction
 	 */
 	public IndexJoinPlan(Plan p1, TablePlan tp2, IndexInfo ii,
-			List<String> lhsJoinFields, List<String> rhsJoinFields,
-			Transaction tx) {
+			Map<String, String> joinFields, Transaction tx) {
 		this.p1 = p1;
 		this.tp2 = tp2;
 		this.ii = ii;
-		this.lhsJoinFields = lhsJoinFields;
-		this.rhsJoinFields = rhsJoinFields;
+		this.joinFields = joinFields;
 		this.tx = tx;
 		schema.addAll(p1.schema());
 		schema.addAll(tp2.schema());
 		
 		// XXX: It needs to be updated for multi-key indexes
-		hist = joinHistogram(p1.histogram(), tp2.histogram(), lhsJoinFields.get(0),
-				rhsJoinFields.get(0));
+		for (String lhsField : joinFields.keySet()) {
+			hist = joinHistogram(p1.histogram(), tp2.histogram(), lhsField,
+					joinFields.get(lhsField));
+			break;
+		}
 	}
 
 	/**
@@ -84,7 +85,7 @@ public class IndexJoinPlan extends AbstractJoinPlan {
 		// throws an exception if p2 is not a tableplan
 		TableScan ts = (TableScan) tp2.open();
 		Index idx = ii.open(tx);
-		return new IndexJoinScan(s, idx, lhsJoinFields, rhsJoinFields, ts);
+		return new IndexJoinScan(s, idx, joinFields, ts);
 	}
 
 	/**

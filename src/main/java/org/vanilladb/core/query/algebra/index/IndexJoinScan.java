@@ -16,8 +16,6 @@
 package org.vanilladb.core.query.algebra.index;
 
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 import org.vanilladb.core.query.algebra.Scan;
@@ -37,7 +35,7 @@ public class IndexJoinScan implements Scan {
 	private Scan s;
 	private TableScan ts; // the data table
 	private Index idx;
-	private List<String> lhsJoinFields, rhsJoinFields;
+	private Map<String, String> joinFields; // <LHS field -> RHS field>
 	private boolean isLhsEmpty;
 
 	/**
@@ -52,12 +50,10 @@ public class IndexJoinScan implements Scan {
 	 * @param ts
 	 *            the table scan of data table
 	 */
-	public IndexJoinScan(Scan s, Index idx, List<String> lhsJoinFields,
-			List<String> rhsJoinFields, TableScan ts) {
+	public IndexJoinScan(Scan s, Index idx, Map<String, String> joinFields, TableScan ts) {
 		this.s = s;
 		this.idx = idx;
-		this.lhsJoinFields = lhsJoinFields;
-		this.rhsJoinFields = rhsJoinFields;
+		this.joinFields = joinFields;
 		this.ts = ts;
 		beforeFirst();
 	}
@@ -135,13 +131,11 @@ public class IndexJoinScan implements Scan {
 	}
 
 	private void resetIndex() {
-		Iterator<String> lhsFieldIter = lhsJoinFields.iterator();
-		Iterator<String> rhsFieldIter = rhsJoinFields.iterator();
 		Map<String, ConstantRange> ranges = new HashMap<String, ConstantRange>();
 		
-		while (lhsFieldIter.hasNext()) {
-			String lhsField = lhsFieldIter.next();
-			String rhsField = rhsFieldIter.next();
+		for (Map.Entry<String, String> fieldPair : joinFields.entrySet()) {
+			String lhsField = fieldPair.getKey();
+			String rhsField = fieldPair.getValue();
 			Constant commonVal = s.getVal(lhsField);
 			ConstantRange range = ConstantRange.newInstance(commonVal);
 			ranges.put(rhsField, range);

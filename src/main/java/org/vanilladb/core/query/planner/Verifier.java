@@ -17,16 +17,15 @@ package org.vanilladb.core.query.planner;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.vanilladb.core.query.parse.CreateIndexData;
 import org.vanilladb.core.query.parse.CreateTableData;
 import org.vanilladb.core.query.parse.CreateViewData;
+import org.vanilladb.core.query.parse.DeleteData;
+import org.vanilladb.core.query.parse.DropIndexData;
 import org.vanilladb.core.query.parse.DropTableData;
 import org.vanilladb.core.query.parse.DropViewData;
-import org.vanilladb.core.query.parse.DropIndexData;
-import org.vanilladb.core.query.parse.DeleteData;
 import org.vanilladb.core.query.parse.InsertData;
 import org.vanilladb.core.query.parse.ModifyData;
 import org.vanilladb.core.query.parse.Parser;
@@ -39,7 +38,6 @@ import org.vanilladb.core.sql.VarcharConstant;
 import org.vanilladb.core.sql.aggfn.AggregationFn;
 import org.vanilladb.core.storage.metadata.TableInfo;
 import org.vanilladb.core.storage.metadata.TableMgr;
-import org.vanilladb.core.storage.metadata.index.IndexInfo;
 import org.vanilladb.core.storage.tx.Transaction;
 
 /**
@@ -209,20 +207,20 @@ public class Verifier {
 		if (ti == null)
 			throw new BadSemanticException("table " + tableName
 					+ " does not exist");
-
-		Schema sch = ti.schema();
-		String fieldName = data.fieldName();
+		
 		// examine if column exist
-		if (!sch.hasField(fieldName))
-			throw new BadSemanticException("field " + fieldName
-					+ " does not exist in table " + tableName);
-
-		// examine the index
-		Map<String, IndexInfo> indexInfoes = VanillaDb.catalogMgr().getIndexInfo(
-				tableName, tx);
-		if (indexInfoes.containsKey(fieldName))
-			throw new BadSemanticException("field " + fieldName
-					+ " has already been indexed");
+		Schema sch = ti.schema();
+		List<String> fieldNames = data.fieldNames();
+		for (String fieldName : fieldNames) {
+			if (!sch.hasField(fieldName))
+				throw new BadSemanticException("field " + fieldName
+						+ " does not exist in table " + tableName);
+		}
+		
+		// examine the index name
+		if (VanillaDb.catalogMgr().getIndexInfoByName(data.indexName(), tx) != null)
+			throw new BadSemanticException("index " + data.indexName()
+					+ " has already existed");
 	}
 
 	public static void verifyDropIndexData(DropIndexData data, Transaction tx) {

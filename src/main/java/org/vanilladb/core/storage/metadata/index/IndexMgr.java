@@ -19,6 +19,7 @@ import static org.vanilladb.core.sql.Type.INTEGER;
 import static org.vanilladb.core.sql.Type.VARCHAR;
 import static org.vanilladb.core.storage.metadata.TableMgr.MAX_NAME;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -69,7 +70,11 @@ public class IndexMgr {
 	// Index Name -> IndexInfo
 	private Map<String, IndexInfo> iiMapByIdxNames;
 	// Table Name -> (Field Name -> List of IndexInfos which uses the field)
-	private Map<String, Map<String, List<IndexInfo>>> iiMapByTblNames;
+	private Map<String, Map<String, List<IndexInfo>>> iiMapByTblAndFlds;
+	// Table Name -> List of IndexInfos
+	private Map<String, List<IndexInfo>> iiMapByTblNames;
+	// A set that indicates the tables whose IndexInfos are all loaded in the memory.
+	private Set<String> loadedTables;
 
 	/**
 	 * Creates the index manager. This constructor is called during system
@@ -103,7 +108,9 @@ public class IndexMgr {
 		 * schema modification, this opt should be aware of the changing.
 		 */
 		iiMapByIdxNames = new ConcurrentHashMap<String, IndexInfo>();
-		iiMapByTblNames = new ConcurrentHashMap<String, Map<String, List<IndexInfo>>>();
+		iiMapByTblAndFlds = new ConcurrentHashMap<String, Map<String, List<IndexInfo>>>();
+		iiMapByTblNames = new ConcurrentHashMap<String, List<IndexInfo>>();
+		loadedTables = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 	}
 
 	/**
@@ -144,7 +151,7 @@ public class IndexMgr {
 		
 		updateCache(new IndexInfo(idxName, tblName, fldNames, idxType));
 	}
-
+	
 	/**
 	 * Returns a map containing the index info for all indexes on the specified
 	 * table.
@@ -155,14 +162,10 @@ public class IndexMgr {
 	 *            the calling transaction
 	 * @return a map of IndexInfo objects, keyed by their field names
 	 */
-	public List<IndexInfo> getIndexInfo(String tblName, String fldName, Transaction tx) {
+	public List<IndexInfo> getIndexInfo(String tblName, Transaction tx) {
 		// Check the cache
-		Map<String, List<IndexInfo>> iiMapByFldNames = iiMapByTblNames.get(tblName);
-		if (iiMapByFldNames != null) {
-			List<IndexInfo> iiList = iiMapByFldNames.get(fldName);
-			if (iiList != null)
-				return iiList;
-		}
+		if (loadedTables.contains(tblName))
+			return iiMapByTblNames.get(tblName);
 		
 		// Read from the catalog files
 		Map<String, IndexType> idxTypeMap = new HashMap<String, IndexType>();
@@ -205,16 +208,22 @@ public class IndexMgr {
 			List<String> fldNames = fldNamesMap.get(idxName);
 			updateCache(new IndexInfo(idxName, tblName, fldNames, idxType));
 		}
+		loadedTables.add(tblName);
 		
 		// Fetch from the cache again
-		iiMapByFldNames = iiMapByTblNames.get(tblName);
-		if (iiMapByFldNames != null) {
-			List<IndexInfo> iiList = iiMapByFldNames.get(fldName);
-			if (iiList != null)
-				return iiList;
-		}
+		return iiMapByTblNames.get(tblName);
+	}
+	
+	public List<IndexInfo> getIndexInfo(String tblName, String fldName, Transaction tx) {
+		// Check the cache
+		if (loadedTables.contains(tblName))
+			return iiMapByTblAndFlds.get(tblName).get(fldName);
 		
-		return null;
+		// Read from the catalog files (calling another method)
+		getIndexInfo(tblName, tx);
+		
+		// Fetch from the cache again
+		return iiMapByTblAndFlds.get(tblName).get(fldName);
 	}
 
 	/**
@@ -321,14 +330,23 @@ public class IndexMgr {
 	private void updateCache(IndexInfo ii) {
 		iiMapByIdxNames.put(ii.indexName(), ii);
 		
-		Map<String, List<IndexInfo>> iiMapByFldNames = iiMapByTblNames.get(ii.tableName());
+		// Update iiMapByTblNames
+		List<IndexInfo> iiList = iiMapByTblNames.get(ii.tableName());
+		if (iiList == null) {
+			iiList = new CopyOnWriteArrayList<IndexInfo>();
+			iiMapByTblNames.put(ii.tableName(), iiList);
+		}
+		iiList.add(ii);
+		
+		// Update iiMapByTblAndFlds
+		Map<String, List<IndexInfo>> iiMapByFldNames = iiMapByTblAndFlds.get(ii.tableName());
 		if (iiMapByFldNames == null) {
 			iiMapByFldNames = new ConcurrentHashMap<String, List<IndexInfo>>();
-			iiMapByTblNames.put(ii.tableName(), iiMapByFldNames);
+			iiMapByTblAndFlds.put(ii.tableName(), iiMapByFldNames);
 		}
 		
 		for (String fldName : ii.fieldNames()) {
-			List<IndexInfo> iiList = iiMapByFldNames.get(fldName);
+			iiList = iiMapByFldNames.get(fldName);
 			if (iiList == null) {
 				iiList = new CopyOnWriteArrayList<IndexInfo>();
 				iiMapByFldNames.put(fldName, iiList);
@@ -340,10 +358,17 @@ public class IndexMgr {
 	private void removeFromCache(IndexInfo ii) {
 		iiMapByIdxNames.remove(ii.indexName());
 		
-		Map<String, List<IndexInfo>> iiMapByFldNames = iiMapByTblNames.get(ii.tableName());
+		// Update iiMapByTblNames
+		List<IndexInfo> iiList = iiMapByTblNames.get(ii.tableName());
+		if (iiList != null) {
+			iiList.remove(ii);
+		}
+		
+		// Update iiMapByTblAndFlds
+		Map<String, List<IndexInfo>> iiMapByFldNames = iiMapByTblAndFlds.get(ii.tableName());
 		if (iiMapByFldNames != null) {
 			for (String fldName : ii.fieldNames()) {
-				List<IndexInfo> iiList = iiMapByFldNames.get(fldName);
+				iiList = iiMapByFldNames.get(fldName);
 				if (iiList != null)
 					iiList.remove(ii);
 			}

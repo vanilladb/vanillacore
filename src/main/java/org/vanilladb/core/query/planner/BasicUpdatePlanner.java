@@ -106,7 +106,7 @@ public class BasicUpdatePlanner implements UpdatePlanner {
 	@Override
 	public int executeCreateIndex(CreateIndexData data, Transaction tx) {
 		VanillaDb.catalogMgr().createIndex(data.indexName(), data.tableName(),
-				data.fieldName(), data.indexType(), tx);
+				data.fieldNames(), data.indexType(), tx);
 		return 0;
 	}
 

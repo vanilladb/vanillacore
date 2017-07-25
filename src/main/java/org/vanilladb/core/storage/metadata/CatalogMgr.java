@@ -66,6 +66,10 @@ public class CatalogMgr {
 	public void dropIndex(String idxName, Transaction tx) {
 		idxMgr.dropIndex(idxName, tx);
 	}
+	
+	public List<IndexInfo> getIndexInfo(String tblName, Transaction tx) {
+		return idxMgr.getIndexInfo(tblName, tx);
+	}
 
 	public List<IndexInfo> getIndexInfo(String tblName, String fldName, 
 			Transaction tx) {
