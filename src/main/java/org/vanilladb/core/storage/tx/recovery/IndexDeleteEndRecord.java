@@ -17,11 +17,9 @@ package org.vanilladb.core.storage.tx.recovery;
 
 import static org.vanilladb.core.sql.Type.BIGINT;
 import static org.vanilladb.core.sql.Type.INTEGER;
-import static org.vanilladb.core.sql.Type.VARCHAR;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.BigIntConstant;
@@ -98,7 +96,7 @@ public class IndexDeleteEndRecord extends LogicalEndRecord implements LogRecord 
 
 	@Override
 	public void undo(Transaction tx) {
-		IndexInfo ii = VanillaDb.catalogMgr().getIndexInfo(indexName, tx);
+		IndexInfo ii = VanillaDb.catalogMgr().getIndexInfoByName(indexName, tx);
 		BlockId blk = new BlockId(ii.tableName() + ".tbl", recordBlockNum);
 		RecordId rid = new RecordId(blk, recordSlotId);
 		

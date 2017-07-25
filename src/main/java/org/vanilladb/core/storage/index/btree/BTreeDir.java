@@ -23,7 +23,6 @@ import java.util.List;
 import org.vanilladb.core.sql.BigIntConstant;
 import org.vanilladb.core.sql.Constant;
 import org.vanilladb.core.sql.Schema;
-import org.vanilladb.core.sql.Type;
 import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.index.SearchKey;
 import org.vanilladb.core.storage.index.SearchKeyType;

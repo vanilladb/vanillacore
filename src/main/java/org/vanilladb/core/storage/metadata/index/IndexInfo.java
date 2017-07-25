@@ -29,6 +29,9 @@ import org.vanilladb.core.storage.tx.Transaction;
  * The information about an index. This information is used by the query planner
  * in order to estimate the costs of using the index, and to obtain the schema
  * of the index records. Its methods are essentially the same as those of Plan.
+ * 
+ * Note that if two IndexInfos have the same index name, they will be treated
+ *  as the same IndexInfo.
  */
 public class IndexInfo {
 	private String idxName, tblName;
@@ -102,5 +105,27 @@ public class IndexInfo {
 	 */
 	public String indexName() {
 		return idxName;
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null)
+			return false;
+		
+		if (this == obj)
+			return true;
+		
+		if (!obj.getClass().equals(IndexInfo.class))
+			return false;
+		
+		// We assume that index names are unique
+		// identifiers for IndexInfos
+		IndexInfo ii = (IndexInfo) obj;
+		return idxName.equals(ii.idxName);
+	}
+	
+	@Override
+	public int hashCode() {
+		return idxName.hashCode();
 	}
 }

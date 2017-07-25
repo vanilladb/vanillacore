@@ -21,7 +21,6 @@ import static org.vanilladb.core.sql.Type.VARCHAR;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.BigIntConstant;
@@ -31,7 +30,6 @@ import org.vanilladb.core.sql.Type;
 import org.vanilladb.core.sql.VarcharConstant;
 import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.index.Index;
-import org.vanilladb.core.storage.index.IndexType;
 import org.vanilladb.core.storage.index.SearchKey;
 import org.vanilladb.core.storage.log.BasicLogRecord;
 import org.vanilladb.core.storage.log.LogSeqNum;
@@ -100,7 +98,7 @@ public class IndexInsertEndRecord extends LogicalEndRecord implements LogRecord 
 
 	@Override
 	public void undo(Transaction tx) {
-		IndexInfo ii = VanillaDb.catalogMgr().getIndexInfo(indexName, tx);
+		IndexInfo ii = VanillaDb.catalogMgr().getIndexInfoByName(indexName, tx);
 		BlockId blk = new BlockId(ii.tableName() + ".tbl", recordBlockNum);
 		RecordId rid = new RecordId(blk, recordSlotId);
 		
