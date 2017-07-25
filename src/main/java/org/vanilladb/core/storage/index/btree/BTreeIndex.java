@@ -45,7 +45,6 @@ public class BTreeIndex extends Index {
 	private String leafFileName, dirFileName;
 	private BTreeLeaf leaf = null;
 	private BlockId rootBlk;
-	private String dataFileName;
 	private SearchKeyType keyType;
 
 	private List<BlockId> dirsMayBeUpdated;
@@ -71,11 +70,9 @@ public class BTreeIndex extends Index {
 	 *            the calling transaction
 	 */
 	public BTreeIndex(IndexInfo ii, SearchKeyType keyType, Transaction tx) {
-		this.ii = ii;
-		this.dataFileName = ii.tableName() + ".tbl";
-		this.tx = tx;
+		super(ii, keyType, tx);
+		
 		this.ccMgr = tx.concurrencyMgr();
-		this.keyType = keyType;
 		
 		// Initialize the first leaf block (if it needed)
 		leafFileName = BTreeLeaf.getFileName(ii.indexName());

@@ -64,6 +64,28 @@ public abstract class Index {
 		else
 			throw new IllegalArgumentException("unsupported index type");
 	}
+	
+	protected IndexInfo ii;
+	protected SearchKeyType keyType;
+	protected Transaction tx;
+	protected String dataFileName;
+	
+	/**
+	 * Opens a hash index for the specified index.
+	 * 
+	 * @param ii
+	 *            the information of this index
+	 * @param keyType
+	 *            the types of the indexed fields
+	 * @param tx
+	 *            the calling transaction
+	 */
+	public Index(IndexInfo ii, SearchKeyType keyType, Transaction tx) {
+		this.ii = ii;
+		this.dataFileName = ii.tableName() + ".tbl";
+		this.keyType = keyType;
+		this.tx = tx;
+	}
 
 	/**
 	 * Positions the index before the first index record matching the specified
@@ -119,4 +141,12 @@ public abstract class Index {
 	 * Preload the index blocks to memory.
 	 */
 	public abstract void preLoadToMemory();
+	
+	public IndexInfo getIndexInfo() {
+		return ii;
+	}
+	
+	public SearchKeyType getKeyType() {
+		return keyType;
+	}
 }

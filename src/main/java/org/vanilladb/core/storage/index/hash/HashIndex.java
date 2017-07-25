@@ -83,12 +83,8 @@ public class HashIndex extends Index {
 		sch.addField(SCHEMA_RID_ID, INTEGER);
 		return sch;
 	}
-
-	private IndexInfo ii;
+	
 	private SearchKey searchKey;
-	private SearchKeyType keyType;
-	private String dataFileName;
-	private Transaction tx;
 	private RecordFile rf;
 
 	/**
@@ -102,10 +98,7 @@ public class HashIndex extends Index {
 	 *            the calling transaction
 	 */
 	public HashIndex(IndexInfo ii, SearchKeyType keyType, Transaction tx) {
-		this.ii = ii;
-		this.dataFileName = ii.tableName() + ".tbl";
-		this.keyType = keyType;
-		this.tx = tx;
+		super(ii, keyType, tx);
 	}
 
 	@Override
