@@ -15,6 +15,8 @@
  ******************************************************************************/
 package org.vanilladb.core.query.algebra.index;
 
+import java.util.List;
+
 import org.vanilladb.core.query.algebra.AbstractJoinPlan;
 import org.vanilladb.core.query.algebra.Plan;
 import org.vanilladb.core.query.algebra.Scan;
@@ -22,6 +24,7 @@ import org.vanilladb.core.query.algebra.TablePlan;
 import org.vanilladb.core.query.algebra.TableScan;
 import org.vanilladb.core.sql.Schema;
 import org.vanilladb.core.storage.index.Index;
+import org.vanilladb.core.storage.index.SearchKeyType;
 import org.vanilladb.core.storage.metadata.index.IndexInfo;
 import org.vanilladb.core.storage.metadata.statistics.Histogram;
 import org.vanilladb.core.storage.tx.Transaction;
@@ -34,7 +37,7 @@ public class IndexJoinPlan extends AbstractJoinPlan {
 	private Plan p1;
 	private TablePlan tp2;
 	private IndexInfo ii;
-	private String joinField;
+	private List<String> lhsJoinFields, rhsJoinFields;
 	private Schema schema = new Schema();
 	private Transaction tx;
 	private Histogram hist;
@@ -54,20 +57,24 @@ public class IndexJoinPlan extends AbstractJoinPlan {
 	 *            the calling transaction
 	 */
 	public IndexJoinPlan(Plan p1, TablePlan tp2, IndexInfo ii,
-			String joinField, Transaction tx) {
+			List<String> lhsJoinFields, List<String> rhsJoinFields,
+			Transaction tx) {
 		this.p1 = p1;
 		this.tp2 = tp2;
 		this.ii = ii;
-		this.joinField = joinField;
+		this.lhsJoinFields = lhsJoinFields;
+		this.rhsJoinFields = rhsJoinFields;
 		this.tx = tx;
 		schema.addAll(p1.schema());
 		schema.addAll(tp2.schema());
-		hist = joinHistogram(p1.histogram(), tp2.histogram(), joinField,
-				ii.fieldName());
+		
+		// XXX: It needs to be updated for multi-key indexes
+		hist = joinHistogram(p1.histogram(), tp2.histogram(), lhsJoinFields.get(0),
+				rhsJoinFields.get(0));
 	}
 
 	/**
-	 * Opens an indexjoin scan for this query
+	 * Opens an index-join scan for this query
 	 * 
 	 * @see Plan#open()
 	 */
@@ -77,7 +84,7 @@ public class IndexJoinPlan extends AbstractJoinPlan {
 		// throws an exception if p2 is not a tableplan
 		TableScan ts = (TableScan) tp2.open();
 		Index idx = ii.open(tx);
-		return new IndexJoinScan(s, idx, joinField, ts);
+		return new IndexJoinScan(s, idx, lhsJoinFields, rhsJoinFields, ts);
 	}
 
 	/**
@@ -95,7 +102,7 @@ public class IndexJoinPlan extends AbstractJoinPlan {
 	public long blocksAccessed() {
 		// block accesses to search for a join record in the index
 		long searchCost = Index.searchCost(ii.indexType(),
-				schema().type(ii.fieldName()), tp2.recordsOutput(), 1);
+				new SearchKeyType(schema(), ii.fieldNames()), tp2.recordsOutput(), 1);
 		return p1.blocksAccessed() + (p1.recordsOutput() * searchCost)
 				+ recordsOutput();
 	}

@@ -15,11 +15,17 @@
  ******************************************************************************/
 package org.vanilladb.core.query.algebra.index;
 
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
 import org.vanilladb.core.query.algebra.Scan;
 import org.vanilladb.core.query.algebra.TableScan;
 import org.vanilladb.core.sql.Constant;
 import org.vanilladb.core.sql.ConstantRange;
 import org.vanilladb.core.storage.index.Index;
+import org.vanilladb.core.storage.index.SearchRange;
 
 /**
  * The scan class corresponding to the indexjoin relational algebra operator.
@@ -31,7 +37,7 @@ public class IndexJoinScan implements Scan {
 	private Scan s;
 	private TableScan ts; // the data table
 	private Index idx;
-	private String joinField;
+	private List<String> lhsJoinFields, rhsJoinFields;
 	private boolean isLhsEmpty;
 
 	/**
@@ -46,10 +52,12 @@ public class IndexJoinScan implements Scan {
 	 * @param ts
 	 *            the table scan of data table
 	 */
-	public IndexJoinScan(Scan s, Index idx, String joinField, TableScan ts) {
+	public IndexJoinScan(Scan s, Index idx, List<String> lhsJoinFields,
+			List<String> rhsJoinFields, TableScan ts) {
 		this.s = s;
 		this.idx = idx;
-		this.joinField = joinField;
+		this.lhsJoinFields = lhsJoinFields;
+		this.rhsJoinFields = rhsJoinFields;
 		this.ts = ts;
 		beforeFirst();
 	}
@@ -127,8 +135,21 @@ public class IndexJoinScan implements Scan {
 	}
 
 	private void resetIndex() {
-		Constant searchkey = s.getVal(joinField);
-		idx.beforeFirst(ConstantRange.newInstance(searchkey));
+		Iterator<String> lhsFieldIter = lhsJoinFields.iterator();
+		Iterator<String> rhsFieldIter = rhsJoinFields.iterator();
+		Map<String, ConstantRange> ranges = new HashMap<String, ConstantRange>();
+		
+		while (lhsFieldIter.hasNext()) {
+			String lhsField = lhsFieldIter.next();
+			String rhsField = rhsFieldIter.next();
+			Constant commonVal = s.getVal(lhsField);
+			ConstantRange range = ConstantRange.newInstance(commonVal);
+			ranges.put(rhsField, range);
+		}
+		
+		SearchRange searchRange = new SearchRange(idx.getIndexInfo().fieldNames(),
+				idx.getKeyType(), ranges);
+		idx.beforeFirst(searchRange);
 	}
 
 }

@@ -19,8 +19,8 @@ import org.vanilladb.core.query.algebra.Scan;
 import org.vanilladb.core.query.algebra.TableScan;
 import org.vanilladb.core.query.algebra.UpdateScan;
 import org.vanilladb.core.sql.Constant;
-import org.vanilladb.core.sql.ConstantRange;
 import org.vanilladb.core.storage.index.Index;
+import org.vanilladb.core.storage.index.SearchRange;
 import org.vanilladb.core.storage.record.RecordId;
 
 /**
@@ -29,7 +29,7 @@ import org.vanilladb.core.storage.record.RecordId;
 public class IndexSelectScan implements UpdateScan {
 	private Index idx;
 	private TableScan ts;
-	private ConstantRange searchRange;
+	private SearchRange searchRange;
 
 	/**
 	 * Creates an index select scan for the specified index and search range.
@@ -41,7 +41,7 @@ public class IndexSelectScan implements UpdateScan {
 	 * @param ts
 	 *            the table scan of data table
 	 */
-	public IndexSelectScan(Index idx, ConstantRange searchRange, TableScan ts) {
+	public IndexSelectScan(Index idx, SearchRange searchRange, TableScan ts) {
 		this.idx = idx;
 		this.searchRange = searchRange;
 		this.ts = ts;

@@ -8,22 +8,44 @@ import java.util.Map;
 import org.vanilladb.core.sql.Constant;
 import org.vanilladb.core.sql.ConstantRange;
 import org.vanilladb.core.sql.Schema;
+import org.vanilladb.core.sql.Type;
 
 public class SearchRange {
 
 	private ConstantRange[] ranges;
 	private SearchKey min, max;
 
-	public SearchRange(List<String> indexedFields, Schema tblSch, Map<String, ConstantRange> fldRangeMap) {
+	public SearchRange(List<String> indexedFields, Schema tblSch,
+			Map<String, ConstantRange> specifiedRanges) {
 		ranges = new ConstantRange[indexedFields.size()];
 		Iterator<String> fldNameIter = indexedFields.iterator();
 		String fldName;
 
 		for (int i = 0; i < ranges.length; i++) {
 			fldName = fldNameIter.next();
-			ranges[i] = fldRangeMap.get(fldName);
-			if (ranges[i] == null)
-				throw new NullPointerException("there is no ConstantRange for '" + fldName + "'");
+			ranges[i] = specifiedRanges.get(fldName);
+			if (ranges[i] == null) {
+				Type type = tblSch.type(fldName);
+				ranges[i] = ConstantRange.newInstance(
+						type.minValue(), true, type.maxValue(), true);
+			}
+		}
+	}
+	
+	public SearchRange(List<String> indexedFields, SearchKeyType keyType,
+			Map<String, ConstantRange> specifiedRanges) {
+		ranges = new ConstantRange[indexedFields.size()];
+		Iterator<String> fldNameIter = indexedFields.iterator();
+		String fldName;
+
+		for (int i = 0; i < ranges.length; i++) {
+			fldName = fldNameIter.next();
+			ranges[i] = specifiedRanges.get(fldName);
+			if (ranges[i] == null) {
+				Type type = keyType.get(i);
+				ranges[i] = ConstantRange.newInstance(
+						type.minValue(), true, type.maxValue(), true);
+			}
 		}
 	}
 
