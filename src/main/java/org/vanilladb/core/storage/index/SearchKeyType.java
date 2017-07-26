@@ -28,7 +28,7 @@ public class SearchKeyType {
 		}
 	}
 	
-	public SearchKeyType(Type[] types) {
+	public SearchKeyType(Type... types) {
 		this.types = Arrays.copyOf(types, types.length);
 	}
 	

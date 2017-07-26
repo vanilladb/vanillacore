@@ -39,13 +39,10 @@ public class BTreeIndex extends Index {
 	
 	protected static enum SearchPurpose { READ, INSERT, DELETE };
 
-	private IndexInfo ii;
-	private Transaction tx;
 	private ConcurrencyMgr ccMgr;
 	private String leafFileName, dirFileName;
 	private BTreeLeaf leaf = null;
 	private BlockId rootBlk;
-	private SearchKeyType keyType;
 
 	private List<BlockId> dirsMayBeUpdated;
 

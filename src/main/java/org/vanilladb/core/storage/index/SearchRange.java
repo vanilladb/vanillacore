@@ -56,7 +56,7 @@ public class SearchRange {
 		}
 	}
 	
-	public SearchRange(ConstantRange[] constantRanges) {
+	public SearchRange(ConstantRange... constantRanges) {
 		ranges = Arrays.copyOf(constantRanges, constantRanges.length);
 	}
 
@@ -136,7 +136,7 @@ public class SearchRange {
 	 * @return
 	 */
 	public boolean betweenMinAndMax(SearchKey key) {
-		return key.compareTo(min) >= 0 && key.compareTo(max) <= 0;
+		return key.compareTo(getMin()) >= 0 && key.compareTo(getMax()) <= 0;
 	}
 	
 	/**

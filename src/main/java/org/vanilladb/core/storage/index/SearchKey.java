@@ -39,7 +39,7 @@ public class SearchKey implements Comparable<SearchKey> {
 		}
 	}
 
-	public SearchKey(Constant[] constants) {
+	public SearchKey(Constant... constants) {
 		vals = Arrays.copyOf(constants, constants.length);
 	}
 	
