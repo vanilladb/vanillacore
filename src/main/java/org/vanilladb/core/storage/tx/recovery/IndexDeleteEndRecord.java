@@ -17,6 +17,7 @@ package org.vanilladb.core.storage.tx.recovery;
 
 import static org.vanilladb.core.sql.Type.BIGINT;
 import static org.vanilladb.core.sql.Type.INTEGER;
+import static org.vanilladb.core.sql.Type.VARCHAR;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -57,6 +58,7 @@ public class IndexDeleteEndRecord extends LogicalEndRecord implements LogRecord 
 
 	public IndexDeleteEndRecord(BasicLogRecord rec) {
 		txNum = (Long) rec.nextVal(BIGINT).asJavaVal();
+		indexName = (String) rec.nextVal(VARCHAR).asJavaVal();
 
 		// Search Key
 		int keyLen = (Integer) rec.nextVal(INTEGER).asJavaVal();
