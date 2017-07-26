@@ -18,10 +18,10 @@ package org.vanilladb.core.storage.index.hash;
 import static org.junit.Assert.assertTrue;
 import static org.vanilladb.core.sql.Type.INTEGER;
 import static org.vanilladb.core.sql.Type.VARCHAR;
-import static org.vanilladb.core.storage.index.Index.IDX_HASH;
 
 import java.sql.Connection;
-import java.util.Map;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -32,12 +32,13 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.vanilladb.core.server.ServerInit;
 import org.vanilladb.core.server.VanillaDb;
-import org.vanilladb.core.sql.Constant;
-import org.vanilladb.core.sql.ConstantRange;
 import org.vanilladb.core.sql.IntegerConstant;
 import org.vanilladb.core.sql.Schema;
 import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.index.Index;
+import org.vanilladb.core.storage.index.IndexType;
+import org.vanilladb.core.storage.index.SearchKey;
+import org.vanilladb.core.storage.index.SearchRange;
 import org.vanilladb.core.storage.metadata.CatalogMgr;
 import org.vanilladb.core.storage.metadata.index.IndexInfo;
 import org.vanilladb.core.storage.record.RecordId;
@@ -70,9 +71,17 @@ public class HashIndexTest {
 		schema.addField("title", VARCHAR(20));
 		schema.addField("deptid", INTEGER);
 		md.createTable(dataTableName, schema, tx);
-		md.createIndex("_tempHI1", dataTableName, "cid", IDX_HASH, tx);
-		md.createIndex("_tempHI2", dataTableName, "title", IDX_HASH, tx);
-		md.createIndex("_tempHI3", dataTableName, "deptid", IDX_HASH, tx);
+		
+		List<String> idxFlds1 = new LinkedList<String>();
+		idxFlds1.add("cid");
+		List<String> idxFlds2 = new LinkedList<String>();
+		idxFlds2.add("title");
+		List<String> idxFlds3 = new LinkedList<String>();
+		idxFlds3.add("deptid");
+		
+		md.createIndex("_tempHI1", dataTableName, idxFlds1, IndexType.HASH, tx);
+		md.createIndex("_tempHI2", dataTableName, idxFlds2, IndexType.HASH, tx);
+		md.createIndex("_tempHI3", dataTableName, idxFlds3, IndexType.HASH, tx);
 
 		tx.commit();
 	}
@@ -99,36 +108,43 @@ public class HashIndexTest {
 
 	@Test
 	public void testHashIndex() {
-		Map<String, IndexInfo> idxmap = md.getIndexInfo(dataTableName, tx);
-		Index cidIndex = idxmap.get("cid").open(tx);
+		List<IndexInfo> idxList = md.getIndexInfo(dataTableName, "cid", tx);
+		Index cidIndex = idxList.get(0).open(tx);
+		
+		// Insert 10 records with the same key
 		RecordId[] records = new RecordId[10];
 		BlockId blk = new BlockId(dataTableName + ".tbl", 0);
-		Constant int5 = new IntegerConstant(5);
+		SearchKey int5 = new SearchKey(new IntegerConstant(5));
 		for (int i = 0; i < 10; i++) {
 			records[i] = new RecordId(blk, i);
 			cidIndex.insert(int5, records[i], false);
 		}
-
+		
+		// Insert a record with another key
 		RecordId rid2 = new RecordId(blk, 9);
-		Constant int7 = new IntegerConstant(7);
+		SearchKey int7 = new SearchKey(new IntegerConstant(7));
 		cidIndex.insert(int7, rid2, false);
-
-		cidIndex.beforeFirst(ConstantRange.newInstance(new IntegerConstant(5)));
+		
+		// It should find 10 records for int 5
+		cidIndex.beforeFirst(new SearchRange(int5));
 		int k = 0;
 		while (cidIndex.next())
 			k++;
 		assertTrue("*****HashIndexTest: bad insert", k == 10);
-
-		cidIndex.beforeFirst(ConstantRange.newInstance(new IntegerConstant(7)));
+		
+		// It should find only one record for int 7
+		cidIndex.beforeFirst(new SearchRange(int7));
 		cidIndex.next();
 		assertTrue("*****HashIndexTest: bad read index", cidIndex
 				.getDataRecordId().equals(rid2));
-
+		
+		// Delete the 10 records with key int 5
 		for (int i = 0; i < 10; i++)
 			cidIndex.delete(int5, records[i], false);
-		cidIndex.beforeFirst(ConstantRange.newInstance(new IntegerConstant(5)));
+		cidIndex.beforeFirst(new SearchRange(int5));
 		assertTrue("*****HashIndexTest: bad delete", cidIndex.next() == false);
-
+		
+		// Delete the record with key int 7
 		cidIndex.delete(int7, rid2, false);
 		cidIndex.close();
 	}
