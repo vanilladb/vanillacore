@@ -55,6 +55,10 @@ public class SearchRange {
 			ranges[i] = ConstantRange.newInstance(key.get(i));
 		}
 	}
+	
+	public SearchRange(ConstantRange[] constantRanges) {
+		ranges = Arrays.copyOf(constantRanges, constantRanges.length);
+	}
 
 	public int length() {
 		return ranges.length;
