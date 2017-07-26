@@ -146,9 +146,9 @@ public class CatalogTest {
 		List<String> idxFlds1 = new LinkedList<String>();
 		idxFlds1.add("A");
 		List<String> idxFlds2 = new LinkedList<String>();
-		idxFlds1.add("B");
+		idxFlds2.add("B");
 		List<String> idxFlds3 = new LinkedList<String>();
-		idxFlds1.add("C");
+		idxFlds3.add("C");
 		
 		catMgr.createIndex(i1, tbl, idxFlds1, IndexType.HASH, tx);
 		catMgr.createIndex(i2, tbl, idxFlds2, IndexType.HASH, tx);

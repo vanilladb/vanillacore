@@ -128,4 +128,10 @@ public class IndexInfo {
 	public int hashCode() {
 		return idxName.hashCode();
 	}
+	
+	@Override
+	public String toString() {
+		return "Index: " + idxType + " " + idxName
+				+ " for " + tblName + " on " + fldNames;
+	}
 }

@@ -328,7 +328,8 @@ public class IndexMgr {
 	}
 	
 	private void updateCache(IndexInfo ii) {
-		iiMapByIdxNames.put(ii.indexName(), ii);
+		if (!iiMapByIdxNames.containsKey(ii.indexName()))
+			iiMapByIdxNames.put(ii.indexName(), ii);
 		
 		// Update iiMapByTblNames
 		List<IndexInfo> iiList = iiMapByTblNames.get(ii.tableName());
@@ -336,7 +337,8 @@ public class IndexMgr {
 			iiList = new CopyOnWriteArrayList<IndexInfo>();
 			iiMapByTblNames.put(ii.tableName(), iiList);
 		}
-		iiList.add(ii);
+		if (!iiList.contains(ii))
+			iiList.add(ii);
 		
 		// Update iiMapByTblAndFlds
 		Map<String, List<IndexInfo>> iiMapByFldNames = iiMapByTblAndFlds.get(ii.tableName());
@@ -351,7 +353,8 @@ public class IndexMgr {
 				iiList = new CopyOnWriteArrayList<IndexInfo>();
 				iiMapByFldNames.put(fldName, iiList);
 			}
-			iiList.add(ii);
+			if (!iiList.contains(ii))
+				iiList.add(ii);
 		}
 	}
 	
