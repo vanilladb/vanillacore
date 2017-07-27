@@ -42,11 +42,11 @@ import org.vanilladb.core.storage.tx.Transaction;
 import junit.framework.Assert;
 
 public class MultiKeyIndexTest {
-private static Logger logger = Logger.getLogger(MultiKeyIndexTest.class.getName());
+	private static Logger logger = Logger.getLogger(MultiKeyIndexTest.class.getName());
 	
-	private static final String TESTING_TABLE_NAME = "testing_table";
-	private static final String TESTING_INDEX_NAME = "testing_index";
-	private static final String TESTING_JOIN_TABLE_NAME = "testing_join_table";
+	private static final String TABLE_NAME = "testing_table";
+	private static final String INDEX_NAME = "testing_index";
+	private static final String JOIN_TABLE_NAME = "testing_join_table";
 	private static final int KEY_MAX = 20;
 	
 	@BeforeClass
@@ -79,19 +79,19 @@ private static Logger logger = Logger.getLogger(MultiKeyIndexTest.class.getName(
 		sch.addField("key_2", Type.INTEGER);
 		sch.addField("key_3", Type.INTEGER);
 		sch.addField("data", Type.VARCHAR(100));
-		cataMgr.createTable(TESTING_TABLE_NAME, sch, tx);
+		cataMgr.createTable(TABLE_NAME, sch, tx);
 		
 		// Create a multi-key index
 		List<String> indexedFlds = new LinkedList<String>();
 		indexedFlds.add("key_1");
 		indexedFlds.add("key_2");
 		indexedFlds.add("key_3");
-		cataMgr.createIndex(TESTING_INDEX_NAME, TESTING_TABLE_NAME, indexedFlds,
+		cataMgr.createIndex(INDEX_NAME, TABLE_NAME, indexedFlds,
 				IndexType.BTREE, tx);
 		
 		// Load data
-		TableInfo ti = cataMgr.getTableInfo(TESTING_TABLE_NAME, tx);
-		IndexInfo ii = cataMgr.getIndexInfoByName(TESTING_INDEX_NAME, tx);
+		TableInfo ti = cataMgr.getTableInfo(TABLE_NAME, tx);
+		IndexInfo ii = cataMgr.getIndexInfoByName(INDEX_NAME, tx);
 		RecordFile rf = ti.open(tx, true);
 		Index idx = ii.open(tx);
 		
@@ -124,10 +124,10 @@ private static Logger logger = Logger.getLogger(MultiKeyIndexTest.class.getName(
 		sch.addField("join_key_2", Type.INTEGER);
 		sch.addField("join_key_3", Type.INTEGER);
 		sch.addField("join_data", Type.VARCHAR(100));
-		cataMgr.createTable(TESTING_JOIN_TABLE_NAME, sch, tx);
+		cataMgr.createTable(JOIN_TABLE_NAME, sch, tx);
 		
 		// Load data
-		ti = cataMgr.getTableInfo(TESTING_JOIN_TABLE_NAME, tx);
+		ti = cataMgr.getTableInfo(JOIN_TABLE_NAME, tx);
 		rf = ti.open(tx, true);
 		
 		for (int key1 = 1; key1 <= KEY_MAX; key1++) {
@@ -175,8 +175,8 @@ private static Logger logger = Logger.getLogger(MultiKeyIndexTest.class.getName(
 	 */
 	@Test
 	public void testPreciseSelection() {
-		TablePlan tp = new TablePlan(TESTING_TABLE_NAME, tx);
-		IndexInfo ii = VanillaDb.catalogMgr().getIndexInfoByName(TESTING_INDEX_NAME, tx);
+		TablePlan tp = new TablePlan(TABLE_NAME, tx);
+		IndexInfo ii = VanillaDb.catalogMgr().getIndexInfoByName(INDEX_NAME, tx);
 		Map<String, ConstantRange> searchRanges = new HashMap<String, ConstantRange>();
 		
 		Constant key1 = new IntegerConstant(1);
@@ -212,8 +212,8 @@ private static Logger logger = Logger.getLogger(MultiKeyIndexTest.class.getName(
 	 */
 	@Test
 	public void testRangeSelection() {
-		TablePlan tp = new TablePlan(TESTING_TABLE_NAME, tx);
-		IndexInfo ii = VanillaDb.catalogMgr().getIndexInfoByName(TESTING_INDEX_NAME, tx);
+		TablePlan tp = new TablePlan(TABLE_NAME, tx);
+		IndexInfo ii = VanillaDb.catalogMgr().getIndexInfoByName(INDEX_NAME, tx);
 		Map<String, ConstantRange> searchRanges = new HashMap<String, ConstantRange>();
 		
 		searchRanges.put("key_1", ConstantRange.newInstance(new IntegerConstant(1)));
@@ -252,7 +252,7 @@ private static Logger logger = Logger.getLogger(MultiKeyIndexTest.class.getName(
 		t = new Term(exp1, Term.OP_EQ, exp2);
 		pred.conjunctWith(t);
 		
-		TablePlan tp = new TablePlan(TESTING_JOIN_TABLE_NAME, tx);
+		TablePlan tp = new TablePlan(JOIN_TABLE_NAME, tx);
 		Plan p = new SelectPlan(tp, pred);
 		
 		// Create a mapping for joined field names
@@ -262,8 +262,8 @@ private static Logger logger = Logger.getLogger(MultiKeyIndexTest.class.getName(
 		joinFields.put("join_key_3", "key_3");
 		
 		// Create an IndexJoinPlan
-		tp = new TablePlan(TESTING_TABLE_NAME, tx);
-		IndexInfo ii = VanillaDb.catalogMgr().getIndexInfoByName(TESTING_INDEX_NAME, tx);
+		tp = new TablePlan(TABLE_NAME, tx);
+		IndexInfo ii = VanillaDb.catalogMgr().getIndexInfoByName(INDEX_NAME, tx);
 		p = new IndexJoinPlan(p, tp, ii, joinFields, tx);
 		
 		// Open the scan

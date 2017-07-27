@@ -75,7 +75,9 @@ public class IndexUpdatePlanner implements UpdatePlanner {
 		// Insert the record to all corresponding indexes
 		Set<IndexInfo> indexes = new HashSet<IndexInfo>();
 		for (String fldname : data.fields()) {
-			indexes.addAll(VanillaDb.catalogMgr().getIndexInfo(tblname, fldname, tx));
+			List<IndexInfo> iis = VanillaDb.catalogMgr().getIndexInfo(tblname, fldname, tx);
+			if (iis != null)
+				indexes.addAll(iis);
 		}
 		
 		for (IndexInfo ii : indexes) {

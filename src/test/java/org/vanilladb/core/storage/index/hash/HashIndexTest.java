@@ -50,8 +50,11 @@ public class HashIndexTest {
 			.getName());
 	private static CatalogMgr md;
 	
-	private static String FILE_PREFIX = "_test" + System.currentTimeMillis() + "_";
-	private static String dataTableName = FILE_PREFIX + "HITable";
+	private static final String FILE_PREFIX = "_test" + System.currentTimeMillis() + "_";
+	private static final String dataTableName = FILE_PREFIX + "HITable";
+	
+	private static final String SINGLE_KEY_INDEX_NAME = "_tempH_SI1";
+	private static final String MULTI_KEY_INDEX_NAME = "_tempH_MI1";
 	
 	private Transaction tx;
 
@@ -89,7 +92,7 @@ public class HashIndexTest {
 		
 		List<String> idxFlds = new LinkedList<String>();
 		idxFlds.add("cid");
-		md.createIndex("_tempH_SI1", dataTableName, idxFlds, IndexType.HASH, tx);
+		md.createIndex(SINGLE_KEY_INDEX_NAME, dataTableName, idxFlds, IndexType.HASH, tx);
 		
 		tx.commit();
 	}
@@ -101,7 +104,7 @@ public class HashIndexTest {
 		List<String> idxFlds = new LinkedList<String>();
 		idxFlds.add("cid");
 		idxFlds.add("deptid");
-		md.createIndex("_tempH_MI1", dataTableName, idxFlds, IndexType.HASH, tx);
+		md.createIndex(MULTI_KEY_INDEX_NAME, dataTableName, idxFlds, IndexType.HASH, tx);
 		
 		tx.commit();
 	}
@@ -123,8 +126,7 @@ public class HashIndexTest {
 		
 		createSingleKeyIndex();
 		
-		List<IndexInfo> idxList = md.getIndexInfo(dataTableName, "cid", tx);
-		Index index = idxList.get(0).open(tx);
+		Index index = md.getIndexInfoByName(SINGLE_KEY_INDEX_NAME, tx).open(tx);
 		
 		// Insert 10 records with the same key
 		RecordId[] records = new RecordId[10];
@@ -169,8 +171,7 @@ public class HashIndexTest {
 		
 		createMultiKeyIndex();
 		
-		List<IndexInfo> idxList = md.getIndexInfo(dataTableName, "cid", tx);
-		IndexInfo indexInfo = idxList.get(0);
+		IndexInfo indexInfo = md.getIndexInfoByName(MULTI_KEY_INDEX_NAME, tx);
 		Index index = indexInfo.open(tx);
 		
 		// Check the field names

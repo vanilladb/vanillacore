@@ -154,7 +154,8 @@ class TablePlanner {
 			for (String outerFld : outerFlds)
 				if (trunkSch.hasField(outerFld)) {
 					List<IndexInfo> iis = VanillaDb.catalogMgr().getIndexInfo(tblName, fieldName, tx);
-					candidates.addAll(iis);
+					if (iis != null)
+						candidates.addAll(iis);
 					break;
 				}
 		}

@@ -28,7 +28,8 @@ public class IndexSelector {
 				continue;
 			
 			List<IndexInfo> iis = VanillaDb.catalogMgr().getIndexInfo(tblName, fieldName, tx);
-			candidates.addAll(iis);
+			if (iis != null)
+				candidates.addAll(iis);
 		}
 		
 		return selectByBestMatchedIndex(candidates, tablePlan, pred, tx);

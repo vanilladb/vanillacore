@@ -216,14 +216,16 @@ public class IndexMgr {
 	
 	public List<IndexInfo> getIndexInfo(String tblName, String fldName, Transaction tx) {
 		// Check the cache
-		if (loadedTables.contains(tblName))
-			return iiMapByTblAndFlds.get(tblName).get(fldName);
+		if (!loadedTables.contains(tblName)) {
+			// Read from the catalog files (calling another method)
+			getIndexInfo(tblName, tx);
+		}
 		
-		// Read from the catalog files (calling another method)
-		getIndexInfo(tblName, tx);
-		
-		// Fetch from the cache again
-		return iiMapByTblAndFlds.get(tblName).get(fldName);
+		// Fetch from the cache
+		Map<String, List<IndexInfo>> iiMap = iiMapByTblAndFlds.get(tblName);
+		if (iiMap == null)
+			return null;
+		return iiMap.get(fldName);
 	}
 
 	/**
