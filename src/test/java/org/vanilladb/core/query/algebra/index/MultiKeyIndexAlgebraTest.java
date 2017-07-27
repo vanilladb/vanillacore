@@ -41,8 +41,8 @@ import org.vanilladb.core.storage.tx.Transaction;
 
 import junit.framework.Assert;
 
-public class MultiKeyIndexTest {
-	private static Logger logger = Logger.getLogger(MultiKeyIndexTest.class.getName());
+public class MultiKeyIndexAlgebraTest {
+	private static Logger logger = Logger.getLogger(MultiKeyIndexAlgebraTest.class.getName());
 	
 	private static final String TABLE_NAME = "testing_table";
 	private static final String INDEX_NAME = "testing_index";
@@ -51,7 +51,7 @@ public class MultiKeyIndexTest {
 	
 	@BeforeClass
 	public static void init() {
-		ServerInit.init(MultiKeyIndexTest.class);
+		ServerInit.init(MultiKeyIndexAlgebraTest.class);
 		
 		generateTestingData();
 

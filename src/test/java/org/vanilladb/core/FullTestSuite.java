@@ -22,10 +22,11 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite.SuiteClasses;
 import org.vanilladb.core.IsolatedClassLoaderSuite.IsolationRoot;
 import org.vanilladb.core.query.algebra.BasicQueryTest;
-import org.vanilladb.core.query.algebra.index.MultiKeyIndexTest;
+import org.vanilladb.core.query.algebra.index.MultiKeyIndexAlgebraTest;
 import org.vanilladb.core.query.parse.ParserTest;
 import org.vanilladb.core.query.planner.index.IndexUpdatePlannerTest;
 import org.vanilladb.core.query.planner.opt.HeuristicQueryPlannerTest;
+import org.vanilladb.core.query.planner.opt.MultiKeyIndexPlanningTest;
 import org.vanilladb.core.server.ServerInit;
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.storage.buffer.BufferConcurrencyTest;
@@ -88,11 +89,11 @@ import org.vanilladb.core.storage.tx.recovery.RecoveryBasicTest;
 	ParserTest.class,
 	
 	// query.algebra
-	BasicQueryTest.class, MultiKeyIndexTest.class,
+	BasicQueryTest.class, MultiKeyIndexAlgebraTest.class,
 	
 	// query.planner
 	IndexUpdatePlannerTest.class, HeuristicQueryPlannerTest.class,
-	
+	MultiKeyIndexPlanningTest.class,
 })
 @IsolationRoot(VanillaDb.class)
 public class FullTestSuite {
