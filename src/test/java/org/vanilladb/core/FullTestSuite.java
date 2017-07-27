@@ -21,6 +21,8 @@ import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite.SuiteClasses;
 import org.vanilladb.core.IsolatedClassLoaderSuite.IsolationRoot;
+import org.vanilladb.core.query.algebra.BasicQueryTest;
+import org.vanilladb.core.query.algebra.index.MultiKeyIndexTest;
 import org.vanilladb.core.query.parse.ParserTest;
 import org.vanilladb.core.server.ServerInit;
 import org.vanilladb.core.server.VanillaDb;
@@ -46,9 +48,6 @@ import org.vanilladb.core.storage.tx.recovery.RecoveryBasicTest;
 
 @RunWith(IsolatedClassLoaderSuite.class)
 @SuiteClasses({
-	
-	// query.parse
-	ParserTest.class,
 	
 	// storage.file
 	FileTest.class, PageConcurrencyTest.class,
@@ -82,6 +81,13 @@ import org.vanilladb.core.storage.tx.recovery.RecoveryBasicTest;
 	
 	// storage.tx.recovery
 	RecoveryBasicTest.class,
+	
+	// query.parse
+	ParserTest.class,
+	
+	// query.algebra
+	BasicQueryTest.class, MultiKeyIndexTest.class,
+	
 })
 @IsolationRoot(VanillaDb.class)
 public class FullTestSuite {
