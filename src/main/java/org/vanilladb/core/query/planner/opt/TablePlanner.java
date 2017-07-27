@@ -43,6 +43,7 @@ class TablePlanner {
 	private Schema sch;
 	private Map<String, IndexInfo> idxes;
 	private Transaction tx;
+	private int indexNum;
 
 	/**
 	 * Creates a new table planner. The specified predicate applies to the
@@ -57,12 +58,18 @@ class TablePlanner {
 	 * @param tx
 	 *            the calling transaction
 	 */
-	public TablePlanner(String tblName, Predicate pred, Transaction tx) {
+	public TablePlanner(String tblName, Predicate pred, Transaction tx, int indexNum) {
 		this.pred = pred;
 		this.tx = tx;
+		this.indexNum = indexNum;
 		tp = new TablePlan(tblName, tx);
 		sch = tp.schema();
 		idxes = VanillaDb.catalogMgr().getIndexInfo(tblName, tx);
+	}
+	
+	// method for Selinger opt.
+	public int getIndexNum() {
+		return indexNum;
 	}
 
 	/**
