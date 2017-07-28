@@ -43,7 +43,8 @@ class TablePlanner {
 	private Schema sch;
 	private Map<String, IndexInfo> idxes;
 	private Transaction tx;
-	private int indexNum;
+	private int tblNum;
+	private int binaryCode;
 
 	/**
 	 * Creates a new table planner. The specified predicate applies to the
@@ -58,18 +59,24 @@ class TablePlanner {
 	 * @param tx
 	 *            the calling transaction
 	 */
-	public TablePlanner(String tblName, Predicate pred, Transaction tx, int indexNum) {
+	public TablePlanner(String tblName, Predicate pred, Transaction tx, int tblNum) {
 		this.pred = pred;
 		this.tx = tx;
-		this.indexNum = indexNum;
+		this.tblNum = tblNum;
+		this.binaryCode = (int) Math.pow(2, tblNum);
 		tp = new TablePlan(tblName, tx);
 		sch = tp.schema();
 		idxes = VanillaDb.catalogMgr().getIndexInfo(tblName, tx);
 	}
 	
-	// method for Selinger opt.
-	public int getIndexNum() {
-		return indexNum;
+	// set an unique number to this table planner
+	public int getTblNum() {
+		return tblNum;
+	}
+	
+	// use binary to represent the combination
+	public int getBinaryCode() {
+		return binaryCode;
 	}
 
 	/**

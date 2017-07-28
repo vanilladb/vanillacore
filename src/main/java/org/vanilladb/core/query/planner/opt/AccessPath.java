@@ -4,42 +4,44 @@ import java.util.ArrayList;
 
 import org.vanilladb.core.query.algebra.Plan;
 
+/**
+ * This class contains methods for a valid access path
+ */
 public class AccessPath {
-	private Plan trunk;
-	private int hashCode = 0;
-	private ArrayList<TablePlanner> combination = new ArrayList<TablePlanner>();
-	
-	// add new member of current layer to combination and plus the hash code
-	public void add(int layer, TablePlanner tp) {
-		if (combination.size() == layer) 
-			combination.add(tp);
-		else
-			combination.set(layer, tp);
-		hashCode += Math.pow(2, tp.getIndexNum());
+	private Plan p;
+	private int binaryCode = 0;
+	private ArrayList<Integer> tblUsed = new ArrayList<Integer>();
+
+	public AccessPath (TablePlanner newTp, Plan p) {
+		this.p = p;
+		this.tblUsed.add(newTp.getTblNum());
+		this.binaryCode = newTp.getBinaryCode();	
 	}
 	
-	// when jump to previous layer, need to subtract the hash code of current layer
-	public void del(TablePlanner tp) {
-		hashCode -= Math.pow(2, tp.getIndexNum());
+	public AccessPath (AccessPath preAp, TablePlanner newTp, Plan p) {
+		this.p = p;
+		this.tblUsed.addAll(preAp.getTblUsed());
+		this.tblUsed.add(newTp.getTblNum());
+		this.binaryCode = preAp.getBinaryCode() + newTp.getBinaryCode();
 	}
 	
-	// get the ith table planner of combination
-	public TablePlanner getTablePlanner (int index) {
-		return combination.get(index);
+	public Plan getPlan () {
+		return p;
 	}
 	
-	// method for view
-	public void setTrunk (Plan p) {
-		trunk = p;
+	public long getCost () {
+		return p.recordsOutput();
 	}
 	
-	// method for view
-	public Plan getTrunk () {
-		return trunk;
+	public ArrayList<Integer> getTblUsed () {
+		return tblUsed;
 	}
 	
-	@Override
-	public int hashCode() {
-		return hashCode;
+	public boolean isUsed (int tbl) {
+		return tblUsed.contains(tbl);
+	}
+
+	public int getBinaryCode() {
+		return binaryCode;
 	}
 }
