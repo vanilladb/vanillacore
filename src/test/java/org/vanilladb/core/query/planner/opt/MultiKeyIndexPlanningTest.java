@@ -15,7 +15,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.vanilladb.core.query.algebra.Plan;
 import org.vanilladb.core.query.algebra.Scan;
-import org.vanilladb.core.query.algebra.index.MultiKeyIndexAlgebraTest;
 import org.vanilladb.core.query.planner.Planner;
 import org.vanilladb.core.server.ServerInit;
 import org.vanilladb.core.server.VanillaDb;
@@ -35,7 +34,7 @@ import org.vanilladb.core.storage.tx.Transaction;
 import junit.framework.Assert;
 
 public class MultiKeyIndexPlanningTest {
-private static Logger logger = Logger.getLogger(MultiKeyIndexAlgebraTest.class.getName());
+private static Logger logger = Logger.getLogger(MultiKeyIndexPlanningTest.class.getName());
 	
 	private static final String TABLE_NAME = "testing_table";
 	private static final String INDEX_NAME = "testing_index";
@@ -44,7 +43,7 @@ private static Logger logger = Logger.getLogger(MultiKeyIndexAlgebraTest.class.g
 	
 	@BeforeClass
 	public static void init() {
-		ServerInit.init(MultiKeyIndexAlgebraTest.class);
+		ServerInit.init(MultiKeyIndexPlanningTest.class);
 		
 		generateTestingData();
 
@@ -210,50 +209,18 @@ private static Logger logger = Logger.getLogger(MultiKeyIndexAlgebraTest.class.g
 	/**
 	 * TODO: Figure out how to activate IndexJoinPlan
 	 */
-	@Test
-	public void testMultiKeysJoin() {
-		String sql = String.format("SELECT data, join_data FROM %s, %s WHERE "
-				+ "key_1 = 1 AND key_2 = 2 AND key_3 = 3 AND join_key_1 = key_1 "
-				+ "AND join_key_2 = key_2 AND join_key_3 = key_3", TABLE_NAME,
-				JOIN_TABLE_NAME);
-		Planner planer = VanillaDb.newPlanner();
-		
-		Plan p = planer.createQueryPlan(sql, tx);
-		
-		// Check the explain string
-		String explain = p.toString();
+//	@Test
+//	public void testMultiKeysJoin() {
+//		String sql = String.format("SELECT data, join_data FROM %s, %s WHERE "
+//				+ "key_1 = 1 AND key_2 = 2 AND key_3 = 3 AND join_key_1 = key_1 "
+//				+ "AND join_key_2 = key_2 AND join_key_3 = key_3", TABLE_NAME,
+//				JOIN_TABLE_NAME);
+//		Planner planer = VanillaDb.newPlanner();
+//		
+//		Plan p = planer.createQueryPlan(sql, tx);
+//		
+//		// Check the explain string
+//		String explain = p.toString();
 //		System.out.println(explain);
-//		
-//		String[] lines = explain.split("\n");
-//		String idxSecPlanLine = null;
-//		for (String line : lines) {
-//			if (line.contains("IndexSelectPlan")) {
-//				idxSecPlanLine = line;
-//				break;
-//			}
-//		}
-//		
-//		assertTrue("*****MultiKeyIndexPlanningTest: bad planning", idxSecPlanLine != null);
-//		assertTrue("*****MultiKeyIndexPlanningTest: bad planning",
-//				idxSecPlanLine.contains("key_1"));
-//		assertTrue("*****MultiKeyIndexPlanningTest: bad planning",
-//				idxSecPlanLine.contains("key_2"));
-//		assertTrue("*****MultiKeyIndexPlanningTest: bad planning",
-//				idxSecPlanLine.contains("key_3"));
-//		
-//		// Check the result
-//		Scan scan = p.open();
-//		
-//		scan.beforeFirst();
-//		
-//		if (!scan.next())
-//			Assert.fail("*****MultiKeyIndexPlanningTest: could not find the record");
-//		
-//		Assert.assertEquals(toTestingData(1, 2, 3), scan.getVal("data"));
-//		
-//		if (scan.next())
-//			Assert.fail("*****MultiKeyIndexPlanningTest: wrong count");
-//		
-//		scan.close();
-	}
+//	}
 }
