@@ -15,6 +15,7 @@
  ******************************************************************************/
 package org.vanilladb.core.storage.metadata;
 
+import java.util.Collection;
 import java.util.Map;
 
 import org.vanilladb.core.sql.Schema;
@@ -52,6 +53,10 @@ public class CatalogMgr {
 
 	public void dropView(String viewName, Transaction tx) {
 		viewMgr.dropView(viewName, tx);
+	}
+
+	public Collection<String> getViewNamesByTable(String tblName, Transaction tx) {
+		return viewMgr.getViewNamesByTable(tblName, tx);
 	}
 
 	public String getViewDef(String viewName, Transaction tx) {
