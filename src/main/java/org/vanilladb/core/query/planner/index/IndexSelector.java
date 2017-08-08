@@ -47,9 +47,6 @@ public class IndexSelector {
 				continue;
 			
 			List<IndexInfo> iis = VanillaDb.catalogMgr().getIndexInfo(tblName, fieldName, tx);
-			if (iis == null)
-				continue;
-			
 			for (IndexInfo ii : iis) {
 				boolean ignored = false;
 				for (String fldName : ii.fieldNames())

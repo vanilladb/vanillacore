@@ -135,7 +135,8 @@ public class Timer {
 						subTimers.get(com).getCount()));
 			}
 		}
-		sb.append(String.format("%-40s: %d us\n", EXE_TIME_KEY, subTimers.get(EXE_TIME_KEY).getTotalTime()));
+		if (subTimers.get(EXE_TIME_KEY) != null)
+			sb.append(String.format("%-40s: %d us\n", EXE_TIME_KEY, subTimers.get(EXE_TIME_KEY).getTotalTime()));
 		sb.append("==============================\n");
 
 		return sb.toString();
