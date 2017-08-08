@@ -46,8 +46,11 @@ public class IndexSelector {
 			if (searchRange == null)
 				continue;
 			
-			for (IndexInfo ii : VanillaDb.catalogMgr().getIndexInfo(tblName, fieldName, tx)) {
-				
+			List<IndexInfo> iis = VanillaDb.catalogMgr().getIndexInfo(tblName, fieldName, tx);
+			if (iis == null)
+				continue;
+			
+			for (IndexInfo ii : iis) {
 				boolean ignored = false;
 				for (String fldName : ii.fieldNames())
 					if (excludedFields.contains(fldName)) {
