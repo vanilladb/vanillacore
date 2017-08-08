@@ -16,6 +16,7 @@
 package org.vanilladb.core.storage.metadata;
 
 import java.util.List;
+import java.util.Set;
 
 import org.vanilladb.core.sql.Schema;
 import org.vanilladb.core.storage.index.IndexType;
@@ -67,8 +68,8 @@ public class CatalogMgr {
 		idxMgr.dropIndex(idxName, tx);
 	}
 	
-	public List<IndexInfo> getIndexInfo(String tblName, Transaction tx) {
-		return idxMgr.getIndexInfo(tblName, tx);
+	public Set<String> getIndexedFields(String tblName, Transaction tx) {
+		return idxMgr.getIndexedFields(tblName, tx);
 	}
 
 	public List<IndexInfo> getIndexInfo(String tblName, String fldName, 

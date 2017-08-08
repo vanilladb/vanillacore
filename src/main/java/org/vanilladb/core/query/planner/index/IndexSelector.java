@@ -22,14 +22,13 @@ public class IndexSelector {
 			TablePlan tablePlan, Predicate pred, Transaction tx) {
 		
 		Set<IndexInfo> candidates = new HashSet<IndexInfo>();
-		for (String fieldName : tablePlan.schema().fields()) {
+		for (String fieldName : VanillaDb.catalogMgr().getIndexedFields(tblName, tx)) {
 			ConstantRange searchRange = pred.constantRange(fieldName);
 			if (searchRange == null)
 				continue;
 			
 			List<IndexInfo> iis = VanillaDb.catalogMgr().getIndexInfo(tblName, fieldName, tx);
-			if (iis != null)
-				candidates.addAll(iis);
+			candidates.addAll(iis);
 		}
 		
 		return selectByBestMatchedIndex(candidates, tablePlan, pred, tx);

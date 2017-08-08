@@ -76,8 +76,7 @@ public class IndexUpdatePlanner implements UpdatePlanner {
 		Set<IndexInfo> indexes = new HashSet<IndexInfo>();
 		for (String fldname : data.fields()) {
 			List<IndexInfo> iis = VanillaDb.catalogMgr().getIndexInfo(tblname, fldname, tx);
-			if (iis != null)
-				indexes.addAll(iis);
+			indexes.addAll(iis);
 		}
 		
 		for (IndexInfo ii : indexes) {
@@ -107,9 +106,12 @@ public class IndexUpdatePlanner implements UpdatePlanner {
 		}
 		
 		// Retrieve all indexes
-		List<IndexInfo> iiList = VanillaDb.catalogMgr().getIndexInfo(tblName, tx);
-		if (iiList == null) {
-			iiList = new LinkedList<IndexInfo>();
+		List<IndexInfo> allIndexes = new LinkedList<IndexInfo>();
+		Set<String> indexedFlds = VanillaDb.catalogMgr().getIndexedFields(tblName, tx);
+		
+		for (String indexedFld : indexedFlds) {
+			List<IndexInfo> iis = VanillaDb.catalogMgr().getIndexInfo(tblName, indexedFld, tx);
+			allIndexes.addAll(iis);
 		}
 		
 		// Open the scan
@@ -120,7 +122,7 @@ public class IndexUpdatePlanner implements UpdatePlanner {
 			RecordId rid = s.getRecordId();
 			
 			// Delete the record from every index
-			for (IndexInfo ii : iiList) {
+			for (IndexInfo ii : allIndexes) {
 				// Construct a key-value map
 				Map<String, Constant> fldValMap = new HashMap<String, Constant>();
 				for (String fldName : ii.fieldNames())
@@ -174,11 +176,8 @@ public class IndexUpdatePlanner implements UpdatePlanner {
 		Set<Index> modifiedIndexes = new HashSet<Index>();
 		for (String fieldName : data.targetFields()) {
 			List<IndexInfo> iiList = VanillaDb.catalogMgr().getIndexInfo(tblName, fieldName, tx);
-			if (iiList != null) {
-				for (IndexInfo ii : iiList) {
-					modifiedIndexes.add(ii.open(tx));
-				}
-			}
+			for (IndexInfo ii : iiList)
+				modifiedIndexes.add(ii.open(tx));
 		}
 		
 		// Open the scan
