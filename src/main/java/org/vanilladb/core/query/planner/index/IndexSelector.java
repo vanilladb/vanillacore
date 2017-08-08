@@ -38,7 +38,7 @@ public class IndexSelector {
 			TablePlan tablePlan, Predicate pred, Transaction tx, Collection<String> excludedFields) {
 		
 		Set<IndexInfo> candidates = new HashSet<IndexInfo>();
-		for (String fieldName : tablePlan.schema().fields()) {
+		for (String fieldName : VanillaDb.catalogMgr().getIndexedFields(tblName, tx)) {
 			if (excludedFields.contains(fieldName))
 				continue;
 			
