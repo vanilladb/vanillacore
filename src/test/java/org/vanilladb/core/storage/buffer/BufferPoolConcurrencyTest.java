@@ -33,7 +33,7 @@ public class BufferPoolConcurrencyTest {
 	private static Logger logger = Logger.getLogger(BufferPoolConcurrencyTest.class.getName());
 
 	private static final int CLIENT_COUNT_PER_BUFFER = 100;
-	private static final int BUFFER_COUNT = 100;
+	private static final int BUFFER_COUNT = 10;
 	private static final int TOTAL_CLIENT_COUNT = BUFFER_COUNT * CLIENT_COUNT_PER_BUFFER;
 
 	private static final String TEST_FILE_NAME = "_tempbufferpooltest";
