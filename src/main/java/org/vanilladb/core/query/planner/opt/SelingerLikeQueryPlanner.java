@@ -33,15 +33,15 @@ public class SelingerLikeQueryPlanner implements QueryPlanner{
 	@Override
 	public Plan createPlan(QueryData data, Transaction tx) {
 		// Step 1: Create a TablePlanner object for each mentioned table/view
-		int i = 0;
+		int id = 0;
 		for (String tbl : data.tables()) {
 			String viewdef = VanillaDb.catalogMgr().getViewDef(tbl, tx);
 			if (viewdef != null)
 				views.add(VanillaDb.newPlanner().createQueryPlan(viewdef, tx));
 			else {
-				TablePlanner tp = new TablePlanner(tbl, data.pred(), tx, i);
+				TablePlanner tp = new TablePlanner(tbl, data.pred(), tx, id);
 				tablePlanners.add(tp);
-				i += 1;
+				id += 1;
 			}
 		}
 		// step 2: Use Selinger optimization to find join access path
@@ -76,8 +76,9 @@ public class SelingerLikeQueryPlanner implements QueryPlanner{
 	private Plan getAllCombination(Plan viewTrunk) {
 		int finalKey = 0;
 
+		// construct all combination layer by layer
 		for (int layer = 1; layer <= tablePlanners.size(); layer++) {
-			// construct layer 1: use select down strategy
+			// when layer = 1, use select down strategy to construct layer 1
 			if (layer == 1) {
 				for (TablePlanner tp: tablePlanners) {
 					Plan bestPlan = null;
@@ -90,17 +91,17 @@ public class SelingerLikeQueryPlanner implements QueryPlanner{
 						bestPlan = tp.makeSelectPlan();
 					
 					AccessPath ap = new AccessPath(tp, bestPlan);
-					lookupTbl.put(ap.getBinaryCode(), ap);
+					lookupTbl.put(ap.hashCode(), ap);
 					
 					// compute final hash key
-					finalKey += tp.getBinaryCode();
+					finalKey += tp.hashCode();
 				}
 				continue;
 			}
 
 			Set<Integer> keySet = new HashSet<Integer>(lookupTbl.keySet());
 			
-			// when layer >= 2, iterate all existing (layer-1) combination to join with all table planners 
+			// when layer >= 2, iterate all existing (layer-1) combination to join with all table planners to construct next layer
 			for (Integer key: keySet) {
 				AccessPath leftTrunk = lookupTbl.get(key);
 				
@@ -111,7 +112,7 @@ public class SelingerLikeQueryPlanner implements QueryPlanner{
 						continue;
 					
 					// cannot join with table which combination already included
-					if (leftTrunk.isUsed(rightOne.getTblNum()))
+					if (leftTrunk.isUsed(rightOne.getId()))
 						continue;
 					
 					// do join
@@ -119,7 +120,7 @@ public class SelingerLikeQueryPlanner implements QueryPlanner{
 					if (bestPlan == null)
 						bestPlan = rightOne.makeProductPlan(leftTrunk.getPlan());
 					
-					int newKey = leftTrunk.getBinaryCode() + rightOne.getBinaryCode();
+					int newKey = leftTrunk.hashCode() + rightOne.hashCode();
 					AccessPath ap = lookupTbl.get(newKey);
 					
 					// there is no access path contains this combination

@@ -9,20 +9,20 @@ import org.vanilladb.core.query.algebra.Plan;
  */
 public class AccessPath {
 	private Plan p;
-	private int binaryCode = 0;
+	private int hashCode = 0;
 	private ArrayList<Integer> tblUsed = new ArrayList<Integer>();
 
 	public AccessPath (TablePlanner newTp, Plan p) {
 		this.p = p;
-		this.tblUsed.add(newTp.getTblNum());
-		this.binaryCode = newTp.getBinaryCode();	
+		this.tblUsed.add(newTp.getId());
+		this.hashCode = newTp.hashCode();	
 	}
 	
 	public AccessPath (AccessPath preAp, TablePlanner newTp, Plan p) {
 		this.p = p;
 		this.tblUsed.addAll(preAp.getTblUsed());
-		this.tblUsed.add(newTp.getTblNum());
-		this.binaryCode = preAp.getBinaryCode() + newTp.getBinaryCode();
+		this.tblUsed.add(newTp.getId());
+		this.hashCode = preAp.hashCode() + newTp.hashCode();
 	}
 	
 	public Plan getPlan () {
@@ -40,8 +40,9 @@ public class AccessPath {
 	public boolean isUsed (int tbl) {
 		return tblUsed.contains(tbl);
 	}
-
-	public int getBinaryCode() {
-		return binaryCode;
+	
+	@ Override
+	public int hashCode() {
+		return hashCode;
 	}
 }
