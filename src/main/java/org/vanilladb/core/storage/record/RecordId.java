@@ -59,14 +59,9 @@ public class RecordId implements Comparable<RecordId> {
 	
 	@Override
 	public int compareTo(RecordId rid) {
-		int fileResult = blk.fileName().compareTo(rid.blk.fileName());
-		if (fileResult != 0)
-			return fileResult;
-		
-		if (blk.number() < rid.blk.number())
-			return -1;
-		else if (blk.number() > rid.blk.number())
-			return 1;
+		int blkResult = blk.compareTo(rid.blk);
+		if (blkResult != 0)
+			return blkResult;
 		
 		if (id < rid.id)
 			return -1;
