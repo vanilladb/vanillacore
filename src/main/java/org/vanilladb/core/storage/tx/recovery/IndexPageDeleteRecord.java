@@ -30,6 +30,7 @@ import org.vanilladb.core.sql.Type;
 import org.vanilladb.core.sql.VarcharConstant;
 import org.vanilladb.core.storage.buffer.Buffer;
 import org.vanilladb.core.storage.file.BlockId;
+import org.vanilladb.core.storage.index.SearchKeyType;
 import org.vanilladb.core.storage.index.btree.BTreeDir;
 import org.vanilladb.core.storage.index.btree.BTreeLeaf;
 import org.vanilladb.core.storage.log.BasicLogRecord;
@@ -41,11 +42,11 @@ public class IndexPageDeleteRecord implements LogRecord {
 	private BlockId indexBlkId;
 	private int slotId;
 	private boolean isDirPage;
-	private Type keyType;
+	private SearchKeyType keyType;
 	private LogSeqNum lsn;
 
 	public IndexPageDeleteRecord(long txNum, BlockId indexBlkId, boolean isDirPage,
-			Type keyType, int slotId) {
+			SearchKeyType keyType, int slotId) {
 		this.txNum = txNum;
 		this.isDirPage = isDirPage;
 		this.keyType = keyType;
@@ -56,7 +57,16 @@ public class IndexPageDeleteRecord implements LogRecord {
 	public IndexPageDeleteRecord(BasicLogRecord rec) {
 		txNum = (Long) rec.nextVal(BIGINT).asJavaVal();
 		isDirPage = (Integer) rec.nextVal(INTEGER).asJavaVal() == 1;
-		keyType = Type.newInstance((Integer) rec.nextVal(INTEGER).asJavaVal());
+		
+		// Search Key Type
+		int keyLen = (Integer) rec.nextVal(INTEGER).asJavaVal();
+		Type[] types = new Type[keyLen];
+		for (int i = 0; i < keyLen; i++) {
+			int type = (Integer) rec.nextVal(INTEGER).asJavaVal();
+			types[i] = Type.newInstance(type);
+		}
+		keyType = new SearchKeyType(types);
+		
 		String fileName = (String) rec.nextVal(VARCHAR).asJavaVal();
 		long blkNum = (Long) rec.nextVal(BIGINT).asJavaVal();
 		indexBlkId = new BlockId(fileName, blkNum);
@@ -133,8 +143,7 @@ public class IndexPageDeleteRecord implements LogRecord {
 	@Override
 	public String toString() {
 		return "<INDEX PAGE DELETE " + txNum + " " + isDirPage + " "
-				+ keyType.getSqlType() + " " + indexBlkId + " "
-				+ slotId + ">";
+				+ keyType + " " + indexBlkId + " " + slotId + ">";
 	}
 
 	@Override
@@ -144,7 +153,14 @@ public class IndexPageDeleteRecord implements LogRecord {
 		rec.add(new BigIntConstant(txNum));
 		// Covert Boolean into int
 		rec.add(new IntegerConstant(isDirPage ? 1 : 0));
-		rec.add(new IntegerConstant(keyType.getSqlType()));
+		
+		// Search Key Type
+		rec.add(new IntegerConstant(keyType.length()));
+		for (int i = 0; i < keyType.length(); i++) {
+			Type type = keyType.get(i);
+			rec.add(new IntegerConstant(type.getSqlType()));
+		}
+		
 		rec.add(new VarcharConstant(indexBlkId.fileName()));
 		rec.add(new BigIntConstant(indexBlkId.number()));
 		rec.add(new IntegerConstant(slotId));

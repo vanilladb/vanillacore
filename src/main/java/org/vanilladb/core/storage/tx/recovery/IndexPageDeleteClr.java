@@ -22,8 +22,8 @@ import java.util.List;
 import org.vanilladb.core.sql.BigIntConstant;
 import org.vanilladb.core.sql.Constant;
 import org.vanilladb.core.sql.IntegerConstant;
-import org.vanilladb.core.sql.Type;
 import org.vanilladb.core.storage.file.BlockId;
+import org.vanilladb.core.storage.index.SearchKeyType;
 import org.vanilladb.core.storage.log.BasicLogRecord;
 import org.vanilladb.core.storage.log.LogSeqNum;
 import org.vanilladb.core.storage.tx.Transaction;
@@ -32,7 +32,7 @@ public class IndexPageDeleteClr extends IndexPageDeleteRecord implements Compesa
 	private LogSeqNum undoNextLSN;
 
 	public IndexPageDeleteClr(long compTxNum, BlockId indexBlkId, boolean isDirPage,
-			Type keyType, int slotId, LogSeqNum undoNextLSN) {
+			SearchKeyType keyType, int slotId, LogSeqNum undoNextLSN) {
 		super(compTxNum, indexBlkId, isDirPage, keyType, slotId);
 		this.undoNextLSN = undoNextLSN;
 

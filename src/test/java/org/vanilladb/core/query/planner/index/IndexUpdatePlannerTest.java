@@ -6,9 +6,10 @@ import static org.junit.Assert.fail;
 import static org.vanilladb.core.sql.Type.BIGINT;
 import static org.vanilladb.core.sql.Type.INTEGER;
 import static org.vanilladb.core.sql.Type.VARCHAR;
-import static org.vanilladb.core.storage.index.Index.IDX_BTREE;
 
 import java.sql.Connection;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -28,22 +29,18 @@ import org.vanilladb.core.query.planner.opt.HeuristicQueryPlanner;
 import org.vanilladb.core.server.ServerInit;
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.Schema;
+import org.vanilladb.core.storage.index.IndexType;
 import org.vanilladb.core.storage.metadata.CatalogMgr;
 import org.vanilladb.core.storage.tx.Transaction;
 
 public class IndexUpdatePlannerTest {
-	private static Logger logger = Logger
-			.getLogger(IndexUpdatePlannerTest.class.getName());
-	private static String tableName = "indextest";
-	private Transaction tx;
+	private static Logger logger = Logger.getLogger(IndexUpdatePlannerTest.class.getName());
+	
+	private static final String TABLE_NAME = "indextest";
 	
 	@BeforeClass
 	public static void init() {
 		ServerInit.init(IndexUpdatePlannerTest.class);
-		ServerInit.loadTestbed();
-
-		if (logger.isLoggable(Level.INFO))
-			logger.info("BEGIN INDEX UPDATE PLANNER TEST");
 		
 		// create and populate the indexed temp table
 		CatalogMgr md = VanillaDb.catalogMgr();
@@ -53,11 +50,20 @@ public class IndexUpdatePlannerTest {
 		sch.addField("tid", INTEGER);
 		sch.addField("tname", VARCHAR(10));
 		sch.addField("tdate", BIGINT);
-		md.createTable(tableName, sch, tx);
-		md.createIndex("_tempIUP1", tableName, "tid", IDX_BTREE, tx);
-		md.createIndex("_tempIUP2", tableName, "tdate", IDX_BTREE, tx);
+		md.createTable(TABLE_NAME, sch, tx);
+		
+		List<String> indexedFlds = new LinkedList<String>();
+		indexedFlds.add("tid");
+		md.createIndex("_tempIUP1", TABLE_NAME, indexedFlds, IndexType.BTREE, tx);
+		
+		indexedFlds = new LinkedList<String>();
+		indexedFlds.add("tdate");
+		md.createIndex("_tempIUP2", TABLE_NAME, indexedFlds, IndexType.BTREE, tx);
 
 		tx.commit();
+
+		if (logger.isLoggable(Level.INFO))
+			logger.info("BEGIN INDEX UPDATE PLANNER TEST");
 	}
 	
 	@AfterClass
@@ -66,22 +72,23 @@ public class IndexUpdatePlannerTest {
 			logger.info("FINISH INDEX UPDATE PLANNER TEST");
 	}
 	
+	private Transaction tx;
 	
 	@Before
 	public void createTx() {
 		tx = VanillaDb.txMgr().newTransaction(
 				Connection.TRANSACTION_SERIALIZABLE, false);
 	}
-	
+
 	@After
 	public void finishTx() {
-		tx.commit();
-		tx = null;
+		tx.rollback();
 	}
 	
 	@Test
 	public void testInsert() {
-		String cmd = "insert into indextest(tid,tname,tdate) values(1, 'basketry',9890033330000)";
+		String cmd = "INSERT INTO indextest(tid, tname, tdate) VALUES "
+				+ "(1, 'basketry', 9890033330000)";
 		Parser psr = new Parser(cmd);
 		InsertData id = (InsertData) psr.updateCommand();
 		int n = new IndexUpdatePlanner().executeInsert(id, tx);
@@ -196,12 +203,12 @@ public class IndexUpdatePlannerTest {
 		Parser psr = new Parser(cmd);
 		ModifyData md = (ModifyData) psr.updateCommand();
 		int n = new IndexUpdatePlanner().executeModify(md, tx);
-		
+
 		assertTrue("*****IndexUpdatePlannerTest: bad modification",
 				n == insertCount);
 
 		// Check if the data has been modified
-		String qry = "select tid, tname, tdate from indextest where tid = 999";
+		String qry = "select tid, tname, tdate from indextest tid = 999";
 		psr = new Parser(qry);
 		QueryData qd = psr.queryCommand();
 		Plan p = new HeuristicQueryPlanner().createPlan(qd, tx);

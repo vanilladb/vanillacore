@@ -19,11 +19,10 @@ import static org.junit.Assert.assertTrue;
 import static org.vanilladb.core.sql.Type.BIGINT;
 import static org.vanilladb.core.sql.Type.INTEGER;
 import static org.vanilladb.core.sql.Type.VARCHAR;
-import static org.vanilladb.core.storage.index.Index.IDX_BTREE;
 
 import java.sql.Connection;
 import java.util.LinkedList;
-import java.util.Map;
+import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.logging.Level;
@@ -36,7 +35,6 @@ import org.junit.Test;
 import org.vanilladb.core.server.ServerInit;
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.Constant;
-import org.vanilladb.core.sql.ConstantRange;
 import org.vanilladb.core.sql.IntegerConstant;
 import org.vanilladb.core.sql.Schema;
 import org.vanilladb.core.sql.VarcharConstant;
@@ -44,6 +42,9 @@ import org.vanilladb.core.storage.buffer.Buffer;
 import org.vanilladb.core.storage.buffer.BufferMgr;
 import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.index.Index;
+import org.vanilladb.core.storage.index.IndexType;
+import org.vanilladb.core.storage.index.SearchKey;
+import org.vanilladb.core.storage.index.SearchRange;
 import org.vanilladb.core.storage.log.LogSeqNum;
 import org.vanilladb.core.storage.metadata.CatalogMgr;
 import org.vanilladb.core.storage.metadata.index.IndexInfo;
@@ -73,7 +74,10 @@ public class RecoveryBasicTest {
 		schema.addField("title", VARCHAR(20));
 		schema.addField("majorid", BIGINT);
 		md.createTable(dataTableName, schema, tx);
-		md.createIndex("index_cid", dataTableName, "cid", IDX_BTREE, tx);
+		
+		List<String> idxFlds = new LinkedList<String>();
+		idxFlds.add("cid");
+		md.createIndex("index_cid", dataTableName, idxFlds, IndexType.BTREE, tx);
 
 		tx.commit();
 
@@ -476,14 +480,14 @@ public class RecoveryBasicTest {
 	}
 	@Test
 	public void testBTreeIndexRecovery() {
-
+		// The first tx inserts records to the index
 		Transaction tx = VanillaDb.txMgr().newTransaction(Connection.TRANSACTION_SERIALIZABLE, false);
-		Map<String, IndexInfo> idxmap = md.getIndexInfo(dataTableName, tx);
+		IndexInfo ii = md.getIndexInfo(dataTableName, "cid", tx).get(0);
 
-		Index cidIndex = idxmap.get("cid").open(tx);
+		Index cidIndex = ii.open(tx);
 		RecordId[] records = new RecordId[10];
 		BlockId blk = new BlockId(dataTableName + ".tbl", 0);
-		Constant int5 = new IntegerConstant(5);
+		SearchKey int5 = new SearchKey(new IntegerConstant(5));
 
 		for (int i = 0; i < 10; i++) {
 			records[i] = new RecordId(blk, i);
@@ -491,51 +495,57 @@ public class RecoveryBasicTest {
 		}
 
 		RecordId rid2 = new RecordId(blk, 19);
-		Constant int7 = new IntegerConstant(7);
+		SearchKey int7 = new SearchKey(new IntegerConstant(7));
 		cidIndex.insert(int7, rid2, true);
 
 		cidIndex.close();
 		tx.commit();
-
+		
+		// The second tx does recovery (redo)
 		tx = VanillaDb.txMgr().newTransaction(Connection.TRANSACTION_SERIALIZABLE, false);
 		RecoveryMgr.recover(tx);
 		tx.commit();
-
+		
+		// The third tx checks the records
 		tx = VanillaDb.txMgr().newTransaction(Connection.TRANSACTION_SERIALIZABLE, true);
-		idxmap = md.getIndexInfo(dataTableName, tx);
-		cidIndex = idxmap.get("cid").open(tx);
-		cidIndex.beforeFirst(ConstantRange.newInstance(int5));
+		
+		ii = md.getIndexInfo(dataTableName, "cid", tx).get(0);
+		cidIndex = ii.open(tx);
+		cidIndex.beforeFirst(new SearchRange(int5));
 		int k = 0;
 		while (cidIndex.next())
 			k++;
 
 		assertTrue("*****RecoveryTest: bad index insertion recovery", k == 10);
 
-		cidIndex.beforeFirst(ConstantRange.newInstance(int7));
+		cidIndex.beforeFirst(new SearchRange(int7));
 		cidIndex.next();
 		assertTrue("*****RecoveryTest: bad index insertion recovery", cidIndex.getDataRecordId().equals(rid2));
 
 		cidIndex.close();
 		tx.commit();
 
-		// test roll back deletion on index
+		// The fourth tx tests roll back deletion on index
 		tx = VanillaDb.txMgr().newTransaction(Connection.TRANSACTION_SERIALIZABLE, false);
-		idxmap = md.getIndexInfo(dataTableName, tx);
-		cidIndex = idxmap.get("cid").open(tx);
+		ii = md.getIndexInfo(dataTableName, "cid", tx).get(0);
+		cidIndex = ii.open(tx);
 		cidIndex.delete(int7, rid2, true);
 
 		RecordId rid3 = new RecordId(blk, 999);
-		Constant int777 = new IntegerConstant(777);
+		SearchKey int777 = new SearchKey(new IntegerConstant(777));
 		cidIndex.insert(int777, rid3, true);
 		cidIndex.close();
 		tx.rollback();
-
+		
+		// The fifth tx checks the result
 		tx = VanillaDb.txMgr().newTransaction(Connection.TRANSACTION_SERIALIZABLE, true);
-		cidIndex.beforeFirst(ConstantRange.newInstance(int7));
+		ii = md.getIndexInfo(dataTableName, "cid", tx).get(0);
+		cidIndex = ii.open(tx);
+		cidIndex.beforeFirst(new SearchRange(int7));
 		cidIndex.next();
 		assertTrue("*****RecoveryTest: bad index deletion rollback", cidIndex.getDataRecordId().equals(rid2));
 
-		cidIndex.beforeFirst(ConstantRange.newInstance(int777));
+		cidIndex.beforeFirst(new SearchRange(int777));
 		cidIndex.next();
 		assertTrue("*****RecoveryTest: bad index insertion rollback", !cidIndex.next());
 		cidIndex.close();

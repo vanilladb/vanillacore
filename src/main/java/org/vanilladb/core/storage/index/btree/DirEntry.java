@@ -15,14 +15,14 @@
  ******************************************************************************/
 package org.vanilladb.core.storage.index.btree;
 
-import org.vanilladb.core.sql.Constant;
+import org.vanilladb.core.storage.index.SearchKey;
 
 /**
  * A directory entry has two components: the key of the first record in that
  * block, and the number of the child block.
  */
 public class DirEntry {
-	private Constant key;
+	private SearchKey key;
 	private long blockNum;
 
 	/**
@@ -33,7 +33,7 @@ public class DirEntry {
 	 * @param blockNum
 	 *            the block number
 	 */
-	public DirEntry(Constant key, long blockNum) {
+	public DirEntry(SearchKey key, long blockNum) {
 		this.key = key;
 		this.blockNum = blockNum;
 	}
@@ -43,7 +43,7 @@ public class DirEntry {
 	 * 
 	 * @return the key of the entry
 	 */
-	public Constant key() {
+	public SearchKey key() {
 		return key;
 	}
 

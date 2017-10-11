@@ -33,38 +33,36 @@ import org.vanilladb.core.storage.record.RecordFile;
 import org.vanilladb.core.storage.tx.Transaction;
 
 public class HeuristicQueryPlannerTest {
-	private static Logger logger = Logger
-			.getLogger(HeuristicQueryPlannerTest.class.getName());
-	private Transaction tx;
+	private static Logger logger = Logger.getLogger(HeuristicQueryPlannerTest.class.getName());
 	
 	@BeforeClass
 	public static void init() {
 		ServerInit.init(HeuristicQueryPlannerTest.class);
 		ServerInit.loadTestbed();
-
+		
 		if (logger.isLoggable(Level.INFO))
-			logger.info("BEGIN ADV QUERY PLANNER TEST");
+			logger.info("BEGIN INDEX UPDATE PLANNER TEST");
 	}
 	
 	@AfterClass
 	public static void finish() {
 		if (logger.isLoggable(Level.INFO))
-			logger.info("FINISH ADV QUERY PLANNER TEST");
+			logger.info("FINISH INDEX UPDATE PLANNER TEST");
 	}
 	
+	private Transaction tx;
 	
 	@Before
 	public void createTx() {
 		tx = VanillaDb.txMgr().newTransaction(
 				Connection.TRANSACTION_SERIALIZABLE, false);
 	}
-	
+
 	@After
 	public void finishTx() {
 		tx.commit();
-		tx = null;
 	}
-
+	
 	@Test
 	public void testQuery() {
 		String qry = "select sid, sname, majorid from student, dept "
@@ -74,14 +72,14 @@ public class HeuristicQueryPlannerTest {
 		Plan p = new HeuristicQueryPlanner().createPlan(qd, tx);
 		Schema sch = p.schema();
 		assertTrue(
-				"*****AdvQueryPlannerTest: bad heuristic plan schema",
+				"*****HeuristicQueryPlannerTest: bad heuristic plan schema",
 				sch.fields().size() == 3 && sch.hasField("sid")
 						&& sch.hasField("sname") && sch.hasField("majorid"));
 		Scan s = p.open();
 		s.beforeFirst();
 		while (s.next())
 			assertEquals(
-					"*****AdvQueryPlannerTest: bad heuristic plan selection",
+					"*****HeuristicQueryPlannerTest: bad heuristic plan selection",
 					(Integer) 0, (Integer) s.getVal("majorid").asJavaVal());
 		s.close();
 	}
@@ -94,7 +92,7 @@ public class HeuristicQueryPlannerTest {
 		Parser psr = new Parser(cmd);
 		CreateViewData cvd = (CreateViewData) psr.updateCommand();
 		int i = new BasicUpdatePlanner().executeCreateView(cvd, tx);
-		assertTrue("*****PlannerTest: bad create view", i == 0);
+		assertTrue("*****HeuristicQueryPlannerTest: bad create view", i == 0);
 
 		String qry = "select sid, sname, majorid from view02";
 		psr = new Parser(qry);
@@ -102,14 +100,14 @@ public class HeuristicQueryPlannerTest {
 		Plan p = new HeuristicQueryPlanner().createPlan(qd, tx);
 		Schema sch = p.schema();
 		assertTrue(
-				"*****PlannerTest: bad view schema",
+				"*****HeuristicQueryPlannerTest: bad view schema",
 				sch.fields().size() == 3 && sch.hasField("sid")
 						&& sch.hasField("sname") && sch.hasField("majorid"));
 		Scan s = p.open();
 		s.beforeFirst();
 		while (s.next())
 			assertEquals(
-					"*****PlannerTest: bad basic plan selection from view",
+					"*****HeuristicQueryPlannerTest: bad basic plan selection from view",
 					(Integer) 0, (Integer) s.getVal("majorid").asJavaVal());
 		s.close();
 	}
@@ -118,20 +116,15 @@ public class HeuristicQueryPlannerTest {
 	public void testJoinQuery() {
 		// initial data
 		CatalogMgr md = VanillaDb.catalogMgr();
+		
 		Schema sch = new Schema();
 		sch.addField("aid", INTEGER);
 		// ach.addStringField("aname", 20);
 		sch.addField("acid", BIGINT);
 		md.createTable("atable", sch, tx);
+		
 		TableInfo ti = md.getTableInfo("atable", tx);
-
 		RecordFile rf = ti.open(tx, true);
-		rf.beforeFirst();
-		while (rf.next())
-			rf.delete();
-		rf.close();
-
-		rf = ti.open(tx, true);
 		for (int id = 1; id < 9; id++) {
 			rf.insert();
 			rf.setVal("aid", new IntegerConstant(id));
@@ -148,14 +141,8 @@ public class HeuristicQueryPlannerTest {
 		sch.addField("cname", VARCHAR(20));
 		sch.addField("ctid", BIGINT);
 		md.createTable("ctable", sch, tx);
+		
 		ti = md.getTableInfo("ctable", tx);
-
-		rf = ti.open(tx, true);
-		rf.beforeFirst();
-		while (rf.next())
-			rf.delete();
-		rf.close();
-
 		rf = ti.open(tx, true);
 		rf.insert();
 		rf.setVal("cid", new IntegerConstant(10));
@@ -175,14 +162,8 @@ public class HeuristicQueryPlannerTest {
 		sch.addField("tid", BIGINT);
 		sch.addField("tname", VARCHAR(20));
 		md.createTable("ttable", sch, tx);
+		
 		ti = md.getTableInfo("ttable", tx);
-
-		rf = ti.open(tx, true);
-		rf.beforeFirst();
-		while (rf.next())
-			rf.delete();
-		rf.close();
-
 		rf = ti.open(tx, true);
 		rf.insert();
 		rf.setVal("tid", new BigIntConstant(7));
@@ -195,8 +176,8 @@ public class HeuristicQueryPlannerTest {
 		rf.setVal("tname", new VarcharConstant("teacher30"));
 		rf.close();
 
-		String qry = "select ctid, tname, aid, cname from atable, ctable, ttable "
-				+ "where acid=cid and ctid=tid and tid>7 ";
+		String qry = "SELECT ctid, tname, aid, cname FROM atable, ctable, ttable "
+				+ "WHERE acid = cid AND ctid = tid AND tid > 7";
 		// order by sid desc group by sid
 		Parser psr = new Parser(qry);
 		QueryData qd = psr.queryCommand();
@@ -205,7 +186,7 @@ public class HeuristicQueryPlannerTest {
 		sch = p.schema();
 
 		assertTrue(
-				"*****AdvQueryPlannerTest: bad heuristic plan schema",
+				"*****HeuristicQueryPlannerTest: bad heuristic plan schema",
 				sch.fields().size() == 4 && sch.hasField("aid")
 						&& sch.hasField("ctid") && sch.hasField("tname")
 						&& sch.hasField("cname"));
@@ -213,10 +194,9 @@ public class HeuristicQueryPlannerTest {
 		Scan s = p.open();
 		s.beforeFirst();
 		while (s.next())
-			assertTrue("*****AdvQueryPlannerTest: bad heuristic plan schema",
+			assertTrue("*****HeuristicQueryPlannerTest: bad heuristic query result",
 					((Long) s.getVal("ctid").asJavaVal()) > 7);
 
 		s.close();
 	}
-
 }

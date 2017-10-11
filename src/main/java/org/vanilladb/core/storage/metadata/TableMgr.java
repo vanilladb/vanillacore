@@ -21,7 +21,10 @@ import static org.vanilladb.core.sql.Type.VARCHAR;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.IntegerConstant;
@@ -178,8 +181,15 @@ public class TableMgr {
 		fcatfile.close();
 
 		// remove corresponding indices
-		Map<String, IndexInfo> tblIndex = VanillaDb.catalogMgr().getIndexInfo(tblName, tx);
-		for (IndexInfo ii : tblIndex.values())
+		List<IndexInfo> allIndexes = new LinkedList<IndexInfo>();
+		Set<String> indexedFlds = VanillaDb.catalogMgr().getIndexedFields(tblName, tx);
+		
+		for (String indexedFld : indexedFlds) {
+			List<IndexInfo> iis = VanillaDb.catalogMgr().getIndexInfo(tblName, indexedFld, tx);
+			allIndexes.addAll(iis);
+		}
+		
+		for (IndexInfo ii : allIndexes)
 			VanillaDb.catalogMgr().dropIndex(ii.indexName(), tx);
 
 		// remove corresponding views

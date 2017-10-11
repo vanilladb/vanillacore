@@ -19,10 +19,10 @@ import static org.junit.Assert.assertTrue;
 import static org.vanilladb.core.sql.Type.BIGINT;
 import static org.vanilladb.core.sql.Type.INTEGER;
 import static org.vanilladb.core.sql.Type.VARCHAR;
-import static org.vanilladb.core.storage.index.Index.IDX_BTREE;
 
 import java.sql.Connection;
-import java.util.Map;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -41,6 +41,9 @@ import org.vanilladb.core.sql.Schema;
 import org.vanilladb.core.sql.VarcharConstant;
 import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.index.Index;
+import org.vanilladb.core.storage.index.IndexType;
+import org.vanilladb.core.storage.index.SearchKey;
+import org.vanilladb.core.storage.index.SearchRange;
 import org.vanilladb.core.storage.metadata.CatalogMgr;
 import org.vanilladb.core.storage.metadata.index.IndexInfo;
 import org.vanilladb.core.storage.record.RecordId;
@@ -77,10 +80,26 @@ public class BTreeIndexTest {
 		schema.addField("deptid", INTEGER);
 		schema.addField("majorid", BIGINT);
 		catMgr.createTable(DATA_TABLE_NAME, schema, tx);
-		catMgr.createIndex("_tempI1", DATA_TABLE_NAME, "cid", IDX_BTREE, tx);
-		catMgr.createIndex("_tempI2", DATA_TABLE_NAME, "title", IDX_BTREE, tx);
-		catMgr.createIndex("_tempI3", DATA_TABLE_NAME, "deptid", IDX_BTREE, tx);
-		catMgr.createIndex("_tempI4", DATA_TABLE_NAME, "majorid", IDX_BTREE, tx);
+		
+		List<String> idxFlds1 = new LinkedList<String>();
+		idxFlds1.add("cid");
+		List<String> idxFlds2 = new LinkedList<String>();
+		idxFlds2.add("title");
+		List<String> idxFlds3 = new LinkedList<String>();
+		idxFlds3.add("deptid");
+		List<String> idxFlds4 = new LinkedList<String>();
+		idxFlds4.add("majorid");
+		
+		catMgr.createIndex("_tempI1", DATA_TABLE_NAME, idxFlds1, IndexType.BTREE, tx);
+		catMgr.createIndex("_tempI2", DATA_TABLE_NAME, idxFlds2, IndexType.BTREE, tx);
+		catMgr.createIndex("_tempI3", DATA_TABLE_NAME, idxFlds3, IndexType.BTREE, tx);
+		catMgr.createIndex("_tempI4", DATA_TABLE_NAME, idxFlds4, IndexType.BTREE, tx);
+		
+		List<String> idxFlds5 = new LinkedList<String>();
+		idxFlds5.add("cid");
+		idxFlds5.add("deptid");
+		catMgr.createIndex("_tempH_MI1", DATA_TABLE_NAME, idxFlds5, IndexType.BTREE, tx);
+		
 		tx.commit();
 	}
 	
@@ -105,44 +124,51 @@ public class BTreeIndexTest {
 
 	@Test
 	public void testBasicOperation() {
-		Map<String, IndexInfo> idxmap = catMgr.getIndexInfo(DATA_TABLE_NAME, tx);
-		Index cidIndex = idxmap.get("cid").open(tx);
+		List<IndexInfo> idxList = catMgr.getIndexInfo(DATA_TABLE_NAME, "cid", tx);
+		Index index = idxList.get(0).open(tx);
+		
+		// Insert 10 records with the same key
 		RecordId[] records = new RecordId[10];
 		BlockId blk = new BlockId(DATA_TABLE_NAME + ".tbl", 0);
-		Constant int5 = new IntegerConstant(5);
+		SearchKey int5 = new SearchKey(new IntegerConstant(5));
 		for (int i = 0; i < 10; i++) {
 			records[i] = new RecordId(blk, i);
-			cidIndex.insert(int5, records[i], false);
+			index.insert(int5, records[i], false);
 		}
-
+		
+		// Insert a record with another key
 		RecordId rid2 = new RecordId(blk, 9);
-		Constant int7 = new IntegerConstant(7);
-		cidIndex.insert(int7, rid2, false);
-
-		cidIndex.beforeFirst(ConstantRange.newInstance(int5));
+		SearchKey int7 = new SearchKey(new IntegerConstant(7));
+		index.insert(int7, rid2, false);
+		
+		// It should find 10 records for int 5
+		index.beforeFirst(new SearchRange(int5));
 		int k = 0;
-		while (cidIndex.next())
+		while (index.next())
 			k++;
 		Assert.assertEquals("*****BTreeIndexTest: bad insert", 10, k);
-
-		cidIndex.beforeFirst(ConstantRange.newInstance(int7));
-		cidIndex.next();
-		assertTrue("*****BTreeIndexTest: bad read index", cidIndex
+		
+		// It should find only one record for int 7
+		index.beforeFirst(new SearchRange(int7));
+		index.next();
+		assertTrue("*****BTreeIndexTest: bad read index", index
 				.getDataRecordId().equals(rid2));
-
+		
+		// Delete the 10 records with key int 5
 		for (int i = 0; i < 10; i++)
-			cidIndex.delete(int5, records[i], false);
-		cidIndex.beforeFirst(ConstantRange.newInstance(int5));
-		assertTrue("*****BTreeIndexTest: bad delete", cidIndex.next() == false);
-
-		cidIndex.delete(int7, rid2, false);
-		cidIndex.close();
+			index.delete(int5, records[i], false);
+		index.beforeFirst(new SearchRange(int5));
+		assertTrue("*****BTreeIndexTest: bad delete", index.next() == false);
+		
+		// Delete the record with key int 7
+		index.delete(int7, rid2, false);
+		index.close();
 	}
 
 	@Test
 	public void testVarcharKey() {
-		Map<String, IndexInfo> idxmap = catMgr.getIndexInfo(DATA_TABLE_NAME, tx);
-		Index cidIndex = idxmap.get("title").open(tx);
+		List<IndexInfo> idxList = catMgr.getIndexInfo(DATA_TABLE_NAME, "title", tx);
+		Index index = idxList.get(0).open(tx);
 
 		BlockId blk = new BlockId(DATA_TABLE_NAME + ".tbl", 0);
 
@@ -151,38 +177,38 @@ public class BTreeIndexTest {
 		String str3 = "AAEBAEBAEBASAEBASZ";
 		String str4 = "BAEBAEBAEBASAEBASZ1";
 		String str2 = "KARBAEBAEBASAEBASE";
-		Constant key1 = new VarcharConstant(str1, VARCHAR(20));
-		Constant key2 = new VarcharConstant(str2, VARCHAR(20));
-		Constant key3 = new VarcharConstant(str3, VARCHAR(20));
-		Constant key4 = new VarcharConstant(str4, VARCHAR(20));
+		SearchKey key1 = new SearchKey(new VarcharConstant(str1, VARCHAR(20)));
+		SearchKey key2 = new SearchKey(new VarcharConstant(str2, VARCHAR(20)));
+		SearchKey key3 = new SearchKey(new VarcharConstant(str3, VARCHAR(20)));
+		SearchKey key4 = new SearchKey(new VarcharConstant(str4, VARCHAR(20)));
 
 		for (int i = 0; i < repeat; i++) {
-			cidIndex.insert(key1, new RecordId(blk, i), false);
-			cidIndex.insert(key2, new RecordId(blk, repeat + i), false);
-			cidIndex.insert(key3, new RecordId(blk, repeat * 2 + i), false);
-			cidIndex.insert(key4, new RecordId(blk, repeat * 3 + i), false);
+			index.insert(key1, new RecordId(blk, i), false);
+			index.insert(key2, new RecordId(blk, repeat + i), false);
+			index.insert(key3, new RecordId(blk, repeat * 2 + i), false);
+			index.insert(key4, new RecordId(blk, repeat * 3 + i), false);
 		}
 
-		cidIndex.beforeFirst(ConstantRange.newInstance(key1));
+		index.beforeFirst(new SearchRange(key1));
 		int j = 0;
-		while (cidIndex.next())
+		while (index.next())
 			j++;
 		assertTrue("*****BTreeIndexTest: varchar selection", j == repeat);
 
 		for (int i = 0; i < repeat; i++) {
-			cidIndex.delete(key1, new RecordId(blk, i), false);
-			cidIndex.delete(key2, new RecordId(blk, repeat + i), false);
-			cidIndex.delete(key3, new RecordId(blk, repeat * 2 + i), false);
-			cidIndex.delete(key4, new RecordId(blk, repeat * 3 + i), false);
+			index.delete(key1, new RecordId(blk, i), false);
+			index.delete(key2, new RecordId(blk, repeat + i), false);
+			index.delete(key3, new RecordId(blk, repeat * 2 + i), false);
+			index.delete(key4, new RecordId(blk, repeat * 3 + i), false);
 		}
 
-		cidIndex.close();
+		index.close();
 	}
 
 	@Test
 	public void testDir() {
-		Map<String, IndexInfo> idxmap = catMgr.getIndexInfo(DATA_TABLE_NAME, tx);
-		Index cidIndex = idxmap.get("majorid").open(tx);
+		List<IndexInfo> idxList = catMgr.getIndexInfo(DATA_TABLE_NAME, "majorid", tx);
+		Index index = idxList.get(0).open(tx);
 		BlockId blk1 = new BlockId(DATA_TABLE_NAME + ".tbl", 0);
 		int maxValue = 250; // 40000000
 		/*
@@ -192,91 +218,164 @@ public class BTreeIndexTest {
 		 */
 		int repeat = 170;
 		for (int k = 0; k < maxValue; k++) {
-			Constant con = new BigIntConstant(k);
+			SearchKey key = new SearchKey(new BigIntConstant(k));
 			for (int i = 0; i < repeat; i++) {
-				cidIndex.insert(con, new RecordId(blk1, k * repeat + i), false);
+				index.insert(key, new RecordId(blk1, k * repeat + i), false);
 			}
 		}
 
-		Constant int100 = new IntegerConstant(100);
-		cidIndex.beforeFirst(ConstantRange.newInstance(int100));
+		SearchKey int100 = new SearchKey(new IntegerConstant(100));
+		SearchRange range100 = new SearchRange(int100);
+		index.beforeFirst(range100);
 		int j = 0;
-		while (cidIndex.next())
+		while (index.next())
 			j++;
 		assertTrue("*****BTreeIndexTest: bad equal with", j == repeat);
 
 		for (int i = 0; i < repeat; i++) {
-			cidIndex.delete(int100, new RecordId(blk1, 100 * repeat + i), false);
+			index.delete(int100, new RecordId(blk1, 100 * repeat + i), false);
 		}
-		cidIndex.beforeFirst(ConstantRange.newInstance(int100));
-		assertTrue("*****BTreeIndexTest: bad delete", cidIndex.next() == false);
+		index.beforeFirst(range100);
+		assertTrue("*****BTreeIndexTest: bad delete", index.next() == false);
 	}
 
 	@Test
 	public void testBTreeIndex() {
-		Map<String, IndexInfo> idxmap = catMgr.getIndexInfo(DATA_TABLE_NAME, tx);
-		Index cidIndex = idxmap.get("deptid").open(tx);
+		List<IndexInfo> idxList = catMgr.getIndexInfo(DATA_TABLE_NAME, "deptid", tx);
+		Index index = idxList.get(0).open(tx);
 		BlockId blk = new BlockId(DATA_TABLE_NAME + ".tbl", 0);
 		BlockId blk1 = new BlockId(DATA_TABLE_NAME + ".tbl", 23);
 		int maxValue = 300;
 		int repeat = 200;
 		for (int k = 0; k < maxValue; k++) {
 			for (int i = 0; i < repeat; i++) {
-				cidIndex.insert(new IntegerConstant(k), new RecordId(blk, k
-						* repeat + i), false);
+				SearchKey key = new SearchKey(new BigIntConstant(k));
+				index.insert(key, new RecordId(blk, k * repeat + i), false);
 			}
 		}
 
 		int count = 0;
-		Constant int7 = new IntegerConstant(7);
+		SearchKey int7 = new SearchKey(new IntegerConstant(7));
 		while (count < 500) {
-			cidIndex.insert(int7, new RecordId(blk1, 2500 + count), false);
+			index.insert(int7, new RecordId(blk1, 2500 + count), false);
 			count++;
 		}
 
 		// test larger than 50
-		cidIndex.beforeFirst(ConstantRange.newInstance(new IntegerConstant(50),
-				false, null, false));
+		ConstantRange range = ConstantRange.newInstance(new IntegerConstant(50),
+				false, null, false);
+		index.beforeFirst(new SearchRange(range));
 		int j = 0;
-		while (cidIndex.next())
+		while (index.next())
 			j++;
 		assertTrue("*****BTreeIndexTest: bad > selection", j == (maxValue - 51)
 				* repeat);
 
-		Constant int5 = new IntegerConstant(5);
+		Constant int5con = new IntegerConstant(5);
 		// test less than
-		cidIndex.beforeFirst(ConstantRange
-				.newInstance(null, false, int5, false));
+		range = ConstantRange.newInstance(null, false, int5con, false);
+		index.beforeFirst(new SearchRange(range));
 		j = 0;
-		while (cidIndex.next())
+		while (index.next())
 			j++;
 		assertTrue("*****BTreeIndexTest: bad < selection", j == (5 * repeat));
 
 		// test equality
-		cidIndex.beforeFirst(ConstantRange.newInstance(int5));
+		index.beforeFirst(new SearchRange(new SearchKey(int5con)));
 		j = 0;
-		while (cidIndex.next())
+		while (index.next())
 			j++;
 		assertTrue("*****BTreeIndexTest: bad equal with", j == repeat);
 
 		// test delete
 		for (int k = 0; k < maxValue; k++) {
 			for (int i = 0; i < repeat; i++) {
-				cidIndex.delete(new IntegerConstant(k), new RecordId(blk, k
-						* repeat + i), false);
+				SearchKey key = new SearchKey(new BigIntConstant(k));
+				index.delete(key, new RecordId(blk, k * repeat + i), false);
 			}
 		}
-		cidIndex.beforeFirst(ConstantRange.newInstance(new IntegerConstant(5)));
-		assertTrue("*****BTreeIndexTest: bad delete", cidIndex.next() == false);
+		index.beforeFirst(new SearchRange(new SearchKey(int5con)));
+		assertTrue("*****BTreeIndexTest: bad delete", index.next() == false);
 
 		count = 0;
 		while (count < 500) {
-			cidIndex.delete(int7, new RecordId(blk1, 2500 + count), false);
+			index.delete(int7, new RecordId(blk1, 2500 + count), false);
 			count++;
 		}
-		cidIndex.beforeFirst(ConstantRange.newInstance(int7));
-		assertTrue("*****BTreeIndexTest: bad delete", cidIndex.next() == false);
+		index.beforeFirst(new SearchRange(int7));
+		assertTrue("*****BTreeIndexTest: bad delete", index.next() == false);
 
-		cidIndex.close();
+		index.close();
+	}
+	
+	@Test
+	public void testMultiKeys() {
+		List<IndexInfo> idxList = catMgr.getIndexInfo(DATA_TABLE_NAME, "cid", tx);
+		
+		// Find the required index
+		IndexInfo indexInfo = null;
+		
+		for (IndexInfo ii : idxList) {
+			if (ii.fieldNames().contains("cid") &&
+					ii.fieldNames().contains("deptid"))
+				indexInfo = ii;
+		}
+		
+		if (indexInfo == null)
+			Assert.fail("*****HashIndexTest: bad index metadata");
+		
+		Index index = indexInfo.open(tx);
+		
+		// Insert 10 records with the same keys
+		BlockId blk = new BlockId(DATA_TABLE_NAME + ".tbl", 0);
+		RecordId[] records1 = new RecordId[10];
+		SearchKey key1_1 = new SearchKey(new IntegerConstant(1), new IntegerConstant(1));
+		for (int i = 0; i < 10; i++) {
+			records1[i] = new RecordId(blk, i);
+			index.insert(key1_1, records1[i], false);
+		}
+		
+		// Insert 1 records with another key
+		blk = new BlockId(DATA_TABLE_NAME + ".tbl", 1);
+		RecordId record2 = new RecordId(blk, 100);
+		SearchKey key2_1 = new SearchKey(new IntegerConstant(2), new IntegerConstant(1));
+		index.insert(key2_1, record2, false);
+		
+		// Insert 10 records with the third key
+		blk = new BlockId(DATA_TABLE_NAME + ".tbl", 2);
+		RecordId[] records3 = new RecordId[10];
+		SearchKey key3_1 = new SearchKey(new IntegerConstant(3), new IntegerConstant(1));
+		for (int i = 0; i < 10; i++) {
+			records3[i] = new RecordId(blk, i);
+			index.insert(key3_1, records3[i], false);
+		}
+		
+		// It should find 10 records for the first key
+		index.beforeFirst(new SearchRange(key1_1));
+		int count = 0;
+		while (index.next())
+			count++;
+		assertTrue("*****HashIndexTest: bad insert", count == 10);
+		
+		// It should find only one record for the second key
+		index.beforeFirst(new SearchRange(key2_1));
+		index.next();
+		assertTrue("*****HashIndexTest: bad read index", index
+				.getDataRecordId().equals(record2));
+		
+		// It should find 10 records for the third key
+		index.beforeFirst(new SearchRange(key3_1));
+		count = 0;
+		while (index.next())
+			count++;
+		assertTrue("*****HashIndexTest: bad insert", count == 10);
+		
+		// Delete the records with the first key
+		for (int i = 0; i < 10; i++)
+			index.delete(key1_1, records1[i], false);
+		index.beforeFirst(new SearchRange(key1_1));
+		assertTrue("*****HashIndexTest: bad delete", index.next() == false);
+
+		index.close();
 	}
 }

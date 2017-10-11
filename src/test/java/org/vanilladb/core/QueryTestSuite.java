@@ -18,13 +18,15 @@ package org.vanilladb.core;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite.SuiteClasses;
 import org.vanilladb.core.IsolatedClassLoaderSuite.IsolationRoot;
-import org.vanilladb.core.query.algebra.QueryTest;
+import org.vanilladb.core.query.algebra.BasicQueryTest;
+import org.vanilladb.core.query.algebra.index.MultiKeyIndexAlgebraTest;
 import org.vanilladb.core.query.algebra.materialize.MaterializeTest;
 import org.vanilladb.core.query.parse.ParseTest;
 import org.vanilladb.core.query.planner.BasicQueryPlannerTest;
 import org.vanilladb.core.query.planner.VerifierTest;
 import org.vanilladb.core.query.planner.index.IndexUpdatePlannerTest;
 import org.vanilladb.core.query.planner.opt.HeuristicQueryPlannerTest;
+import org.vanilladb.core.query.planner.opt.MultiKeyIndexPlanningTest;
 import org.vanilladb.core.query.planner.opt.SelingerQueryPlannerTest;
 import org.vanilladb.core.server.VanillaDb;
 
@@ -37,13 +39,14 @@ import org.vanilladb.core.server.VanillaDb;
 	VerifierTest.class, BasicQueryPlannerTest.class,
 	
 	// query.algebra
-	QueryTest.class,
+	BasicQueryTest.class, MultiKeyIndexAlgebraTest.class,
 	
 	// query.algebra.materialize
 	MaterializeTest.class,
 	
 	// query.planner
-	IndexUpdatePlannerTest.class, HeuristicQueryPlannerTest.class, SelingerQueryPlannerTest.class
+	IndexUpdatePlannerTest.class, HeuristicQueryPlannerTest.class, 
+	MultiKeyIndexPlanningTest.class, SelingerQueryPlannerTest.class
 	
 })
 @IsolationRoot(VanillaDb.class)
