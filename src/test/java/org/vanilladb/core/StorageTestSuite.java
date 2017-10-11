@@ -15,20 +15,15 @@
  ******************************************************************************/
 package org.vanilladb.core;
 
-import java.io.File;
-
-import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite.SuiteClasses;
 import org.vanilladb.core.IsolatedClassLoaderSuite.IsolationRoot;
-import org.vanilladb.core.server.ServerInit;
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.storage.buffer.BufferConcurrencyTest;
 import org.vanilladb.core.storage.buffer.BufferMgrConcurrencyTest;
 import org.vanilladb.core.storage.buffer.BufferPoolConcurrencyTest;
 import org.vanilladb.core.storage.buffer.BufferTest;
 import org.vanilladb.core.storage.buffer.LastLSNTest;
-import org.vanilladb.core.storage.file.FileMgr;
 import org.vanilladb.core.storage.file.FileTest;
 import org.vanilladb.core.storage.file.PageConcurrencyTest;
 import org.vanilladb.core.storage.index.btree.BTreeIndexTest;
@@ -79,28 +74,6 @@ import org.vanilladb.core.storage.tx.recovery.RecoveryBasicTest;
 	RecoveryBasicTest.class,
 })
 @IsolationRoot(VanillaDb.class)
-public class StorageEngineTestSuite {
-	@BeforeClass
-	public static void init() {
-		// Delete the previous test databases
-		File mainDir = new File(FileMgr.DB_FILES_DIR, ServerInit.DB_MAIN_DIR);
-		if (mainDir.exists())
-			delete(mainDir);
-	}
+public class StorageTestSuite {
 	
-	private static void delete(File path) {
-		if (path.isDirectory()) {
-			// Delete the contents
-			File[] files = path.listFiles();
-			for (File file : files)
-				delete(file);
-			
-			// Delete the empty directory
-			if (!path.delete())
-				throw new RuntimeException("cannot delete the directory: " + path);
-		} else {
-			if (!path.delete())
-				throw new RuntimeException("cannot delete the file: " + path);
-		}
-	}
 }
