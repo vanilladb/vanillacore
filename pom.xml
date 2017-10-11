@@ -117,7 +117,7 @@
 						<java.util.logging.config.file>${project.build.directory}/test-classes/java/util/logging/logging.properties</java.util.logging.config.file>
 					</systemPropertyVariables>
 					<includes>
-						<include>org/vanilladb/core/StorageEngineTestSuite.java</include>
+						<include>org/vanilladb/core/FullTestSuite.java</include>
 					</includes>
 				</configuration>
 			</plugin>
