@@ -80,6 +80,6 @@ Other restrictions:
 <TypeDef>           := INT | LONG | DOUBLE | VARCHAR ( NumericTok )
 <CreateView>        := CREATE VIEW IdTok AS <Query>
 <DropView>          := DROP VIEW IdTok
-<CreateIndex>       := CREATE INDEX IdTok ON IdTok ( <Field> )
+<CreateIndex>       := CREATE INDEX IdTok ON IdTok ( <IdSet> ) [ USING HASH | BTREE ]
 <DropIndex>         := DROP INDEX IdTok
 ```
