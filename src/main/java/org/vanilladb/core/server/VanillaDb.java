@@ -120,7 +120,7 @@ public class VanillaDb {
 		updatePlannerCls = CoreProperties.getLoader().getPropertyAsClass(
 				VanillaDb.class.getName() + ".UPDATEPLANNER",
 				IndexUpdatePlanner.class, UpdatePlanner.class);
-
+		
 		// initialize storage engine
 		initFileAndLogMgr(dirName);
 		initTaskMgr();

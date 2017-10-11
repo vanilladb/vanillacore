@@ -44,14 +44,16 @@ public class HeuristicQueryPlanner implements QueryPlanner {
 	@Override
 	public Plan createPlan(QueryData data, Transaction tx) {
 		// Step 1: Create a TablePlanner object for each mentioned table/view
+		int id = 0;
 		for (String tbl : data.tables()) {
 			String viewdef = VanillaDb.catalogMgr().getViewDef(tbl, tx);
 			if (viewdef != null)
 				views.add(VanillaDb.newPlanner().createQueryPlan(viewdef, tx));
 			else {
-				TablePlanner tp = new TablePlanner(tbl, data.pred(), tx);
+				TablePlanner tp = new TablePlanner(tbl, data.pred(), tx, id);
 				tablePlanners.add(tp);
 			}
+			id += 1;
 		}
 		// Step 2: Choose the lowest-size plan to begin the trunk of join
 		Plan trunk = getLowestSelectPlan();

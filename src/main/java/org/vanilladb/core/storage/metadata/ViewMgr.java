@@ -15,9 +15,13 @@
  ******************************************************************************/
 package org.vanilladb.core.storage.metadata;
 
+import java.util.Collection;
+import java.util.LinkedList;
+
 import static org.vanilladb.core.sql.Type.VARCHAR;
 import static org.vanilladb.core.storage.metadata.TableMgr.MAX_NAME;
 
+import org.vanilladb.core.query.parse.Parser;
 import org.vanilladb.core.sql.Schema;
 import org.vanilladb.core.sql.VarcharConstant;
 import org.vanilladb.core.storage.record.RecordFile;
@@ -84,6 +88,24 @@ class ViewMgr {
 				break;
 			}
 		rf.close();
+		return result;
+	}
+
+	// XXX: This makes the storage engine depend on the query engine.
+	// We may have to come out a better method.
+	public Collection<String> getViewNamesByTable(String tblName, Transaction tx) {
+		Collection<String> result = new LinkedList();
+
+		TableInfo ti = tblMgr.getTableInfo(VCAT, tx);
+		RecordFile rf = ti.open(tx, true);
+		rf.beforeFirst();
+		while (rf.next()) {
+			Parser parser = new Parser((String) rf.getVal(VCAT_VDEF).asJavaVal());
+			if (parser.queryCommand().tables().contains(tblName))
+				result.add((String) rf.getVal(VCAT_VNAME).asJavaVal());
+		}
+		rf.close();
+
 		return result;
 	}
 }

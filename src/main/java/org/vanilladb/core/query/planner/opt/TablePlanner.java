@@ -42,6 +42,8 @@ class TablePlanner {
 	private Predicate pred;
 	private Schema sch;
 	private Transaction tx;
+	private int id;
+	private int hashCode;
 
 	/**
 	 * Creates a new table planner. The specified predicate applies to the
@@ -56,12 +58,31 @@ class TablePlanner {
 	 * @param tx
 	 *            the calling transaction
 	 */
-	public TablePlanner(String tblName, Predicate pred, Transaction tx) {
+	public TablePlanner(String tblName, Predicate pred, Transaction tx, int id) {
 		this.tblName = tblName;
 		this.pred = pred;
 		this.tx = tx;
+		this.id = id;
+		this.hashCode = (int) Math.pow(2, id);
 		tp = new TablePlan(tblName, tx);
 		sch = tp.schema();
+	}
+	
+	/**
+	 * An unique number to this planner.
+	 * 
+	 * @return
+	 */
+	public int getId() {
+		return id;
+	}
+	
+	/**
+	 * Use binary to represent the combination
+	 */
+	@ Override
+	public int hashCode() {
+		return hashCode;
 	}
 
 	/**

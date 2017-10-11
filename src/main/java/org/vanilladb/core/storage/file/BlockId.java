@@ -20,7 +20,7 @@ package org.vanilladb.core.storage.file;
  * block number. It does not hold the contents of the block; instead, that is
  * the job of a {@link Page} object.
  */
-public class BlockId {
+public class BlockId implements Comparable<BlockId> {
 	private String fileName;
 	private long blkNum;
 	// Optimization: Materialize the toString and hash value
@@ -60,7 +60,22 @@ public class BlockId {
 	public long number() {
 		return blkNum;
 	}
-
+	
+	@Override
+	public int compareTo(BlockId blk) {
+		int nameResult = fileName.compareTo(blk.fileName);
+		if (nameResult != 0)
+			return nameResult;
+		
+		if (blkNum < blk.blkNum)
+			return -1;
+		else if (blkNum > blk.blkNum)
+			return 1;
+		
+		return 0;
+	}
+	
+	@Override
 	public boolean equals(Object obj) {
 		if (obj == this)
 			return true;
@@ -69,11 +84,13 @@ public class BlockId {
 		BlockId blk = (BlockId) obj;
 		return fileName.equals(blk.fileName) && blkNum == blk.blkNum;
 	}
-
+	
+	@Override
 	public String toString() {
 		return myString;
 	}
-
+	
+	@Override
 	public int hashCode() {
 		return myHashCode;
 	}
