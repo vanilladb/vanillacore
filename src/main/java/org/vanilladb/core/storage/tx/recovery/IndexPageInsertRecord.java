@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2016 vanilladb.org
+ * Copyright 2017 vanilladb.org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import org.vanilladb.core.sql.Type;
 import org.vanilladb.core.sql.VarcharConstant;
 import org.vanilladb.core.storage.buffer.Buffer;
 import org.vanilladb.core.storage.file.BlockId;
+import org.vanilladb.core.storage.index.SearchKeyType;
 import org.vanilladb.core.storage.index.btree.BTreeDir;
 import org.vanilladb.core.storage.index.btree.BTreeLeaf;
 import org.vanilladb.core.storage.log.BasicLogRecord;
@@ -37,31 +38,38 @@ import org.vanilladb.core.storage.log.LogSeqNum;
 import org.vanilladb.core.storage.tx.Transaction;
 
 public class IndexPageInsertRecord implements LogRecord {
-	private long txNum, blkNum;
-	private String indexName;
+	private long txNum;
+	private BlockId indexBlkId;
 	private int slotId;
 	private boolean isDirPage;
-	private Type keyType;
+	private SearchKeyType keyType;
 	private LogSeqNum lsn;
 
-	public IndexPageInsertRecord(long txNum, String indexName,
-			Boolean isDirPage, Type keyType, long blkNum, int slotId) {
+	public IndexPageInsertRecord(long txNum, BlockId indexBlkId, boolean isDirPage,
+			SearchKeyType keyType, int slotId) {
 		this.txNum = txNum;
-		this.indexName = indexName;
 		this.isDirPage = isDirPage;
 		this.keyType = keyType;
-		this.blkNum = blkNum;
+		this.indexBlkId = indexBlkId;
 		this.slotId = slotId;
-		this.lsn = null;
-
 	}
 
 	public IndexPageInsertRecord(BasicLogRecord rec) {
 		txNum = (Long) rec.nextVal(BIGINT).asJavaVal();
-		indexName = (String) rec.nextVal(VARCHAR).asJavaVal();
 		isDirPage = (Integer) rec.nextVal(INTEGER).asJavaVal() == 1;
-		keyType = Type.newInstance((Integer) rec.nextVal(INTEGER).asJavaVal());
-		blkNum = (Long) rec.nextVal(BIGINT).asJavaVal();
+		
+		// Search Key Type
+		int keyLen = (Integer) rec.nextVal(INTEGER).asJavaVal();
+		Type[] types = new Type[keyLen];
+		for (int i = 0; i < keyLen; i++) {
+			int type = (Integer) rec.nextVal(INTEGER).asJavaVal();
+			types[i] = Type.newInstance(type);
+		}
+		keyType = new SearchKeyType(types);
+		
+		String fileName = (String) rec.nextVal(VARCHAR).asJavaVal();
+		long blkNum = (Long) rec.nextVal(BIGINT).asJavaVal();
+		indexBlkId = new BlockId(fileName, blkNum);
 		slotId = (Integer) rec.nextVal(INTEGER).asJavaVal();
 		lsn = rec.getLSN();
 	}
@@ -93,26 +101,20 @@ public class IndexPageInsertRecord implements LogRecord {
 		// repeat history
 		Buffer BlockBuff;
 		if (isDirPage) {
-			BlockId PageBlk = new BlockId(BTreeDir.getFileName(indexName),
-					blkNum);
-			BlockBuff = tx.bufferMgr().pin(PageBlk);
+			BlockBuff = tx.bufferMgr().pin(indexBlkId);
 			if (this.lsn.compareTo(BlockBuff.lastLsn()) == 1) {
-				BTreeDir.deleteASlot(tx, indexName, keyType, blkNum, slotId);
+				BTreeDir.deleteASlot(tx, indexBlkId, keyType, slotId);
 				LogSeqNum lsn = tx.recoveryMgr().logIndexPageDeletionClr(
-						this.txNum, indexName, isDirPage, keyType, blkNum,
-						slotId, this.lsn);
+						txNum, indexBlkId, isDirPage, keyType, slotId, this.lsn);
 				VanillaDb.logMgr().flush(lsn);
 			}
 
 		} else {
-			BlockId PageBlk = new BlockId(BTreeLeaf.getFileName(indexName),
-					blkNum);
-			BlockBuff = tx.bufferMgr().pin(PageBlk);
+			BlockBuff = tx.bufferMgr().pin(indexBlkId);
 			if (this.lsn.compareTo(BlockBuff.lastLsn()) == 1) {
-				BTreeLeaf.deleteASlot(tx, indexName, keyType, blkNum, slotId);
+				BTreeLeaf.deleteASlot(tx, indexBlkId, keyType, slotId);
 				LogSeqNum lsn = tx.recoveryMgr().logIndexPageDeletionClr(
-						this.txNum, indexName, isDirPage, keyType, blkNum,
-						slotId, this.lsn);
+						txNum, indexBlkId, isDirPage, keyType, slotId, this.lsn);
 				VanillaDb.logMgr().flush(lsn);
 			}
 		}
@@ -124,19 +126,15 @@ public class IndexPageInsertRecord implements LogRecord {
 	public void redo(Transaction tx) {
 		Buffer BlockBuff;
 		if (isDirPage) {
-			BlockId PageBlk = new BlockId(BTreeDir.getFileName(indexName),
-					blkNum);
-			BlockBuff = tx.bufferMgr().pin(PageBlk);
+			BlockBuff = tx.bufferMgr().pin(indexBlkId);
 
 			if (this.lsn.compareTo(BlockBuff.lastLsn()) == 1) {
-				BTreeDir.insertASlot(tx, indexName, keyType, blkNum, slotId);
+				BTreeDir.insertASlot(tx, indexBlkId, keyType, slotId);
 			}
 		} else {
-			BlockId PageBlk = new BlockId(BTreeLeaf.getFileName(indexName),
-					blkNum);
-			BlockBuff = tx.bufferMgr().pin(PageBlk);
+			BlockBuff = tx.bufferMgr().pin(indexBlkId);
 			if (this.lsn.compareTo(BlockBuff.lastLsn()) == 1) {
-				BTreeLeaf.insertASlot(tx, indexName, keyType, blkNum, slotId);
+				BTreeLeaf.insertASlot(tx, indexBlkId, keyType, slotId);
 			}
 		}
 		tx.bufferMgr().unpin(BlockBuff);
@@ -145,9 +143,8 @@ public class IndexPageInsertRecord implements LogRecord {
 
 	@Override
 	public String toString() {
-		return "<INDEX PAGE INSERT " + txNum + " " + indexName + " "
-				+ isDirPage + " " + keyType.getSqlType() + " " + blkNum + " "
-				+ slotId + ">";
+		return "<INDEX PAGE INSERT " + txNum + " " + isDirPage + " "
+				+ keyType + " " + indexBlkId + " " + slotId + ">";
 	}
 
 	@Override
@@ -155,11 +152,18 @@ public class IndexPageInsertRecord implements LogRecord {
 		List<Constant> rec = new LinkedList<Constant>();
 		rec.add(new IntegerConstant(op()));
 		rec.add(new BigIntConstant(txNum));
-		rec.add(new VarcharConstant(indexName));
 		// Covert Boolean into int
 		rec.add(new IntegerConstant(isDirPage ? 1 : 0));
-		rec.add(new IntegerConstant(keyType.getSqlType()));
-		rec.add(new BigIntConstant(blkNum));
+		
+		// Search Key Type
+		rec.add(new IntegerConstant(keyType.length()));
+		for (int i = 0; i < keyType.length(); i++) {
+			Type type = keyType.get(i);
+			rec.add(new IntegerConstant(type.getSqlType()));
+		}
+		
+		rec.add(new VarcharConstant(indexBlkId.fileName()));
+		rec.add(new BigIntConstant(indexBlkId.number()));
 		rec.add(new IntegerConstant(slotId));
 		return rec;
 	}

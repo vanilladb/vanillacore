@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2016 vanilladb.org
+ * Copyright 2017 vanilladb.org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,8 +31,8 @@ public class SetValueClr extends SetValueRecord implements CompesationLogRecord 
 
 	private LogSeqNum undoNextLSN;
 
-	public SetValueClr(long txNum, BlockId blk, int offset, Constant val, Constant newVal, LogSeqNum undoNextLSN) {
-		super(txNum, blk, offset, val, newVal);
+	public SetValueClr(long compTxNum, BlockId blk, int offset, Constant val, Constant newVal, LogSeqNum undoNextLSN) {
+		super(compTxNum, blk, offset, val, newVal);
 		this.undoNextLSN = undoNextLSN;
 	}
 

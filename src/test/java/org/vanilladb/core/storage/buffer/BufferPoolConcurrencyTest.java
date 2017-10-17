@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2016 vanilladb.org
+ * Copyright 2017 vanilladb.org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ public class BufferPoolConcurrencyTest {
 	private static Logger logger = Logger.getLogger(BufferPoolConcurrencyTest.class.getName());
 
 	private static final int CLIENT_COUNT_PER_BUFFER = 100;
-	private static final int BUFFER_COUNT = 100;
+	private static final int BUFFER_COUNT = 10;
 	private static final int TOTAL_CLIENT_COUNT = BUFFER_COUNT * CLIENT_COUNT_PER_BUFFER;
 
 	private static final String TEST_FILE_NAME = "_tempbufferpooltest";

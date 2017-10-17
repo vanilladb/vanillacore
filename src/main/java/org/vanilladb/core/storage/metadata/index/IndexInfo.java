@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2016 vanilladb.org
+ * Copyright 2017 vanilladb.org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,12 @@
  ******************************************************************************/
 package org.vanilladb.core.storage.metadata.index;
 
-import static org.vanilladb.core.storage.index.Index.IDX_BTREE;
-import static org.vanilladb.core.storage.index.Index.IDX_HASH;
+import java.util.List;
 
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.storage.index.Index;
+import org.vanilladb.core.storage.index.IndexType;
+import org.vanilladb.core.storage.index.SearchKeyType;
 import org.vanilladb.core.storage.metadata.TableInfo;
 import org.vanilladb.core.storage.metadata.TableNotFoundException;
 import org.vanilladb.core.storage.tx.Transaction;
@@ -28,10 +29,14 @@ import org.vanilladb.core.storage.tx.Transaction;
  * The information about an index. This information is used by the query planner
  * in order to estimate the costs of using the index, and to obtain the schema
  * of the index records. Its methods are essentially the same as those of Plan.
+ * 
+ * Note that if two IndexInfos have the same index name, they will be treated
+ *  as the same IndexInfo.
  */
 public class IndexInfo {
-	private String idxName, fldName, tblName;
-	private int idxType;
+	private String idxName, tblName;
+	private List<String> fldNames;
+	private IndexType idxType;
 
 	/**
 	 * Creates an IndexInfo object for the specified index.
@@ -40,17 +45,15 @@ public class IndexInfo {
 	 *            the name of the index
 	 * @param tblName
 	 *            the name of the table
-	 * @param fldName
-	 *            the name of the indexed field
+	 * @param fldNames
+	 *            the list of names of the indexed fields
 	 * @param idxType
 	 *            the type of the index
 	 */
-	public IndexInfo(String idxName, String tblName, String fldName, int idxType) {
-		if (idxType != IDX_HASH && idxType != IDX_BTREE)
-			throw new IllegalArgumentException();
+	public IndexInfo(String idxName, String tblName, List<String> fldNames, IndexType idxType) {
 		this.tblName = tblName;
 		this.idxName = idxName;
-		this.fldName = fldName;
+		this.fldNames = fldNames;
 		this.idxType = idxType;
 	}
 
@@ -64,16 +67,17 @@ public class IndexInfo {
 		if (ti == null)
 			throw new TableNotFoundException("table '" + tblName
 					+ "' is not defined in catalog.");
-		return Index.newInstance(this, ti.schema().type(fldName), tx);
+
+		return Index.newInstance(this, new SearchKeyType(ti.schema(), fldNames), tx);
 	}
 
 	/**
-	 * Returns the name of the indexed field.
+	 * Returns the names of the indexed fields.
 	 * 
-	 * @return the name of the indexed filed
+	 * @return the names of the indexed fields
 	 */
-	public String fieldName() {
-		return fldName;
+	public List<String> fieldNames() {
+		return fldNames;
 	}
 
 	/**
@@ -90,7 +94,7 @@ public class IndexInfo {
 	 * 
 	 * @return the type of this index
 	 */
-	public int indexType() {
+	public IndexType indexType() {
 		return idxType;
 	}
 
@@ -101,5 +105,33 @@ public class IndexInfo {
 	 */
 	public String indexName() {
 		return idxName;
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null)
+			return false;
+		
+		if (this == obj)
+			return true;
+		
+		if (!obj.getClass().equals(IndexInfo.class))
+			return false;
+		
+		// We assume that index names are unique
+		// identifiers for IndexInfos
+		IndexInfo ii = (IndexInfo) obj;
+		return idxName.equals(ii.idxName);
+	}
+	
+	@Override
+	public int hashCode() {
+		return idxName.hashCode();
+	}
+	
+	@Override
+	public String toString() {
+		return "Index: " + idxType + " " + idxName
+				+ " for " + tblName + " on " + fldNames;
 	}
 }

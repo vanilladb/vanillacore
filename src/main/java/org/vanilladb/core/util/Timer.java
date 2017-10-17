@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2016 vanilladb.org
+ * Copyright 2017 vanilladb.org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -135,7 +135,8 @@ public class Timer {
 						subTimers.get(com).getCount()));
 			}
 		}
-		sb.append(String.format("%-40s: %d us\n", EXE_TIME_KEY, subTimers.get(EXE_TIME_KEY).getTotalTime()));
+		if (subTimers.get(EXE_TIME_KEY) != null)
+			sb.append(String.format("%-40s: %d us\n", EXE_TIME_KEY, subTimers.get(EXE_TIME_KEY).getTotalTime()));
 		sb.append("==============================\n");
 
 		return sb.toString();

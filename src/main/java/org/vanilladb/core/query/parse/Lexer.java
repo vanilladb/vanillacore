@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2016 vanilladb.org
+ * Copyright 2017 vanilladb.org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -189,10 +189,10 @@ public class Lexer {
 
 	private void initKeywords() {
 		keywords = Arrays.asList("select", "from", "where", "and", "insert",
-				"into", "values", "delete", "update", "set", "create", "table",
+				"into", "values", "delete", "drop", "update", "set", "create", "table",
 				"int", "double", "varchar", "view", "as", "index", "on",
 				"long", "order", "by", "asc", "desc", "sum", "count", "avg",
 				"min", "max", "distinct", "group", "add", "sub", "mul", "div",
-				"explain");
+				"explain", "using", "hash", "btree");
 	}
 }

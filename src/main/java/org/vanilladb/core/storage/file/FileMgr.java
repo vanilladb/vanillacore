@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2016 vanilladb.org
+ * Copyright 2017 vanilladb.org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -303,12 +303,35 @@ public class FileMgr {
 						// Actually delete file
 						boolean hasDeleted = new File(logDirectory, fileName).delete();
 						if (!hasDeleted && logger.isLoggable(Level.WARNING))
-							logger.warning("cannot deleted old log file");
+							logger.warning("cannot delete old log file");
 					}
 				}
 		} catch (IOException e) {
 			if (logger.isLoggable(Level.WARNING))
 				logger.warning("there is something wrong when deleting log files");
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * Delete the specified file.
+	 */
+	public void delete(String fileName) {
+		try {
+			synchronized (prepareAnchor(fileName)) {
+				// Close file, if it opened
+				IoChannel fileChannel = openFiles.remove(fileName);
+				if (fileChannel != null)
+					fileChannel.close();
+
+				// Actually delete file
+				boolean hasDeleted = new File(dbDirectory, fileName).delete();
+				if (!hasDeleted && logger.isLoggable(Level.WARNING))
+					logger.warning("cannot delete file: " + fileName);
+			}
+		} catch (IOException e) {
+			if (logger.isLoggable(Level.WARNING))
+				logger.warning("there is something wrong when deleting " + fileName);
 			e.printStackTrace();
 		}
 	}

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2016 vanilladb.org
+ * Copyright 2017 vanilladb.org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,8 @@ import org.vanilladb.core.sql.IntegerConstant;
 import org.vanilladb.core.sql.Type;
 import org.vanilladb.core.storage.buffer.Buffer;
 import org.vanilladb.core.storage.file.BlockId;
+import org.vanilladb.core.storage.index.SearchKeyType;
+import org.vanilladb.core.storage.index.SearchRange;
 import org.vanilladb.core.storage.record.RecordId;
 import org.vanilladb.core.storage.tx.Transaction;
 import org.vanilladb.core.storage.tx.recovery.RecoveryMgr;
@@ -44,7 +46,7 @@ public class BTreeLeafTest {
 	private static String FILE_PREFIX = "_test" + System.currentTimeMillis() + "_";
 	private static final String INDEX_FILE_NAME = BTreeLeaf.getFileName(FILE_PREFIX + "BtreeLeaf");
 	private static final BlockId DATA_BLOCK = new BlockId("_tempBtreeLeaf.tbl", 0);
-	private static final Type KEY_TYPE = Type.INTEGER;
+	private static final SearchKeyType KEY_TYPE = new SearchKeyType(new Type[] {Type.INTEGER});
 	private static final int MAX_NUM_OF_RECORDS;
 	private static final int PRE_FORMATED_PAGE_COUNT = 4;
 	
@@ -82,6 +84,16 @@ public class BTreeLeafTest {
 			logger.info("FINISH BTREE LEAF TEST");
 	}
 	
+	private static SearchRange newSearchRange(int integer) {
+		return new SearchRange(new ConstantRange[] {
+				ConstantRange.newInstance(new IntegerConstant(integer))});
+	}
+	
+	private static SearchRange newSearchRange(int start, int end) {
+		return new SearchRange(new ConstantRange[] { ConstantRange.newInstance(
+				new IntegerConstant(start), true, new IntegerConstant(end), true)});
+	}
+	
 	@Before
 	public void createTx() {
 		tx = VanillaDb.txMgr().newTransaction(
@@ -98,20 +110,19 @@ public class BTreeLeafTest {
 	public void testInsert() {
 		BlockId blk = new BlockId(INDEX_FILE_NAME, 0);
 		BTreeLeaf leaf;
-		ConstantRange insertKey;
-		
-		// Insert 20 records
+		SearchRange insertRange;
 		int numOfRecords = 20;
+		
+		// Insert records
 		for (int i = 0; i < numOfRecords; i++) {
-			insertKey = ConstantRange.newInstance(new IntegerConstant(i));
-			leaf = new BTreeLeaf(DATA_BLOCK.fileName(), blk, KEY_TYPE, insertKey, tx);
+			insertRange = newSearchRange(i);
+			leaf = new BTreeLeaf(DATA_BLOCK.fileName(), blk, KEY_TYPE, insertRange, tx);
 			leaf.insert(new RecordId(DATA_BLOCK, i));
 			leaf.close();
 		}
 		
 		// Check number of records
-		ConstantRange searchRange = ConstantRange.newInstance(
-				new IntegerConstant(0), true, new IntegerConstant(numOfRecords - 1), true);
+		SearchRange searchRange = newSearchRange(0, numOfRecords - 1);
 		leaf = new BTreeLeaf(DATA_BLOCK.fileName(), blk, KEY_TYPE, searchRange, tx);
 		Assert.assertEquals(numOfRecords, leaf.getNumRecords());
 		
@@ -128,32 +139,27 @@ public class BTreeLeafTest {
 	public void testDelete() {
 		BlockId blk = new BlockId(INDEX_FILE_NAME, 1);
 		BTreeLeaf leaf;
-		ConstantRange insertKey;
-		
-		// Insert 20 records
+		SearchRange insertRange;
 		int numOfRecords = 20;
+		
+		// Insert records
 		for (int i = 0; i < numOfRecords; i++) {
-			insertKey = ConstantRange.newInstance(new IntegerConstant(i));
-			leaf = new BTreeLeaf(DATA_BLOCK.fileName(), blk, KEY_TYPE, insertKey, tx);
+			insertRange = newSearchRange(i);
+			leaf = new BTreeLeaf(DATA_BLOCK.fileName(), blk, KEY_TYPE, insertRange, tx);
 			leaf.insert(new RecordId(DATA_BLOCK, i));
 			leaf.close();
 		}
 		
-		// Check number of records
-		ConstantRange searchRange = ConstantRange.newInstance(
-				new IntegerConstant(0), true, new IntegerConstant(numOfRecords - 1), true);
-		leaf = new BTreeLeaf(DATA_BLOCK.fileName(), blk, KEY_TYPE, searchRange, tx);
-		Assert.assertEquals(numOfRecords, leaf.getNumRecords());
-		
-		// Check the order of records
+		// Delete all records
 		for (int i = 0; i < numOfRecords; i++) {
-			insertKey = ConstantRange.newInstance(new IntegerConstant(i));
-			leaf = new BTreeLeaf(DATA_BLOCK.fileName(), blk, KEY_TYPE, insertKey, tx);
+			SearchRange deleteRange = newSearchRange(i);
+			leaf = new BTreeLeaf(DATA_BLOCK.fileName(), blk, KEY_TYPE, deleteRange, tx);
 			leaf.delete(new RecordId(DATA_BLOCK, i));
 			leaf.close();
 		}
 		
 		// Check number of records
+		SearchRange searchRange = newSearchRange(0, numOfRecords - 1);
 		leaf = new BTreeLeaf(DATA_BLOCK.fileName(), blk, KEY_TYPE, searchRange, tx);
 		Assert.assertEquals(0, leaf.getNumRecords());
 	}
@@ -162,19 +168,19 @@ public class BTreeLeafTest {
 	public void testOverflow() {
 		BlockId blk = new BlockId(INDEX_FILE_NAME, 2);
 		BTreeLeaf leaf;
-		ConstantRange insertKey = ConstantRange.newInstance(new IntegerConstant(0));
+		SearchRange insertRange = newSearchRange(0);
 		
 		// Insert a lot of records with the same key
 		int numOfRecords = MAX_NUM_OF_RECORDS * 3 / 2;
 		for (int i = 0; i < numOfRecords; i++) {
-			leaf = new BTreeLeaf(DATA_BLOCK.fileName(), blk, KEY_TYPE, insertKey, tx);
+			leaf = new BTreeLeaf(DATA_BLOCK.fileName(), blk, KEY_TYPE, insertRange, tx);
 			leaf.insert(new RecordId(DATA_BLOCK, i));
 			leaf.close();
 		}
 		
 		// Check the number of data in both pages
 		int count = 0;
-		leaf = new BTreeLeaf(DATA_BLOCK.fileName(), blk, KEY_TYPE, insertKey, tx);
+		leaf = new BTreeLeaf(DATA_BLOCK.fileName(), blk, KEY_TYPE, insertRange, tx);
 		while (leaf.next())
 			count++;
 		leaf.close();
@@ -188,13 +194,13 @@ public class BTreeLeafTest {
 		BlockId newBlk = null;
 		BTreeLeaf leaf;
 		DirEntry dirEntry;
-		ConstantRange insertKey;
+		SearchRange insertRange;
 		
-		// Insert a lot of records with the different keys
+		// Insert a lot of records with different keys
 		int numOfRecords = MAX_NUM_OF_RECORDS * 3 / 2;
 		for (int i = 0; i < numOfRecords; i++) {
-			insertKey = ConstantRange.newInstance(new IntegerConstant(i));
-			leaf = new BTreeLeaf(DATA_BLOCK.fileName(), blk, KEY_TYPE, insertKey, tx);
+			insertRange = newSearchRange(i);
+			leaf = new BTreeLeaf(DATA_BLOCK.fileName(), blk, KEY_TYPE, insertRange, tx);
 			dirEntry = leaf.insert(new RecordId(DATA_BLOCK, i));
 			if (dirEntry != null)
 				newBlk = new BlockId(INDEX_FILE_NAME, dirEntry.blockNumber());
@@ -205,8 +211,7 @@ public class BTreeLeafTest {
 			Assert.fail("BTreeLeafTest: Bad split");
 		
 		// Check the number of data in both pages
-		ConstantRange searchRange = ConstantRange.newInstance(
-				new IntegerConstant(0), true, new IntegerConstant(numOfRecords - 1), true);
+		SearchRange searchRange = newSearchRange(0, numOfRecords - 1);
 		int count = 0;
 		leaf = new BTreeLeaf(DATA_BLOCK.fileName(), blk, KEY_TYPE, searchRange, tx);
 		while (leaf.next())

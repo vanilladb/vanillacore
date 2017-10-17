@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2016 vanilladb.org
+ * Copyright 2017 vanilladb.org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,12 @@ import org.vanilladb.core.sql.Constant;
 import org.vanilladb.core.sql.ConstantRange;
 import org.vanilladb.core.sql.IntegerConstant;
 import org.vanilladb.core.sql.Schema;
-import org.vanilladb.core.sql.Type;
 import org.vanilladb.core.storage.buffer.Buffer;
 import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.index.Index;
+import org.vanilladb.core.storage.index.SearchKey;
+import org.vanilladb.core.storage.index.SearchKeyType;
+import org.vanilladb.core.storage.index.SearchRange;
 import org.vanilladb.core.storage.metadata.TableInfo;
 import org.vanilladb.core.storage.metadata.index.IndexInfo;
 import org.vanilladb.core.storage.record.RecordFile;
@@ -42,6 +44,7 @@ import org.vanilladb.core.util.CoreProperties;
  * allocated, and each bucket is implemented as a file of index records.
  */
 public class HashIndex extends Index {
+	
 	/**
 	 * A field name of the schema of index records.
 	 */
@@ -55,9 +58,13 @@ public class HashIndex extends Index {
 				HashIndex.class.getName() + ".NUM_BUCKETS", 100);
 	}
 
-	public static long searchCost(Type fldType, long totRecs, long matchRecs) {
-		int rpb = Buffer.BUFFER_SIZE / RecordPage.slotSize(schema(fldType));
+	public static long searchCost(SearchKeyType keyType, long totRecs, long matchRecs) {
+		int rpb = Buffer.BUFFER_SIZE / RecordPage.slotSize(schema(keyType));
 		return (totRecs / rpb) / NUM_BUCKETS;
+	}
+	
+	private static String keyFieldName(int index) {
+		return SCHEMA_KEY + index;
 	}
 
 	/**
@@ -68,19 +75,16 @@ public class HashIndex extends Index {
 	 * 
 	 * @return the schema of the index records
 	 */
-	private static Schema schema(Type fldType) {
+	private static Schema schema(SearchKeyType keyType) {
 		Schema sch = new Schema();
-		sch.addField(SCHEMA_KEY, fldType);
+		for (int i = 0; i < keyType.length(); i++)
+			sch.addField(keyFieldName(i), keyType.get(i));
 		sch.addField(SCHEMA_RID_BLOCK, BIGINT);
 		sch.addField(SCHEMA_RID_ID, INTEGER);
 		return sch;
 	}
-
-	private IndexInfo ii;
-	private Type fldType;
-	private String dataFileName;
-	private Transaction tx;
-	private Constant searchKey;
+	
+	private SearchKey searchKey;
 	private RecordFile rf;
 
 	/**
@@ -93,11 +97,8 @@ public class HashIndex extends Index {
 	 * @param tx
 	 *            the calling transaction
 	 */
-	public HashIndex(IndexInfo ii, Type fldType, Transaction tx) {
-		this.ii = ii;
-		this.dataFileName = ii.tableName() + ".tbl";
-		this.fldType = fldType;
-		this.tx = tx;
+	public HashIndex(IndexInfo ii, SearchKeyType keyType, Transaction tx) {
+		super(ii, keyType, tx);
 	}
 
 	@Override
@@ -122,16 +123,16 @@ public class HashIndex extends Index {
 	 * @see Index#beforeFirst(ConstantRange)
 	 */
 	@Override
-	public void beforeFirst(ConstantRange searchRange) {
+	public void beforeFirst(SearchRange searchRange) {
 		close();
 		// support the equality query only
-		if (!searchRange.isConstant())
+		if (!searchRange.isSingleValue())
 			throw new UnsupportedOperationException();
 
-		this.searchKey = searchRange.asConstant();
+		this.searchKey = searchRange.asSearchKey();
 		int bucket = searchKey.hashCode() % NUM_BUCKETS;
 		String tblname = ii.indexName() + bucket;
-		TableInfo ti = new TableInfo(tblname, schema(fldType));
+		TableInfo ti = new TableInfo(tblname, schema(keyType));
 
 		// the underlying record file should not perform logging
 		this.rf = ti.open(tx, false);
@@ -150,7 +151,7 @@ public class HashIndex extends Index {
 	@Override
 	public boolean next() {
 		while (rf.next())
-			if (rf.getVal(SCHEMA_KEY).compareTo(searchKey) == 0)
+			if (getKey().equals(searchKey))
 				return true;
 		return false;
 	}
@@ -173,9 +174,9 @@ public class HashIndex extends Index {
 	 * @see Index#insert(Constant, RecordId, boolean)
 	 */
 	@Override
-	public void insert(Constant key, RecordId dataRecordId, boolean doLogicalLogging) {
+	public void insert(SearchKey key, RecordId dataRecordId, boolean doLogicalLogging) {
 		// search the position
-		beforeFirst(ConstantRange.newInstance(key));
+		beforeFirst(new SearchRange(key));
 		
 		// log the logical operation starts
 		if (doLogicalLogging)
@@ -183,15 +184,16 @@ public class HashIndex extends Index {
 		
 		// insert the data
 		rf.insert();
-		rf.setVal(SCHEMA_KEY, key);
+		for (int i = 0; i < keyType.length(); i++)
+			rf.setVal(keyFieldName(i), key.get(i));
 		rf.setVal(SCHEMA_RID_BLOCK, new BigIntConstant(dataRecordId.block()
 				.number()));
 		rf.setVal(SCHEMA_RID_ID, new IntegerConstant(dataRecordId.id()));
 		
 		// log the logical operation ends
 		if (doLogicalLogging)
-			tx.recoveryMgr().logIndexInsertionEnd(ii.tableName(), ii.fieldName(),
-					key, dataRecordId.block().number(), dataRecordId.id());
+			tx.recoveryMgr().logIndexInsertionEnd(ii.indexName(), key,
+					dataRecordId.block().number(), dataRecordId.id());
 	}
 
 	/**
@@ -200,9 +202,9 @@ public class HashIndex extends Index {
 	 * @see Index#delete(Constant, RecordId, boolean)
 	 */
 	@Override
-	public void delete(Constant key, RecordId dataRecordId, boolean doLogicalLogging) {
+	public void delete(SearchKey key, RecordId dataRecordId, boolean doLogicalLogging) {
 		// search the position
-		beforeFirst(ConstantRange.newInstance(key));
+		beforeFirst(new SearchRange(key));
 		
 		// log the logical operation starts
 		if (doLogicalLogging)
@@ -217,8 +219,8 @@ public class HashIndex extends Index {
 		
 		// log the logical operation ends
 		if (doLogicalLogging)
-			tx.recoveryMgr().logIndexDeletionEnd(ii.tableName(), ii.fieldName(),
-					key, dataRecordId.block().number(), dataRecordId.id());
+			tx.recoveryMgr().logIndexDeletionEnd(ii.indexName(), key,
+					dataRecordId.block().number(), dataRecordId.id());
 	}
 
 	/**
@@ -240,5 +242,12 @@ public class HashIndex extends Index {
 			throw e;
 		}
 		return VanillaDb.fileMgr().size(fileName);
+	}
+	
+	private SearchKey getKey() {
+		Constant[] vals = new Constant[keyType.length()];
+		for (int i = 0; i < vals.length; i++)
+			vals[i] = rf.getVal(keyFieldName(i));
+		return new SearchKey(vals);
 	}
 }

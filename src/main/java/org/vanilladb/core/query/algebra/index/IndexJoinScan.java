@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2016 vanilladb.org
+ * Copyright 2017 vanilladb.org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,15 @@
  ******************************************************************************/
 package org.vanilladb.core.query.algebra.index;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.vanilladb.core.query.algebra.Scan;
 import org.vanilladb.core.query.algebra.TableScan;
 import org.vanilladb.core.sql.Constant;
 import org.vanilladb.core.sql.ConstantRange;
 import org.vanilladb.core.storage.index.Index;
+import org.vanilladb.core.storage.index.SearchRange;
 
 /**
  * The scan class corresponding to the indexjoin relational algebra operator.
@@ -31,7 +35,7 @@ public class IndexJoinScan implements Scan {
 	private Scan s;
 	private TableScan ts; // the data table
 	private Index idx;
-	private String joinField;
+	private Map<String, String> joinFields; // <LHS field -> RHS field>
 	private boolean isLhsEmpty;
 
 	/**
@@ -46,10 +50,10 @@ public class IndexJoinScan implements Scan {
 	 * @param ts
 	 *            the table scan of data table
 	 */
-	public IndexJoinScan(Scan s, Index idx, String joinField, TableScan ts) {
+	public IndexJoinScan(Scan s, Index idx, Map<String, String> joinFields, TableScan ts) {
 		this.s = s;
 		this.idx = idx;
-		this.joinField = joinField;
+		this.joinFields = joinFields;
 		this.ts = ts;
 		beforeFirst();
 	}
@@ -127,8 +131,19 @@ public class IndexJoinScan implements Scan {
 	}
 
 	private void resetIndex() {
-		Constant searchkey = s.getVal(joinField);
-		idx.beforeFirst(ConstantRange.newInstance(searchkey));
+		Map<String, ConstantRange> ranges = new HashMap<String, ConstantRange>();
+		
+		for (Map.Entry<String, String> fieldPair : joinFields.entrySet()) {
+			String lhsField = fieldPair.getKey();
+			String rhsField = fieldPair.getValue();
+			Constant commonVal = s.getVal(lhsField);
+			ConstantRange range = ConstantRange.newInstance(commonVal);
+			ranges.put(rhsField, range);
+		}
+		
+		SearchRange searchRange = new SearchRange(idx.getIndexInfo().fieldNames(),
+				idx.getKeyType(), ranges);
+		idx.beforeFirst(searchRange);
 	}
 
 }

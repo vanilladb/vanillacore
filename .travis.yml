@@ -3,7 +3,6 @@ sudo: required
 branches:
   only:
   - master
-  - develop
 before_script:
   - ulimit -s unlimited
 script: mvn test

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2016 vanilladb.org
+ * Copyright 2017 vanilladb.org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  ******************************************************************************/
 package org.vanilladb.core.query.algebra.index;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import org.vanilladb.core.query.algebra.Plan;
@@ -26,6 +25,8 @@ import org.vanilladb.core.query.algebra.TableScan;
 import org.vanilladb.core.sql.ConstantRange;
 import org.vanilladb.core.sql.Schema;
 import org.vanilladb.core.storage.index.Index;
+import org.vanilladb.core.storage.index.SearchKeyType;
+import org.vanilladb.core.storage.index.SearchRange;
 import org.vanilladb.core.storage.metadata.index.IndexInfo;
 import org.vanilladb.core.storage.metadata.statistics.Histogram;
 import org.vanilladb.core.storage.tx.Transaction;
@@ -37,36 +38,34 @@ import org.vanilladb.core.storage.tx.Transaction;
 public class IndexSelectPlan implements Plan {
 	private TablePlan tp;
 	private IndexInfo ii;
-	private ConstantRange searchRange;
+	private Map<String, ConstantRange> searchRanges;
 	private Transaction tx;
 	private Histogram hist;
 
 	/**
-	 * Creates a new indexselect node in the query tree for the specified index
+	 * Creates a new index-select node in the query tree for the specified index
 	 * and search range.
 	 * 
 	 * @param tp
 	 *            the input table plan
 	 * @param ii
 	 *            information about the index
-	 * @param searchRange
-	 *            the range of search keys
+	 * @param searchRanges
+	 *            the ranges of search keys
 	 * @param tx
 	 *            the calling transaction
 	 */
 	public IndexSelectPlan(TablePlan tp, IndexInfo ii,
-			ConstantRange searchRange, Transaction tx) {
+			Map<String, ConstantRange> searchRanges, Transaction tx) {
 		this.tp = tp;
 		this.ii = ii;
-		this.searchRange = searchRange;
+		this.searchRanges = searchRanges;
 		this.tx = tx;
-		Map<String, ConstantRange> ranges = new HashMap<String, ConstantRange>();
-		ranges.put(ii.fieldName(), searchRange);
-		hist = SelectPlan.constantRangeHistogram(tp.histogram(), ranges);
+		hist = SelectPlan.constantRangeHistogram(tp.histogram(), searchRanges);
 	}
 
 	/**
-	 * Creates a new indexselect scan for this query
+	 * Creates a new index-select scan for this query
 	 * 
 	 * @see Plan#open()
 	 */
@@ -75,7 +74,8 @@ public class IndexSelectPlan implements Plan {
 		// throws an exception if p is not a tableplan.
 		TableScan ts = (TableScan) tp.open();
 		Index idx = ii.open(tx);
-		return new IndexSelectScan(idx, searchRange, ts);
+		return new IndexSelectScan(idx, 
+				new SearchRange(ii.fieldNames(), schema(), searchRanges), ts);
 	}
 
 	/**
@@ -87,7 +87,7 @@ public class IndexSelectPlan implements Plan {
 	 */
 	@Override
 	public long blocksAccessed() {
-		return Index.searchCost(ii.indexType(), schema().type(ii.fieldName()),
+		return Index.searchCost(ii.indexType(), new SearchKeyType(schema(), ii.fieldNames()),
 				tp.recordsOutput(), recordsOutput()) + recordsOutput();
 	}
 
@@ -123,7 +123,7 @@ public class IndexSelectPlan implements Plan {
 		String[] cs = c.split("\n");
 		StringBuilder sb = new StringBuilder();
 		sb.append("->");
-		sb.append("IndexSelectPlan cond:" + searchRange.toString() + " (#blks="
+		sb.append("IndexSelectPlan cond:" + searchRanges.toString() + " (#blks="
 				+ blocksAccessed() + ", #recs=" + recordsOutput() + ")\n");
 		for (String child : cs)
 			sb.append("\t").append(child).append("\n");

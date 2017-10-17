@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2016 vanilladb.org
+ * Copyright 2017 vanilladb.org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import org.vanilladb.core.storage.file.BlockId;
  * An identifier for a record within a file. A RecordId consists of the block
  * number in the file, and the ID of the record in that block.
  */
-public class RecordId {
+public class RecordId implements Comparable<RecordId> {
 	private BlockId blk;
 	private int id;
 
@@ -55,6 +55,20 @@ public class RecordId {
 	 */
 	public int id() {
 		return id;
+	}
+	
+	@Override
+	public int compareTo(RecordId rid) {
+		int blkResult = blk.compareTo(rid.blk);
+		if (blkResult != 0)
+			return blkResult;
+		
+		if (id < rid.id)
+			return -1;
+		else if (id > rid.id)
+			return 1;
+		
+		return 0;
 	}
 
 	@Override

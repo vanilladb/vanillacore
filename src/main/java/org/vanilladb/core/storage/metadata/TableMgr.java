@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2016 vanilladb.org
+ * Copyright 2017 vanilladb.org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,20 @@ package org.vanilladb.core.storage.metadata;
 import static org.vanilladb.core.sql.Type.INTEGER;
 import static org.vanilladb.core.sql.Type.VARCHAR;
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.IntegerConstant;
 import org.vanilladb.core.sql.Schema;
 import org.vanilladb.core.sql.Type;
 import org.vanilladb.core.sql.VarcharConstant;
+import org.vanilladb.core.storage.metadata.index.IndexInfo;
 import org.vanilladb.core.storage.record.RecordFile;
 import org.vanilladb.core.storage.tx.Transaction;
 import org.vanilladb.core.util.CoreProperties;
@@ -135,6 +142,61 @@ public class TableMgr {
 					.getArgument()));
 		}
 		fcatfile.close();
+	}
+
+	/**
+	 * Remove a table with the specified name.
+	 * 
+	 * @param tblName
+	 *            the name of the new table
+	 * @param tx
+	 *            the transaction creating the table
+	 */
+	public void dropTable(String tblName, Transaction tx) {
+		// Remove the file
+		RecordFile rf = getTableInfo(tblName, tx).open(tx, true);
+		rf.remove();
+
+		// Optimization: remove from the TableInfo map
+		tiMap.remove(tblName);
+
+		// remove the record from tblcat
+		RecordFile tcatfile = tcatInfo.open(tx, true);
+		tcatfile.beforeFirst();
+		while (tcatfile.next()) {
+			if (tcatfile.getVal(TCAT_TBLNAME).equals(new VarcharConstant(tblName))) {
+				tcatfile.delete();
+				break;
+			}
+		}
+		tcatfile.close();
+
+		// remove all records whose field FCAT_TBLNAME equals to tblName from fldcat
+		RecordFile fcatfile = fcatInfo.open(tx, true);
+		fcatfile.beforeFirst();
+		while (fcatfile.next()) {
+			if (fcatfile.getVal(FCAT_TBLNAME).equals(new VarcharConstant(tblName)))
+				fcatfile.delete();
+		}
+		fcatfile.close();
+
+		// remove corresponding indices
+		List<IndexInfo> allIndexes = new LinkedList<IndexInfo>();
+		Set<String> indexedFlds = VanillaDb.catalogMgr().getIndexedFields(tblName, tx);
+		
+		for (String indexedFld : indexedFlds) {
+			List<IndexInfo> iis = VanillaDb.catalogMgr().getIndexInfo(tblName, indexedFld, tx);
+			allIndexes.addAll(iis);
+		}
+		
+		for (IndexInfo ii : allIndexes)
+			VanillaDb.catalogMgr().dropIndex(ii.indexName(), tx);
+
+		// remove corresponding views
+		Collection<String> vnames = VanillaDb.catalogMgr().getViewNamesByTable(tblName, tx);
+		Iterator<String> vnameiter = vnames.iterator();
+		while (vnameiter.hasNext())
+			VanillaDb.catalogMgr().dropView(vnameiter.next(), tx);
 	}
 
 	/**

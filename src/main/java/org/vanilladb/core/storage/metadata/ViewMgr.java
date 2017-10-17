@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2016 vanilladb.org
+ * Copyright 2017 vanilladb.org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,13 @@
  ******************************************************************************/
 package org.vanilladb.core.storage.metadata;
 
+import java.util.Collection;
+import java.util.LinkedList;
+
 import static org.vanilladb.core.sql.Type.VARCHAR;
 import static org.vanilladb.core.storage.metadata.TableMgr.MAX_NAME;
 
+import org.vanilladb.core.query.parse.Parser;
 import org.vanilladb.core.sql.Schema;
 import org.vanilladb.core.sql.VarcharConstant;
 import org.vanilladb.core.storage.record.RecordFile;
@@ -62,6 +66,17 @@ class ViewMgr {
 		rf.close();
 	}
 
+	public void dropView(String vName, Transaction tx) {
+		TableInfo ti = tblMgr.getTableInfo(VCAT, tx);
+		RecordFile rf = ti.open(tx, true);
+		rf.beforeFirst();
+		while (rf.next()) {
+			if (rf.getVal(VCAT_VNAME).equals(new VarcharConstant(vName)))
+				rf.delete();
+		}
+		rf.close();
+	}
+
 	public String getViewDef(String vName, Transaction tx) {
 		String result = null;
 		TableInfo ti = tblMgr.getTableInfo(VCAT, tx);
@@ -73,6 +88,24 @@ class ViewMgr {
 				break;
 			}
 		rf.close();
+		return result;
+	}
+
+	// XXX: This makes the storage engine depend on the query engine.
+	// We may have to come out a better method.
+	public Collection<String> getViewNamesByTable(String tblName, Transaction tx) {
+		Collection<String> result = new LinkedList();
+
+		TableInfo ti = tblMgr.getTableInfo(VCAT, tx);
+		RecordFile rf = ti.open(tx, true);
+		rf.beforeFirst();
+		while (rf.next()) {
+			Parser parser = new Parser((String) rf.getVal(VCAT_VDEF).asJavaVal());
+			if (parser.queryCommand().tables().contains(tblName))
+				result.add((String) rf.getVal(VCAT_VNAME).asJavaVal());
+		}
+		rf.close();
+
 		return result;
 	}
 }

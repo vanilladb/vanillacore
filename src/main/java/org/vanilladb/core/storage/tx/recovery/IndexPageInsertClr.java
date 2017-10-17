@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2016 vanilladb.org
+ * Copyright 2017 vanilladb.org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,8 @@ import java.util.List;
 import org.vanilladb.core.sql.BigIntConstant;
 import org.vanilladb.core.sql.Constant;
 import org.vanilladb.core.sql.IntegerConstant;
-import org.vanilladb.core.sql.Type;
+import org.vanilladb.core.storage.file.BlockId;
+import org.vanilladb.core.storage.index.SearchKeyType;
 import org.vanilladb.core.storage.log.BasicLogRecord;
 import org.vanilladb.core.storage.log.LogSeqNum;
 import org.vanilladb.core.storage.tx.Transaction;
@@ -30,9 +31,9 @@ import org.vanilladb.core.storage.tx.Transaction;
 public class IndexPageInsertClr extends IndexPageInsertRecord implements CompesationLogRecord {
 	private LogSeqNum undoNextLSN;
 
-	public IndexPageInsertClr(long txNum, String indexName, boolean isDirPage, Type keyType, long blkNum, int slotId,
-			LogSeqNum undoNextLSN) {
-		super(txNum, indexName, isDirPage, keyType, blkNum, slotId);
+	public IndexPageInsertClr(long compTxNum, BlockId indexBlkId, boolean isDirPage,
+			SearchKeyType keyType, int slotId, LogSeqNum undoNextLSN) {
+		super(compTxNum, indexBlkId, isDirPage, keyType, slotId);
 		this.undoNextLSN = undoNextLSN;
 
 	}

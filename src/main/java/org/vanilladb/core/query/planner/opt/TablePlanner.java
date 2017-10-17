@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2016 vanilladb.org
+ * Copyright 2017 vanilladb.org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,9 @@
  ******************************************************************************/
 package org.vanilladb.core.query.planner.opt;
 
-import static org.vanilladb.core.storage.index.Index.IDX_BTREE;
-import static org.vanilladb.core.storage.index.Index.IDX_HASH;
-
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -25,10 +25,9 @@ import org.vanilladb.core.query.algebra.Plan;
 import org.vanilladb.core.query.algebra.SelectPlan;
 import org.vanilladb.core.query.algebra.TablePlan;
 import org.vanilladb.core.query.algebra.index.IndexJoinPlan;
-import org.vanilladb.core.query.algebra.index.IndexSelectPlan;
 import org.vanilladb.core.query.algebra.multibuffer.MultiBufferProductPlan;
+import org.vanilladb.core.query.planner.index.IndexSelector;
 import org.vanilladb.core.server.VanillaDb;
-import org.vanilladb.core.sql.ConstantRange;
 import org.vanilladb.core.sql.Schema;
 import org.vanilladb.core.sql.predicate.Predicate;
 import org.vanilladb.core.storage.metadata.index.IndexInfo;
@@ -38,11 +37,13 @@ import org.vanilladb.core.storage.tx.Transaction;
  * This class contains methods for planning a single table.
  */
 class TablePlanner {
+	private String tblName;
 	private TablePlan tp;
 	private Predicate pred;
 	private Schema sch;
-	private Map<String, IndexInfo> idxes;
 	private Transaction tx;
+	private int id;
+	private int hashCode;
 
 	/**
 	 * Creates a new table planner. The specified predicate applies to the
@@ -57,12 +58,31 @@ class TablePlanner {
 	 * @param tx
 	 *            the calling transaction
 	 */
-	public TablePlanner(String tblName, Predicate pred, Transaction tx) {
+	public TablePlanner(String tblName, Predicate pred, Transaction tx, int id) {
+		this.tblName = tblName;
 		this.pred = pred;
 		this.tx = tx;
+		this.id = id;
+		this.hashCode = (int) Math.pow(2, id);
 		tp = new TablePlan(tblName, tx);
 		sch = tp.schema();
-		idxes = VanillaDb.catalogMgr().getIndexInfo(tblName, tx);
+	}
+	
+	/**
+	 * An unique number to this planner.
+	 * 
+	 * @return
+	 */
+	public int getId() {
+		return id;
+	}
+	
+	/**
+	 * Use binary to represent the combination
+	 */
+	@ Override
+	public int hashCode() {
+		return hashCode;
 	}
 
 	/**
@@ -127,20 +147,9 @@ class TablePlanner {
 	 * moved across the term operator. Therefore this method may not identify
 	 * all possible index selects. It is users' responsibility to issue queries
 	 * that help the identification: e.g., "F < C", not "F - C < 0".
-	 * 
 	 */
 	private Plan makeIndexSelectPlan() {
-		for (String fld : idxes.keySet()) {
-			ConstantRange searchRange = pred.constantRange(fld);
-			if (searchRange == null)
-				continue;
-			IndexInfo ii = idxes.get(fld);
-			if ((ii.indexType() == IDX_HASH && searchRange.isConstant())
-					|| ii.indexType() == IDX_BTREE) {
-				return new IndexSelectPlan(tp, ii, searchRange, tx);
-			}
-		}
-		return null;
+		return IndexSelector.selectByBestMatchedIndex(tblName, tp, pred, tx);
 	}
 
 	/**
@@ -150,27 +159,62 @@ class TablePlanner {
 	 * across the term operator. Therefore this method may not identify all
 	 * possible index joins. It is users' responsibility to issue queries that
 	 * help the identification: e.g., "F1 = F2", not "F1 - F2 = 0".
-	 * 
 	 */
 	private Plan makeIndexJoinPlan(Plan trunk, Schema trunkSch) {
-		for (String fld : idxes.keySet()) {
-			Set<String> outerFlds = pred.joinFields(fld);
-			if (outerFlds != null)
+		int matchedCount = 0;
+		IndexInfo bestIndex = null;
+		Map<String, String> bestJoinPairs = null; // <Outer Field -> Self Field>
+		
+		// Find the indexes that have fields joined with the target table
+		Set<IndexInfo> candidates = new HashSet<IndexInfo>();
+		for (String fieldName : sch.fields()) {
+			Set<String> outerFlds = pred.joinFields(fieldName);
+			if (outerFlds == null)
+				continue;
+			
+			for (String outerFld : outerFlds)
+				if (trunkSch.hasField(outerFld)) {
+					List<IndexInfo> iis = VanillaDb.catalogMgr().getIndexInfo(tblName, fieldName, tx);
+					candidates.addAll(iis);
+					break;
+				}
+		}
+		
+		// Find the indexes with the most joined fields
+		for (IndexInfo ii : candidates) {
+			if (ii.fieldNames().size() < matchedCount)
+				continue;
+			
+			Map<String, String> joinPairs = new HashMap<String, String>();
+			for (String fieldName : ii.fieldNames()) {
+				Set<String> outerFlds = pred.joinFields(fieldName);
 				for (String outerFld : outerFlds)
 					if (trunkSch.hasField(outerFld)) {
-						IndexInfo ii = idxes.get(fld);
-						Plan p = new IndexJoinPlan(trunk, tp, ii, outerFld, tx);
-						/*
-						 * Ideally, a select plan for this table should be
-						 * created before applying the join. However, since
-						 * indexjoin require the rhs plan to be a TablePlan,
-						 * select predicate can only be added after the join, .
-						 * which makes indexselect for this table infeasible.
-						 */
-						p = addSelectPredicate(p);
-						return addJoinPredicate(p, trunkSch);
+						joinPairs.put(outerFld, fieldName);
+						break;
 					}
+			}
+			
+			if (joinPairs.size() > matchedCount) {
+				matchedCount = joinPairs.size();
+				bestIndex = ii;
+				bestJoinPairs = joinPairs;
+			}
 		}
+		
+		if (bestIndex != null) {
+			Plan p = new IndexJoinPlan(trunk, tp, bestIndex, bestJoinPairs, tx);
+			/*
+			 * Ideally, a select plan for this table should be
+			 * created before applying the join. However, since
+			 * indexjoin require the rhs plan to be a TablePlan,
+			 * select predicate can only be added after the join, .
+			 * which makes indexselect for this table infeasible.
+			 */
+			p = addSelectPredicate(p);
+			return addJoinPredicate(p, trunkSch);
+		}
+		
 		return null;
 	}
 

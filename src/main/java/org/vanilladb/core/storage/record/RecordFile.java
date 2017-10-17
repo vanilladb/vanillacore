@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2016 vanilladb.org
+ * Copyright 2017 vanilladb.org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,6 +104,15 @@ public class RecordFile implements Record {
 			rp.close();
 		if (fhp != null)
 			closeHeader();
+	}
+
+	/**
+	 * Remove the record file.
+	 * TODO: handle the concurrency issues that might happen
+	 */
+	public void remove() {
+		close();
+		VanillaDb.fileMgr().delete(fileName);
 	}
 
 	/**

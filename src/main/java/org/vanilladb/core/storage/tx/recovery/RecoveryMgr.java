@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2016 vanilladb.org
+ * Copyright 2017 vanilladb.org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,9 +28,10 @@ import java.util.Set;
 
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.Constant;
-import org.vanilladb.core.sql.Type;
 import org.vanilladb.core.storage.buffer.Buffer;
 import org.vanilladb.core.storage.file.BlockId;
+import org.vanilladb.core.storage.index.SearchKey;
+import org.vanilladb.core.storage.index.SearchKeyType;
 import org.vanilladb.core.storage.log.LogSeqNum;
 import org.vanilladb.core.storage.tx.Transaction;
 import org.vanilladb.core.storage.tx.TransactionLifecycleListener;
@@ -200,13 +201,13 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 			return null;
 	}
 
-	public LogSeqNum logIndexInsertionEnd(String tblName, String fldName,
-			Constant searchKey, long recordBlockNum, int recordSlotId) {
+	public LogSeqNum logIndexInsertionEnd(String indexName, SearchKey searchKey,
+			long recordBlockNum, int recordSlotId) {
 		if (enableLogging) {
 			if (this.logicalStartLSN == null)
 				throw new RuntimeException(
 						"Logical start LSN is null (in logIndexInsertionEnd)");
-			LogSeqNum lsn = new IndexInsertEndRecord(txNum, tblName, fldName,
+			LogSeqNum lsn = new IndexInsertEndRecord(txNum, indexName,
 					searchKey, recordBlockNum, recordSlotId,
 					this.logicalStartLSN).writeToLog();
 			this.logicalStartLSN = null;
@@ -215,13 +216,13 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 			return null;
 	}
 
-	public LogSeqNum logIndexDeletionEnd(String tblName, String fldName,
-			Constant searchKey, long recordBlockNum, int recordSlotId) {
+	public LogSeqNum logIndexDeletionEnd(String indexName, SearchKey searchKey,
+			long recordBlockNum, int recordSlotId) {
 		if (enableLogging) {
 			if (this.logicalStartLSN == null)
 				throw new RuntimeException(
 						"Logical start LSN is null (in logIndexDeletionEnd)");
-			LogSeqNum lsn = new IndexDeleteEndRecord(txNum, tblName, fldName,
+			LogSeqNum lsn = new IndexDeleteEndRecord(txNum, indexName,
 					searchKey, recordBlockNum, recordSlotId,
 					this.logicalStartLSN).writeToLog();
 			this.logicalStartLSN = null;
@@ -230,51 +231,49 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 			return null;
 	}
 
-	public LogSeqNum logIndexPageInsertion(String indexName, boolean isDirPage,
-			Type keyType, long blkNum, int slotId) {
+	public LogSeqNum logIndexPageInsertion(BlockId indexBlkId, boolean isDirPage,
+			SearchKeyType keyType, int slotId) {
 		if (enableLogging) {
-			return new IndexPageInsertRecord(txNum, indexName, isDirPage,
-					keyType, blkNum, slotId).writeToLog();
+			return new IndexPageInsertRecord(txNum, indexBlkId, isDirPage,
+					keyType, slotId).writeToLog();
 		} else
 			return null;
 	}
 
-	public LogSeqNum logIndexPageDeletion(String indexName, boolean isDirPage,
-			Type keyType, long blkNum, int slotId) {
+	public LogSeqNum logIndexPageDeletion(BlockId indexBlkId, boolean isDirPage,
+			SearchKeyType keyType, int slotId) {
 		if (enableLogging) {
-			return new IndexPageDeleteRecord(txNum, indexName, isDirPage,
-					keyType, blkNum, slotId).writeToLog();
+			return new IndexPageDeleteRecord(txNum, indexBlkId, isDirPage,
+					keyType, slotId).writeToLog();
 		} else
 			return null;
 	}
 
-	public LogSeqNum logIndexPageInsertionClr(long txNum, String indexName,
-			boolean isDirPage, Type keyType, long blkNum, int slotId,
-			LogSeqNum undoNextLSN) {
+	public LogSeqNum logIndexPageInsertionClr(long compTxNum, BlockId indexBlkId,
+			boolean isDirPage, SearchKeyType keyType, int slotId, LogSeqNum undoNextLSN) {
 		if (enableLogging) {
-			return new IndexPageInsertClr(txNum, indexName, isDirPage, keyType,
-					blkNum, slotId, undoNextLSN).writeToLog();
+			return new IndexPageInsertClr(compTxNum, indexBlkId, isDirPage,
+					keyType, slotId, undoNextLSN).writeToLog();
 		} else
 			return null;
 	}
 
-	public LogSeqNum logIndexPageDeletionClr(long txNum, String indexName,
-			boolean isDirPage, Type keyType, long blkNum, int slotId,
-			LogSeqNum undoNextLSN) {
+	public LogSeqNum logIndexPageDeletionClr(long compTxNum, BlockId indexBlkId,
+			boolean isDirPage, SearchKeyType keyType, int slotId, LogSeqNum undoNextLSN) {
 		if (enableLogging) {
-			return new IndexPageDeleteClr(txNum, indexName, isDirPage, keyType,
-					blkNum, slotId, undoNextLSN).writeToLog();
+			return new IndexPageDeleteClr(compTxNum, indexBlkId, isDirPage,
+					keyType, slotId, undoNextLSN).writeToLog();
 		} else
 			return null;
 	}
 
-	public LogSeqNum logSetValClr(long txNum, Buffer buff, int offset,
+	public LogSeqNum logSetValClr(long compTxNum, Buffer buff, int offset,
 			Constant newVal, LogSeqNum undoNextLSN) {
 		if (enableLogging) {
 			BlockId blk = buff.block();
 			if (isTempBlock(blk))
 				return null;
-			return new SetValueClr(txNum, blk, offset, buff.getVal(offset,
+			return new SetValueClr(compTxNum, blk, offset, buff.getVal(offset,
 					newVal.getType()), newVal, undoNextLSN).writeToLog();
 		} else
 			return null;

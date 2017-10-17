@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2016 vanilladb.org
+ * Copyright 2017 vanilladb.org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ import static org.vanilladb.core.sql.predicate.Term.OP_GT;
 import static org.vanilladb.core.sql.predicate.Term.OP_GTE;
 import static org.vanilladb.core.sql.predicate.Term.OP_LT;
 import static org.vanilladb.core.sql.predicate.Term.OP_LTE;
-import static org.vanilladb.core.storage.index.Index.IDX_BTREE;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -56,6 +55,7 @@ import org.vanilladb.core.sql.predicate.Expression;
 import org.vanilladb.core.sql.predicate.FieldNameExpression;
 import org.vanilladb.core.sql.predicate.Predicate;
 import org.vanilladb.core.sql.predicate.Term;
+import org.vanilladb.core.storage.index.IndexType;
 import org.vanilladb.core.util.CoreProperties;
 
 /**
@@ -63,11 +63,12 @@ import org.vanilladb.core.util.CoreProperties;
  * scientific notation.
  */
 public class Parser {
-	public static final int DEFAULT_INDEX_TYPE;
+	public static final IndexType DEFAULT_INDEX_TYPE;
 
 	static {
-		DEFAULT_INDEX_TYPE = CoreProperties.getLoader().getPropertyAsInteger(
-				Parser.class.getName() + ".DEFAULT_INDEX_TYPE", IDX_BTREE);
+		int defaultIdxType = CoreProperties.getLoader().getPropertyAsInteger(
+				Parser.class.getName() + ".DEFAULT_INDEX_TYPE", 1);
+		DEFAULT_INDEX_TYPE = IndexType.fromInteger(defaultIdxType);
 	}
 
 	private static class ProjectEl {
@@ -412,6 +413,8 @@ public class Parser {
 			return modify();
 		else if (lex.matchKeyword("create"))
 			return create();
+		else if (lex.matchKeyword("drop"))
+			return drop();
 		else
 			throw new UnsupportedOperationException();
 	}
@@ -513,8 +516,10 @@ public class Parser {
 			return createTable();
 		else if (lex.matchKeyword("view"))
 			return createView();
-		else
+		else if (lex.matchKeyword("index"))
 			return createIndex();
+		else
+			throw new UnsupportedOperationException();
 	}
 
 	private CreateTableData createTable() {
@@ -572,13 +577,62 @@ public class Parser {
 
 	private CreateIndexData createIndex() {
 		lex.eatKeyword("index");
-		String idxname = lex.eatId();
+		String idxName = lex.eatId();
 		lex.eatKeyword("on");
-		String tblname = lex.eatId();
+		String tblName = lex.eatId();
 		lex.eatDelim('(');
-		String fldname = id();
+		List<String> fldNames = idList();
 		lex.eatDelim(')');
-		return new CreateIndexData(idxname, tblname, fldname,
-				DEFAULT_INDEX_TYPE);
+		
+		// Index type
+		IndexType idxType = DEFAULT_INDEX_TYPE;
+		if (lex.matchKeyword("using")) {
+			lex.eatKeyword("using");
+			
+			if (lex.matchKeyword("hash")) {
+				lex.eatKeyword("hash");
+				idxType = IndexType.HASH;
+			} else if (lex.matchKeyword("btree")) {
+				lex.eatKeyword("btree");
+				idxType = IndexType.BTREE;
+			} else
+				throw new UnsupportedOperationException();
+		}
+		
+		return new CreateIndexData(idxName, tblName, fldNames, idxType);
+	}
+
+	/*
+	 * Method for parsing various drop commands.
+	 */
+
+	private Object drop() {
+		lex.eatKeyword("drop");
+		if (lex.matchKeyword("table"))
+			return dropTable();
+		else if (lex.matchKeyword("view"))
+			return dropView();
+		else if (lex.matchKeyword("index"))
+			return dropIndex();
+		else
+			throw new UnsupportedOperationException();
+	}
+
+	private DropTableData dropTable() {
+		lex.eatKeyword("table");
+		String tblname = lex.eatId();
+		return new DropTableData(tblname);
+	}
+
+	private DropViewData dropView() {
+		lex.eatKeyword("view");
+		String viewname = lex.eatId();
+		return new DropViewData(viewname);
+	}
+
+	private DropIndexData dropIndex() {
+		lex.eatKeyword("index");
+		String idxname = lex.eatId();
+		return new DropIndexData(idxname);
 	}
 }

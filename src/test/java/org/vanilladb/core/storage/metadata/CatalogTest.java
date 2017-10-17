@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2016 vanilladb.org
+ * Copyright 2017 vanilladb.org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.vanilladb.core.sql.Type.INTEGER;
 import static org.vanilladb.core.sql.Type.VARCHAR;
-import static org.vanilladb.core.storage.index.Index.IDX_HASH;
 
 import java.sql.Connection;
-import java.util.Map;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -36,6 +36,7 @@ import org.vanilladb.core.server.ServerInit;
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.Schema;
 import org.vanilladb.core.storage.index.Index;
+import org.vanilladb.core.storage.index.IndexType;
 import org.vanilladb.core.storage.metadata.index.IndexInfo;
 import org.vanilladb.core.storage.tx.Transaction;
 
@@ -141,18 +142,31 @@ public class CatalogTest {
 		sch.addField("B", VARCHAR(20));
 		sch.addField("C", INTEGER);
 		catMgr.createTable(tbl, sch, tx);
-		catMgr.createIndex(i1, tbl, "A", IDX_HASH, tx);
-		catMgr.createIndex(i2, tbl, "B", IDX_HASH, tx);
-		catMgr.createIndex(i3, tbl, "C", IDX_HASH, tx);
+		
+		List<String> idxFlds1 = new LinkedList<String>();
+		idxFlds1.add("A");
+		List<String> idxFlds2 = new LinkedList<String>();
+		idxFlds2.add("B");
+		List<String> idxFlds3 = new LinkedList<String>();
+		idxFlds3.add("C");
+		
+		catMgr.createIndex(i1, tbl, idxFlds1, IndexType.HASH, tx);
+		catMgr.createIndex(i2, tbl, idxFlds2, IndexType.HASH, tx);
+		catMgr.createIndex(i3, tbl, idxFlds3, IndexType.HASH, tx);
 		
 		// Check the existence of created indexes
-		Map<String, IndexInfo> idxmap = catMgr.getIndexInfo(tbl, tx);
-		assertTrue("*****CatalogTest: bad index info", idxmap.containsKey("A")
-				&& idxmap.containsKey("B") && idxmap.containsKey("C")
-				&& idxmap.keySet().size() == 3);
+		List<IndexInfo> idxList = catMgr.getIndexInfo(tbl, "A", tx);
+		assertTrue("*****CatalogTest: bad index info", idxList.size() == 1
+				&& idxList.get(0).fieldNames().contains("A"));
+		idxList = catMgr.getIndexInfo(tbl, "B", tx);
+		assertTrue("*****CatalogTest: bad index info", idxList.size() == 1
+				&& idxList.get(0).fieldNames().contains("B"));
+		idxList = catMgr.getIndexInfo(tbl, "C", tx);
+		assertTrue("*****CatalogTest: bad index info", idxList.size() == 1
+				&& idxList.get(0).fieldNames().contains("C"));
 
 		// check for index open success and properties setting
-		Index k = idxmap.get("A").open(tx);
+		Index k = idxList.get(0).open(tx);
 		assertTrue("*****CatalogTest: bad index open", k != null);
 	}
 }
