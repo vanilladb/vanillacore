@@ -1,3 +1,35 @@
+# Version 0.3.0 (2017-10-11)
+
+## Enhancements
+
+- Added DropTable, DropView and DropIndex ([#15], [#21])
+- Added Selinger-like planner for query optimization ([#23])
+- Added the support of indexing on multiple fields of a table ([#27])
+
+## Code-level Improvements
+
+- Implemented `Comparable` for `RecordId` and `BlockId` ([#18])
+
+## Bug Fixes
+
+- Fixed `NullPointerException` caused by `GROUP BY` query ([#16])
+- Fixed duplicate-postfix problem of B-tree indexes during logging ([#20])
+- Fixed the bug that uses too many threads caused by test cases ([#26])
+
+## Others
+
+- Added `CONTRIBUTING.md` for the newcomers to know how to contribute ([#22])
+- Removed `develop` branch and updated the corresponding configuration in `.travis.yml` ([#22])
+
+[#15]: https://github.com/vanilladb/vanillacore/pull/15
+[#16]: https://github.com/vanilladb/vanillacore/pull/16
+[#18]: https://github.com/vanilladb/vanillacore/pull/18
+[#20]: https://github.com/vanilladb/vanillacore/pull/20
+[#21]: https://github.com/vanilladb/vanillacore/pull/21
+[#22]: https://github.com/vanilladb/vanillacore/pull/22
+[#23]: https://github.com/vanilladb/vanillacore/pull/23
+[#26]: https://github.com/vanilladb/vanillacore/pull/26
+[#27]: https://github.com/vanilladb/vanillacore/pull/27
 
 # Version 0.2.2 (2017-06-08)
 
