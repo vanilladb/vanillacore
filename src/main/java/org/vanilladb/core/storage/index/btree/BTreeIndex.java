@@ -257,7 +257,6 @@ public class BTreeIndex extends Index {
 		try {
 			ccMgr.readFile(fileName);
 		} catch (LockAbortException e) {
-			tx.rollback();
 			throw e;
 		}
 		return VanillaDb.fileMgr().size(fileName);
@@ -267,7 +266,6 @@ public class BTreeIndex extends Index {
 		try {
 			ccMgr.modifyFile(fileName);
 		} catch (LockAbortException e) {
-			tx.rollback();
 			throw e;
 		}
 		BTPageFormatter btpf = new BTPageFormatter(sch, flags);

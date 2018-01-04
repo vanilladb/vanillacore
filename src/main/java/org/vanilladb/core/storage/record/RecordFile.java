@@ -85,7 +85,6 @@ public class RecordFile implements Record {
 		try {
 			tx.concurrencyMgr().modifyFile(fileName);
 		} catch (LockAbortException e) {
-			tx.rollback();
 			throw e;
 		}
 		// header should be the first block of the given file
@@ -229,7 +228,6 @@ public class RecordFile implements Record {
 			if (!isTempTable())
 				tx.concurrencyMgr().modifyFile(fileName);
 		} catch (LockAbortException e) {
-			tx.rollback();
 			throw e;
 		}
 
@@ -291,7 +289,6 @@ public class RecordFile implements Record {
 			if (!isTempTable())
 				tx.concurrencyMgr().modifyFile(fileName);
 		} catch (LockAbortException e) {
-			tx.rollback();
 			throw e;
 		}
 
@@ -370,7 +367,6 @@ public class RecordFile implements Record {
 			if (!isTempTable())
 				tx.concurrencyMgr().readFile(fileName);
 		} catch (LockAbortException e) {
-			tx.rollback();
 			throw e;
 		}
 		return VanillaDb.fileMgr().size(fileName);
@@ -398,7 +394,6 @@ public class RecordFile implements Record {
 			if (!isTempTable())
 				tx.concurrencyMgr().insertBlock(buff.block());
 		} catch (LockAbortException e) {
-			tx.rollback();
 			throw e;
 		}
 
@@ -410,7 +405,6 @@ public class RecordFile implements Record {
 			if (!isTempTable())
 				tx.concurrencyMgr().lockRecordFileHeader(headerBlk);
 		} catch (LockAbortException e) {
-			tx.rollback();
 			throw e;
 		}
 		return new FileHeaderPage(fileName, tx);

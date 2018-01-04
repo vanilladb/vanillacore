@@ -349,7 +349,6 @@ public class BTreeLeaf {
 				return new DirEntry(splitKey, newBlkNum);
 			}
 		} catch (LockAbortException e) {
-			tx.rollback();
 			throw e;
 		}
 	}
@@ -420,7 +419,6 @@ public class BTreeLeaf {
 				}
 			}
 		} catch (LockAbortException e) {
-			tx.rollback();
 			throw e;
 		}
 	}
@@ -478,7 +476,6 @@ public class BTreeLeaf {
 		try {
 			ccMgr.readLeafBlock(blk);
 		} catch (LockAbortException e) {
-			tx.rollback();
 			throw e;
 		}
 		currentPage.close();

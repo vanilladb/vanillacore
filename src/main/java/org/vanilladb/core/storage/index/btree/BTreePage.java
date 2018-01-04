@@ -383,7 +383,6 @@ public class BTreePage {
 			tx.bufferMgr().unpin(buff);
 			return buff.block();
 		} catch (LockAbortException e) {
-			tx.rollback();
 			throw e;
 		}
 	}

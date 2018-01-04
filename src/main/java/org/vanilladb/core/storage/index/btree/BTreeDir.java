@@ -255,7 +255,6 @@ public class BTreeDir {
 			ccMgr.modifyLeafBlock(leafBlk); // exclusive lock
 			return leafBlk;
 		} catch (LockAbortException e) {
-			tx.rollback();
 			throw e;
 		}
 	}
@@ -291,7 +290,6 @@ public class BTreeDir {
 			ccMgr.crabBackDirBlockForRead(currentPage.currentBlk());
 			return leafBlk;
 		} catch (LockAbortException e) {
-			tx.rollback();
 			throw e;
 		}
 	}
@@ -327,7 +325,6 @@ public class BTreeDir {
 			ccMgr.crabBackDirBlockForRead(currentPage.currentBlk());
 			return leafBlk;
 		} catch (LockAbortException e) {
-			tx.rollback();
 			throw e;
 		}
 	}

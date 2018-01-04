@@ -354,7 +354,6 @@ public class RecordPage implements Record {
 			if (!isTempTable())
 				tx.concurrencyMgr().readRecord(new RecordId(blk, currentSlot));
 		} catch (LockAbortException e) {
-			tx.rollback();
 			throw e;
 		}
 		return currentBuff.getVal(offset, type);
@@ -367,7 +366,6 @@ public class RecordPage implements Record {
 			if (!isTempTable())
 				tx.concurrencyMgr().modifyRecord(new RecordId(blk, currentSlot));
 		} catch (LockAbortException e) {
-			tx.rollback();
 			throw e;
 		}
 		LogSeqNum lsn = doLog ? tx.recoveryMgr().logSetVal(currentBuff, offset, val)

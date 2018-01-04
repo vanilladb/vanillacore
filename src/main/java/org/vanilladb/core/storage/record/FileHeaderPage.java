@@ -150,7 +150,6 @@ public class FileHeaderPage {
 			if (!isTempTable())
 				tx.concurrencyMgr().readBlock(blk);
 		} catch (LockAbortException e) {
-			tx.rollback();
 			throw e;
 		}
 		return currentBuff.getVal(offset, type);
@@ -163,7 +162,6 @@ public class FileHeaderPage {
 			if (!isTempTable())
 				tx.concurrencyMgr().modifyBlock(blk);
 		} catch (LockAbortException e) {
-			tx.rollback();
 			throw e;
 		}
 		LogSeqNum lsn = tx.recoveryMgr().logSetVal(currentBuff, offset, val);
