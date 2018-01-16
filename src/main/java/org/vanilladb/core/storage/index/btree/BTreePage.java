@@ -376,15 +376,11 @@ public class BTreePage {
 	}
 
 	private BlockId appendBlock(long[] flags) {
-		try {
-			tx.concurrencyMgr().modifyFile(blk.fileName());
-			BTPageFormatter btpf = new BTPageFormatter(schema, flags);
-			Buffer buff = tx.bufferMgr().pinNew(blk.fileName(), btpf);
-			tx.bufferMgr().unpin(buff);
-			return buff.block();
-		} catch (LockAbortException e) {
-			throw e;
-		}
+		tx.concurrencyMgr().modifyFile(blk.fileName());
+		BTPageFormatter btpf = new BTPageFormatter(schema, flags);
+		Buffer buff = tx.bufferMgr().pinNew(blk.fileName(), btpf);
+		tx.bufferMgr().unpin(buff);
+		return buff.block();
 	}
 
 	private void setVal(int offset, Constant val) {

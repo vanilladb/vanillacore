@@ -254,20 +254,12 @@ public class BTreeIndex extends Index {
 	}
 
 	private long fileSize(String fileName) {
-		try {
-			ccMgr.readFile(fileName);
-		} catch (LockAbortException e) {
-			throw e;
-		}
+		ccMgr.readFile(fileName);
 		return VanillaDb.fileMgr().size(fileName);
 	}
 
 	private BlockId appendBlock(String fileName, Schema sch, long[] flags) {
-		try {
-			ccMgr.modifyFile(fileName);
-		} catch (LockAbortException e) {
-			throw e;
-		}
+		ccMgr.modifyFile(fileName);
 		BTPageFormatter btpf = new BTPageFormatter(sch, flags);
 
 		Buffer buff = tx.bufferMgr().pinNew(fileName, btpf);

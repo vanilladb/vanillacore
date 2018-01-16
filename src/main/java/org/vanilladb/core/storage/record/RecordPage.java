@@ -350,24 +350,16 @@ public class RecordPage implements Record {
 	}
 
 	private Constant getVal(int offset, Type type) {
-		try {
-			if (!isTempTable())
-				tx.concurrencyMgr().readRecord(new RecordId(blk, currentSlot));
-		} catch (LockAbortException e) {
-			throw e;
-		}
+		if (!isTempTable())
+			tx.concurrencyMgr().readRecord(new RecordId(blk, currentSlot));
 		return currentBuff.getVal(offset, type);
 	}
 
 	private void setVal(int offset, Constant val) {
 		if (tx.isReadOnly() && !isTempTable())
 			throw new UnsupportedOperationException();
-		try {
-			if (!isTempTable())
-				tx.concurrencyMgr().modifyRecord(new RecordId(blk, currentSlot));
-		} catch (LockAbortException e) {
-			throw e;
-		}
+		if (!isTempTable())
+			tx.concurrencyMgr().modifyRecord(new RecordId(blk, currentSlot));
 		LogSeqNum lsn = doLog ? tx.recoveryMgr().logSetVal(currentBuff, offset, val)
 				: null;
 		currentBuff.setVal(offset, val, tx.getTransactionNumber(), lsn);

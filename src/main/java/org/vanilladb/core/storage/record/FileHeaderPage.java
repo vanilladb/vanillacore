@@ -146,24 +146,16 @@ public class FileHeaderPage {
 	}
 
 	private Constant getVal(int offset, Type type) {
-		try {
-			if (!isTempTable())
-				tx.concurrencyMgr().readBlock(blk);
-		} catch (LockAbortException e) {
-			throw e;
-		}
+		if (!isTempTable())
+			tx.concurrencyMgr().readBlock(blk);
 		return currentBuff.getVal(offset, type);
 	}
 
 	private void setVal(int offset, Constant val) {
 		if (tx.isReadOnly() && !isTempTable())
 			throw new UnsupportedOperationException();
-		try {
-			if (!isTempTable())
-				tx.concurrencyMgr().modifyBlock(blk);
-		} catch (LockAbortException e) {
-			throw e;
-		}
+		if (!isTempTable())
+			tx.concurrencyMgr().modifyBlock(blk);
 		LogSeqNum lsn = tx.recoveryMgr().logSetVal(currentBuff, offset, val);
 		currentBuff.setVal(offset, val, tx.getTransactionNumber(), lsn);
 	}
