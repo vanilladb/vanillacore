@@ -235,12 +235,7 @@ public class HashIndex extends Index {
 	}
 
 	private long fileSize(String fileName) {
-		try {
-			tx.concurrencyMgr().readFile(fileName);
-		} catch (LockAbortException e) {
-			tx.rollback();
-			throw e;
-		}
+		tx.concurrencyMgr().readFile(fileName);
 		return VanillaDb.fileMgr().size(fileName);
 	}
 	

@@ -222,114 +222,99 @@ public class BTreeDir {
 		// search from root to level 0
 		dirsMayBeUpdated = new ArrayList<BlockId>();
 		BlockId parentBlk = currentPage.currentBlk();
-		try {
-			ccMgr.crabDownDirBlockForModification(parentBlk);
-			long childBlkNum = findChildBlockNumber(searchKey);
-			BlockId childBlk;
-			dirsMayBeUpdated.add(parentBlk);
+		ccMgr.crabDownDirBlockForModification(parentBlk);
+		long childBlkNum = findChildBlockNumber(searchKey);
+		BlockId childBlk;
+		dirsMayBeUpdated.add(parentBlk);
 
-			// if it's not the lowest directory block
-			while (getLevelFlag(currentPage) > 0) {
-				// read child block
-				childBlk = new BlockId(currentPage.currentBlk().fileName(), childBlkNum);
-				ccMgr.crabDownDirBlockForModification(childBlk);
-				BTreePage child = new BTreePage(childBlk, NUM_FLAGS, schema, tx);
+		// if it's not the lowest directory block
+		while (getLevelFlag(currentPage) > 0) {
+			// read child block
+			childBlk = new BlockId(currentPage.currentBlk().fileName(), childBlkNum);
+			ccMgr.crabDownDirBlockForModification(childBlk);
+			BTreePage child = new BTreePage(childBlk, NUM_FLAGS, schema, tx);
 
-				// crabs back the parent if the child is not possible to split
-				if (!child.isGettingFull()) {
-					for (int i = dirsMayBeUpdated.size() - 1; i >= 0; i--)
-						ccMgr.crabBackDirBlockForModification(dirsMayBeUpdated.get(i));
-					dirsMayBeUpdated.clear();
-				}
-				dirsMayBeUpdated.add(childBlk);
-
-				// move current block to child block
-				currentPage.close();
-				currentPage = child;
-				childBlkNum = findChildBlockNumber(searchKey);
-				parentBlk = currentPage.currentBlk();
+			// crabs back the parent if the child is not possible to split
+			if (!child.isGettingFull()) {
+				for (int i = dirsMayBeUpdated.size() - 1; i >= 0; i--)
+					ccMgr.crabBackDirBlockForModification(dirsMayBeUpdated.get(i));
+				dirsMayBeUpdated.clear();
 			}
+			dirsMayBeUpdated.add(childBlk);
 
-			// get leaf block id
-			BlockId leafBlk = new BlockId(leafFileName, childBlkNum);
-			ccMgr.modifyLeafBlock(leafBlk); // exclusive lock
-			return leafBlk;
-		} catch (LockAbortException e) {
-			tx.rollback();
-			throw e;
+			// move current block to child block
+			currentPage.close();
+			currentPage = child;
+			childBlkNum = findChildBlockNumber(searchKey);
+			parentBlk = currentPage.currentBlk();
 		}
+
+		// get leaf block id
+		BlockId leafBlk = new BlockId(leafFileName, childBlkNum);
+		ccMgr.modifyLeafBlock(leafBlk); // exclusive lock
+		return leafBlk;
 	}
 
 	private BlockId searchForDelete(SearchKey searchKey, String leafFileName) {
 		// search from root to level 0
 		BlockId parentBlk = currentPage.currentBlk();
-		try {
-			ccMgr.crabDownDirBlockForRead(parentBlk);
-			long childBlkNum = findChildBlockNumber(searchKey);
-			BlockId childBlk;
+		ccMgr.crabDownDirBlockForRead(parentBlk);
+		long childBlkNum = findChildBlockNumber(searchKey);
+		BlockId childBlk;
 
-			// if it's not the lowest directory block
-			while (getLevelFlag(currentPage) > 0) {
-				// read child block
-				childBlk = new BlockId(currentPage.currentBlk().fileName(), childBlkNum);
-				ccMgr.crabDownDirBlockForRead(childBlk);
-				BTreePage child = new BTreePage(childBlk, NUM_FLAGS, schema, tx);
+		// if it's not the lowest directory block
+		while (getLevelFlag(currentPage) > 0) {
+			// read child block
+			childBlk = new BlockId(currentPage.currentBlk().fileName(), childBlkNum);
+			ccMgr.crabDownDirBlockForRead(childBlk);
+			BTreePage child = new BTreePage(childBlk, NUM_FLAGS, schema, tx);
 
-				// release parent block
-				ccMgr.crabBackDirBlockForRead(parentBlk);
-				currentPage.close();
+			// release parent block
+			ccMgr.crabBackDirBlockForRead(parentBlk);
+			currentPage.close();
 
-				// move current block to child block
-				currentPage = child;
-				childBlkNum = findChildBlockNumber(searchKey);
-				parentBlk = currentPage.currentBlk();
-			}
-
-			// get leaf block id
-			BlockId leafBlk = new BlockId(leafFileName, childBlkNum);
-			ccMgr.modifyLeafBlock(leafBlk); // exclusive lock
-			ccMgr.crabBackDirBlockForRead(currentPage.currentBlk());
-			return leafBlk;
-		} catch (LockAbortException e) {
-			tx.rollback();
-			throw e;
+			// move current block to child block
+			currentPage = child;
+			childBlkNum = findChildBlockNumber(searchKey);
+			parentBlk = currentPage.currentBlk();
 		}
+
+		// get leaf block id
+		BlockId leafBlk = new BlockId(leafFileName, childBlkNum);
+		ccMgr.modifyLeafBlock(leafBlk); // exclusive lock
+		ccMgr.crabBackDirBlockForRead(currentPage.currentBlk());
+		return leafBlk;
 	}
 
 	private BlockId searchForRead(SearchKey searchKey, String leafFileName) {
 		// search from root to level 0
 		BlockId parentBlk = currentPage.currentBlk();
-		try {
-			ccMgr.crabDownDirBlockForRead(parentBlk);
-			long childBlkNum = findChildBlockNumber(searchKey);
-			BlockId childBlk;
+		ccMgr.crabDownDirBlockForRead(parentBlk);
+		long childBlkNum = findChildBlockNumber(searchKey);
+		BlockId childBlk;
 
-			// if it's not the lowest directory block
-			while (getLevelFlag(currentPage) > 0) {
-				// read child block
-				childBlk = new BlockId(currentPage.currentBlk().fileName(), childBlkNum);
-				ccMgr.crabDownDirBlockForRead(childBlk);
-				BTreePage child = new BTreePage(childBlk, NUM_FLAGS, schema, tx);
+		// if it's not the lowest directory block
+		while (getLevelFlag(currentPage) > 0) {
+			// read child block
+			childBlk = new BlockId(currentPage.currentBlk().fileName(), childBlkNum);
+			ccMgr.crabDownDirBlockForRead(childBlk);
+			BTreePage child = new BTreePage(childBlk, NUM_FLAGS, schema, tx);
 
-				// release parent block
-				ccMgr.crabBackDirBlockForRead(parentBlk);
-				currentPage.close();
+			// release parent block
+			ccMgr.crabBackDirBlockForRead(parentBlk);
+			currentPage.close();
 
-				// move current block to child block
-				currentPage = child;
-				childBlkNum = findChildBlockNumber(searchKey);
-				parentBlk = currentPage.currentBlk();
-			}
-
-			// get leaf block id
-			BlockId leafBlk = new BlockId(leafFileName, childBlkNum);
-			ccMgr.readLeafBlock(leafBlk); // shared lock
-			ccMgr.crabBackDirBlockForRead(currentPage.currentBlk());
-			return leafBlk;
-		} catch (LockAbortException e) {
-			tx.rollback();
-			throw e;
+			// move current block to child block
+			currentPage = child;
+			childBlkNum = findChildBlockNumber(searchKey);
+			parentBlk = currentPage.currentBlk();
 		}
+
+		// get leaf block id
+		BlockId leafBlk = new BlockId(leafFileName, childBlkNum);
+		ccMgr.readLeafBlock(leafBlk); // shared lock
+		ccMgr.crabBackDirBlockForRead(currentPage.currentBlk());
+		return leafBlk;
 	}
 
 	private long findChildBlockNumber(SearchKey searchKey) {

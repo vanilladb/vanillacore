@@ -276,81 +276,76 @@ public class BTreeLeaf {
 	 *         no split
 	 */
 	public DirEntry insert(RecordId dataRecordId) {
-		try {
-			// search range must be a constant
-			if (!searchRange.isSingleValue())
-				throw new IllegalStateException();
-			
-			// ccMgr.modifyLeafBlock(currentPage.currentBlk());
-			currentSlot++;
-			SearchKey searchKey = searchRange.asSearchKey();
-			insert(currentSlot, searchKey, dataRecordId);
-			
+		// search range must be a constant
+		if (!searchRange.isSingleValue())
+			throw new IllegalStateException();
+		
+		// ccMgr.modifyLeafBlock(currentPage.currentBlk());
+		currentSlot++;
+		SearchKey searchKey = searchRange.asSearchKey();
+		insert(currentSlot, searchKey, dataRecordId);
+		
+		/*
+		 * If the inserted key is less than the key stored in the overflow
+		 * blocks, split this block to make sure that the key of the first
+		 * record in every block will be the same as the key of records in
+		 * the overflow blocks.
+		 */
+		if (currentSlot == 0 && getOverflowFlag(currentPage) != -1 &&
+				!getKey(currentPage, 1, keyType.length()).equals(searchKey)) {
+			SearchKey splitKey = getKey(currentPage, 1, keyType.length());
+			long newBlkNum = currentPage.split(1,
+					new long[] { getOverflowFlag(currentPage),
+							getSiblingFlag(currentPage) });
+			setOverflowFlag(currentPage, -1);
+			setSiblingFlag(currentPage, newBlkNum);
+			return new DirEntry(splitKey, newBlkNum);
+		}
+		
+		if (!currentPage.isFull())
+			return null;
+		
+		/*
+		 * If this block is full, then split the block and return the directory
+		 * entry of the new block.
+		 */
+		SearchKey firstKey = getKey(currentPage, 0, keyType.length());
+		SearchKey lastKey = getKey(currentPage, currentPage.getNumRecords() - 1,
+				keyType.length());
+		if (lastKey.equals(firstKey)) {
 			/*
-			 * If the inserted key is less than the key stored in the overflow
-			 * blocks, split this block to make sure that the key of the first
-			 * record in every block will be the same as the key of records in
-			 * the overflow blocks.
+			 * If all of the records in the page have the same key, then the
+			 * block does not split; instead, all but one of the records are
+			 * placed into an overflow block.
 			 */
-			if (currentSlot == 0 && getOverflowFlag(currentPage) != -1 &&
-					!getKey(currentPage, 1, keyType.length()).equals(searchKey)) {
-				SearchKey splitKey = getKey(currentPage, 1, keyType.length());
-				long newBlkNum = currentPage.split(1,
-						new long[] { getOverflowFlag(currentPage),
-								getSiblingFlag(currentPage) });
-				setOverflowFlag(currentPage, -1);
-				setSiblingFlag(currentPage, newBlkNum);
-				return new DirEntry(splitKey, newBlkNum);
-			}
+			long overflowFlag = (getOverflowFlag(currentPage) == -1) ?
+					currentPage.currentBlk().number() : getOverflowFlag(currentPage);
+			long newBlkNum = currentPage.split(1, new long[] { overflowFlag, -1 });
+			setOverflowFlag(currentPage, newBlkNum);
+			return null;
 			
-			if (!currentPage.isFull())
-				return null;
+		} else {
+			int splitPos = currentPage.getNumRecords() / 2;
+			SearchKey splitKey = getKey(currentPage, splitPos, keyType.length());
 			
-			/*
-			 * If this block is full, then split the block and return the directory
-			 * entry of the new block.
-			 */
-			SearchKey firstKey = getKey(currentPage, 0, keyType.length());
-			SearchKey lastKey = getKey(currentPage, currentPage.getNumRecords() - 1,
-					keyType.length());
-			if (lastKey.equals(firstKey)) {
-				/*
-				 * If all of the records in the page have the same key, then the
-				 * block does not split; instead, all but one of the records are
-				 * placed into an overflow block.
-				 */
-				long overflowFlag = (getOverflowFlag(currentPage) == -1) ?
-						currentPage.currentBlk().number() : getOverflowFlag(currentPage);
-				long newBlkNum = currentPage.split(1, new long[] { overflowFlag, -1 });
-				setOverflowFlag(currentPage, newBlkNum);
-				return null;
-				
+			// records having the same key must be in the same block
+			if (splitKey.equals(firstKey)) {
+				// move right, looking for a different key
+				while (getKey(currentPage, splitPos, keyType.length()).equals(splitKey))
+					splitPos++;
+				splitKey = getKey(currentPage, splitPos, keyType.length());
 			} else {
-				int splitPos = currentPage.getNumRecords() / 2;
-				SearchKey splitKey = getKey(currentPage, splitPos, keyType.length());
-				
-				// records having the same key must be in the same block
-				if (splitKey.equals(firstKey)) {
-					// move right, looking for a different key
-					while (getKey(currentPage, splitPos, keyType.length()).equals(splitKey))
-						splitPos++;
-					splitKey = getKey(currentPage, splitPos, keyType.length());
-				} else {
-					// move left, looking for first entry having that key
-					while (getKey(currentPage, splitPos - 1, keyType.length())
-							.equals(splitKey))
-						splitPos--;
-				}
-				
-				// split the block
-				long newBlkNum = currentPage.split(splitPos, new long[] { -1,
-						getSiblingFlag(currentPage) });
-				setSiblingFlag(currentPage, newBlkNum);
-				return new DirEntry(splitKey, newBlkNum);
+				// move left, looking for first entry having that key
+				while (getKey(currentPage, splitPos - 1, keyType.length())
+						.equals(splitKey))
+					splitPos--;
 			}
-		} catch (LockAbortException e) {
-			tx.rollback();
-			throw e;
+			
+			// split the block
+			long newBlkNum = currentPage.split(splitPos, new long[] { -1,
+					getSiblingFlag(currentPage) });
+			setSiblingFlag(currentPage, newBlkNum);
+			return new DirEntry(splitKey, newBlkNum);
 		}
 	}
 
@@ -363,65 +358,60 @@ public class BTreeLeaf {
 	 *            the data record ID whose record is to be deleted
 	 */
 	public void delete(RecordId dataRecordId) {
-		try {
-			// search range must be a constant
-			if (!searchRange.isSingleValue())
-				throw new IllegalStateException();
+		// search range must be a constant
+		if (!searchRange.isSingleValue())
+			throw new IllegalStateException();
 
-			// delete all entry with the specific key
-			while (next())
-				if (getDataRecordId().equals(dataRecordId)) {
-					// ccMgr.modifyLeafBlock(currentPage.currentBlk());
-					delete(currentSlot);
-					break;
-				}
+		// delete all entry with the specific key
+		while (next())
+			if (getDataRecordId().equals(dataRecordId)) {
+				// ccMgr.modifyLeafBlock(currentPage.currentBlk());
+				delete(currentSlot);
+				break;
+			}
 
-			if (!isOverflowing) {
-				/*
-				 * If the current regular block is empty or the key of the first
-				 * record is not equal to that of records in overflow blocks,
-				 * transfer one record from a overflow block to here (if any).
-				 */
-				if (getOverflowFlag(currentPage) != -1) {
-					// get overflow page
-					BlockId blk = new BlockId(currentPage.currentBlk().fileName(), getOverflowFlag(currentPage));
-					ccMgr.modifyLeafBlock(blk);
-					BTreePage overflowPage = new BTreePage(blk, NUM_FLAGS, schema, tx);
+		if (!isOverflowing) {
+			/*
+			 * If the current regular block is empty or the key of the first
+			 * record is not equal to that of records in overflow blocks,
+			 * transfer one record from a overflow block to here (if any).
+			 */
+			if (getOverflowFlag(currentPage) != -1) {
+				// get overflow page
+				BlockId blk = new BlockId(currentPage.currentBlk().fileName(), getOverflowFlag(currentPage));
+				ccMgr.modifyLeafBlock(blk);
+				BTreePage overflowPage = new BTreePage(blk, NUM_FLAGS, schema, tx);
 
-					SearchKey firstKey = getKey(currentPage, 0, keyType.length());
-					if ((currentPage.getNumRecords() == 0
-							|| (overflowPage.getNumRecords() != 0
-							&& getKey(overflowPage, 0, keyType.length()) != firstKey))) {
-						overflowPage.transferRecords(overflowPage.getNumRecords() - 1,
-								currentPage, 0, 1);
-						// if the overflow block is empty, make it a dead block
-						if (overflowPage.getNumRecords() == 0) {
-							long overflowFlag = (getOverflowFlag(overflowPage)
-									== currentPage.currentBlk().number())
-									? -1 : getOverflowFlag(overflowPage);
-							setOverflowFlag(currentPage, overflowFlag);
-						}
-						overflowPage.close();
+				SearchKey firstKey = getKey(currentPage, 0, keyType.length());
+				if ((currentPage.getNumRecords() == 0
+						|| (overflowPage.getNumRecords() != 0
+						&& getKey(overflowPage, 0, keyType.length()) != firstKey))) {
+					overflowPage.transferRecords(overflowPage.getNumRecords() - 1,
+							currentPage, 0, 1);
+					// if the overflow block is empty, make it a dead block
+					if (overflowPage.getNumRecords() == 0) {
+						long overflowFlag = (getOverflowFlag(overflowPage)
+								== currentPage.currentBlk().number())
+								? -1 : getOverflowFlag(overflowPage);
+						setOverflowFlag(currentPage, overflowFlag);
 					}
-				}
-			} else {
-				/*
-				 * If the current overflow block is empty, make it a dead block.
-				 */
-				if (currentPage.getNumRecords() == 0) {
-					// reset the overflow flag of original page
-					BlockId blk = new BlockId(currentPage.currentBlk().fileName(), moveFrom);
-					// ccMgr.modifyLeafBlock(blk);
-					BTreePage prePage = new BTreePage(blk, NUM_FLAGS, schema, tx);
-					long overflowFlag = (getOverflowFlag(currentPage) == prePage.currentBlk().number()) ? -1
-							: getOverflowFlag(currentPage);
-					setOverflowFlag(prePage, overflowFlag);
-					prePage.close();
+					overflowPage.close();
 				}
 			}
-		} catch (LockAbortException e) {
-			tx.rollback();
-			throw e;
+		} else {
+			/*
+			 * If the current overflow block is empty, make it a dead block.
+			 */
+			if (currentPage.getNumRecords() == 0) {
+				// reset the overflow flag of original page
+				BlockId blk = new BlockId(currentPage.currentBlk().fileName(), moveFrom);
+				// ccMgr.modifyLeafBlock(blk);
+				BTreePage prePage = new BTreePage(blk, NUM_FLAGS, schema, tx);
+				long overflowFlag = (getOverflowFlag(currentPage) == prePage.currentBlk().number()) ? -1
+						: getOverflowFlag(currentPage);
+				setOverflowFlag(prePage, overflowFlag);
+				prePage.close();
+			}
 		}
 	}
 	
@@ -475,12 +465,7 @@ public class BTreeLeaf {
 	private void moveTo(long blkNum, int slot) {
 		moveFrom = currentPage.currentBlk().number(); // for deletion
 		BlockId blk = new BlockId(currentPage.currentBlk().fileName(), blkNum);
-		try {
-			ccMgr.readLeafBlock(blk);
-		} catch (LockAbortException e) {
-			tx.rollback();
-			throw e;
-		}
+		ccMgr.readLeafBlock(blk);
 		currentPage.close();
 		currentPage = new BTreePage(blk, NUM_FLAGS, schema, tx);
 		currentSlot = slot;
