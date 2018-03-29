@@ -33,7 +33,6 @@ import org.vanilladb.core.storage.file.Page;
 import org.vanilladb.core.storage.log.LogSeqNum;
 import org.vanilladb.core.storage.metadata.TableInfo;
 import org.vanilladb.core.storage.tx.Transaction;
-import org.vanilladb.core.storage.tx.concurrency.LockAbortException;
 
 /**
  * Manages the placement and access of records in a block.
@@ -135,6 +134,8 @@ public class RecordPage implements Record {
 	 *            the table's metadata
 	 * @param tx
 	 *            the transaction
+	 * @param doLog
+	 *            will it log the modification
 	 */
 	public RecordPage(BlockId blk, TableInfo ti, Transaction tx, boolean doLog) {
 		this.blk = blk;

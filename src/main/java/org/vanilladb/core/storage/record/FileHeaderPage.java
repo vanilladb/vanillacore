@@ -27,7 +27,6 @@ import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.file.Page;
 import org.vanilladb.core.storage.log.LogSeqNum;
 import org.vanilladb.core.storage.tx.Transaction;
-import org.vanilladb.core.storage.tx.concurrency.LockAbortException;
 
 /**
  * Manages the placement and access of metadata in the file header.

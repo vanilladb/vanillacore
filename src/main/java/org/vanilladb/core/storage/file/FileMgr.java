@@ -199,7 +199,7 @@ public class FileMgr {
 
 			// Append the block to the file
 			long newSize = fileChannel.append(buffer);
-			
+
 			// Return the new block id
 			return new BlockId(fileName, newSize / BLOCK_SIZE - 1);
 
@@ -315,6 +315,9 @@ public class FileMgr {
 
 	/**
 	 * Delete the specified file.
+	 * 
+	 * @param fileName
+	 *            the name of the target file
 	 */
 	public void delete(String fileName) {
 		try {

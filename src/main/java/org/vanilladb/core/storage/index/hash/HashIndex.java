@@ -21,7 +21,6 @@ import static org.vanilladb.core.sql.Type.INTEGER;
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.BigIntConstant;
 import org.vanilladb.core.sql.Constant;
-import org.vanilladb.core.sql.ConstantRange;
 import org.vanilladb.core.sql.IntegerConstant;
 import org.vanilladb.core.sql.Schema;
 import org.vanilladb.core.storage.buffer.Buffer;
@@ -36,7 +35,6 @@ import org.vanilladb.core.storage.record.RecordFile;
 import org.vanilladb.core.storage.record.RecordId;
 import org.vanilladb.core.storage.record.RecordPage;
 import org.vanilladb.core.storage.tx.Transaction;
-import org.vanilladb.core.storage.tx.concurrency.LockAbortException;
 import org.vanilladb.core.util.CoreProperties;
 
 /**
@@ -92,8 +90,8 @@ public class HashIndex extends Index {
 	 * 
 	 * @param ii
 	 *            the information of this index
-	 * @param fldType
-	 *            the type of the indexed field
+	 * @param keyType
+	 *            the type of the search key
 	 * @param tx
 	 *            the calling transaction
 	 */
@@ -120,7 +118,7 @@ public class HashIndex extends Index {
 	 * then opens a {@link RecordFile} on the file corresponding to the bucket.
 	 * The record file for the previous bucket (if any) is closed.
 	 * 
-	 * @see Index#beforeFirst(ConstantRange)
+	 * @see Index#beforeFirst(SearchRange)
 	 */
 	@Override
 	public void beforeFirst(SearchRange searchRange) {
@@ -171,7 +169,7 @@ public class HashIndex extends Index {
 	/**
 	 * Inserts a new index record into this index.
 	 * 
-	 * @see Index#insert(Constant, RecordId, boolean)
+	 * @see Index#insert(SearchKey, RecordId, boolean)
 	 */
 	@Override
 	public void insert(SearchKey key, RecordId dataRecordId, boolean doLogicalLogging) {
@@ -199,7 +197,7 @@ public class HashIndex extends Index {
 	/**
 	 * Deletes the specified index record.
 	 * 
-	 * @see Index#delete(Constant, RecordId, boolean)
+	 * @see Index#delete(SearchKey, RecordId, boolean)
 	 */
 	@Override
 	public void delete(SearchKey key, RecordId dataRecordId, boolean doLogicalLogging) {

@@ -51,8 +51,8 @@ public class IndexJoinPlan extends AbstractJoinPlan {
 	 *            the right-hand table plan
 	 * @param ii
 	 *            information about the right-hand index
-	 * @param joinField
-	 *            the left-hand field used for joining
+	 * @param joinFields
+	 *            the mapping of join fields from LHS to RHS
 	 * @param tx
 	 *            the calling transaction
 	 */

@@ -94,7 +94,7 @@ class ViewMgr {
 	// XXX: This makes the storage engine depend on the query engine.
 	// We may have to come out a better method.
 	public Collection<String> getViewNamesByTable(String tblName, Transaction tx) {
-		Collection<String> result = new LinkedList();
+		Collection<String> result = new LinkedList<String>();
 
 		TableInfo ti = tblMgr.getTableInfo(VCAT, tx);
 		RecordFile rf = ti.open(tx, true);
