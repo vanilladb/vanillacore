@@ -72,11 +72,7 @@ public class SpResultRecord implements Record, Serializable {
 	public int hashCode() {
 		return toString().hashCode();
 	}
-
-	/**
-	 * Serialize this {@code SpResultRecord} instance.
-	 * 
-	 */
+	
 	private void writeObject(ObjectOutputStream out) throws IOException {
 		Set<String> fldsSet = fldValueMap.keySet();
 		out.defaultWriteObject();

@@ -38,16 +38,15 @@ public abstract class Index {
 	 * 
 	 * @param idxType
 	 *            the index type
-	 * @param fldType
-	 *            the type of the indexed field
+	 * @param keyType
+	 *            the type of the search key
 	 * @param totRecs
 	 *            the total number of records in the table
 	 * @param matchRecs
 	 *            the number of matching records
 	 * @return the estimated the number of block accesses
 	 */
-	public static long searchCost(IndexType idxType, SearchKeyType keyType, long totRecs,
-			long matchRecs) {
+	public static long searchCost(IndexType idxType, SearchKeyType keyType, long totRecs, long matchRecs) {
 		if (idxType == IndexType.HASH)
 			return HashIndex.searchCost(keyType, totRecs, matchRecs);
 		else if (idxType == IndexType.BTREE)
@@ -64,19 +63,19 @@ public abstract class Index {
 		else
 			throw new IllegalArgumentException("unsupported index type");
 	}
-	
+
 	protected IndexInfo ii;
 	protected SearchKeyType keyType;
 	protected Transaction tx;
 	protected String dataFileName;
-	
+
 	/**
 	 * Opens a hash index for the specified index.
 	 * 
 	 * @param ii
 	 *            the information of this index
 	 * @param keyType
-	 *            the types of the indexed fields
+	 *            the type of the search key
 	 * @param tx
 	 *            the calling transaction
 	 */
@@ -119,6 +118,8 @@ public abstract class Index {
 	 *            the key in the new index record.
 	 * @param dataRecordId
 	 *            the data record ID in the new index record.
+	 * @param doLogicalLogging
+	 *            is logical logging enabled
 	 */
 	public abstract void insert(SearchKey key, RecordId dataRecordId, boolean doLogicalLogging);
 
@@ -129,6 +130,8 @@ public abstract class Index {
 	 *            the key of the deleted index record
 	 * @param dataRecordId
 	 *            the data record ID of the deleted index record
+	 * @param doLogicalLogging
+	 *            is logical logging enabled
 	 */
 	public abstract void delete(SearchKey key, RecordId dataRecordId, boolean doLogicalLogging);
 
@@ -141,11 +144,11 @@ public abstract class Index {
 	 * Preload the index blocks to memory.
 	 */
 	public abstract void preLoadToMemory();
-	
+
 	public IndexInfo getIndexInfo() {
 		return ii;
 	}
-	
+
 	public SearchKeyType getKeyType() {
 		return keyType;
 	}

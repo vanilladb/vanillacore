@@ -31,7 +31,6 @@ import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.file.Page;
 import org.vanilladb.core.storage.log.LogSeqNum;
 import org.vanilladb.core.storage.tx.Transaction;
-import org.vanilladb.core.storage.tx.concurrency.LockAbortException;
 
 /**
  * A page corresponding to a single B-tree block in a file for {@link BTreeDir}
@@ -57,6 +56,8 @@ public class BTreePage {
 	/**
 	 * Returns the offset of a specified field within a record.
 	 * 
+	 * @param sch
+	 *            the schema of the target index
 	 * @param fldName
 	 *            the name of the field
 	 * 
@@ -95,6 +96,8 @@ public class BTreePage {
 	/**
 	 * Returns the number of bytes required to store a record in disk.
 	 * 
+	 * @param sch
+	 *            the schema of the target index
 	 * @return the size of a record, in bytes
 	 */
 	public static int slotSize(Schema sch) {
@@ -103,7 +106,7 @@ public class BTreePage {
 			pos += Page.maxSize(sch.type(fldname));
 		return pos;
 	}
-	
+
 	public static int maxNumOfSlots(int numOfFlags, Schema sch) {
 		int slotSize = slotSize(sch);
 		int flagSize = numOfFlags * Type.BIGINT.maxSize();
@@ -305,21 +308,21 @@ public class BTreePage {
 		// not deal with the problem that the transfer data is larger than a
 		// block
 		num = Math.min(getNumRecords() - start, num);
-		
+
 		// Move the records in the destination page in order to clean a space
 		for (int i = 0; i < dest.getNumRecords(); i++)
 			dest.copyRecord(destStart + i, destStart + num + i);
-		
+
 		// Copy the records from the source page to the destination page
 		for (int i = 0; i < num; i++)
 			for (String fld : schema.fields())
 				dest.setVal(destStart + i, fld, getVal(start + i, fld));
-		
+
 		// Move the rest records in the source page for deletion
 		for (int i = 0; i < getNumRecords() - 1 - num; i++)
 			if (start + num + i < getNumRecords())
 				copyRecord(start + num + i, start + i);
-		
+
 		// Update the number of records in both pages
 		setNumRecords(getNumRecords() - num);
 		dest.setNumRecords(dest.getNumRecords() + num);
@@ -348,14 +351,14 @@ public class BTreePage {
 		// Optimization:
 		numberOfRecords = n;
 	}
-	
+
 	private void setNumRecordsWithoutLogging(int n) {
 		Constant v = new IntegerConstant(n);
 		setValWithoutLogging(0, v);
 		// Optimization:
 		numberOfRecords = n;
 	}
-	
+
 	private void copyRecord(int from, int to) {
 		for (String fldname : schema.fields())
 			setVal(to, fldname, getVal(from, fldname));

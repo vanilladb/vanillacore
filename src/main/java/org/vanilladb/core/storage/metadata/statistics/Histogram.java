@@ -78,6 +78,10 @@ public class Histogram {
 
 	/**
 	 * Resets the buckets of given field.
+	 * 
+	 * @param fldName
+	 *            the specified field
+	 * @param bkts
 	 */
 	public void setBuckets(String fldName, Collection<Bucket> bkts) {
 		if (!dists.containsKey(fldName))
@@ -105,6 +109,8 @@ public class Histogram {
 	 * Returns the estimated number of distinct values in the specified field of
 	 * the table approximated by this histogram.
 	 * 
+	 * @param fldName
+	 *            the specified field
 	 * @return the estimated number of distinct values in the specified field
 	 */
 	public double distinctValues(String fldName) {
@@ -142,8 +148,7 @@ public class Histogram {
 
 		sb = new StringBuilder();
 		sb.append("{");
-		sb.append("\n" + mIdt + "numRecs: "
-				+ String.format("%1$.1f", recordsOutput()));
+		sb.append("\n" + mIdt + "numRecs: " + String.format("%1$.1f", recordsOutput()));
 		for (String fld : new TreeSet<String>(fields())) {
 			sb.append(",\n" + mIdt + fld + ": [");
 			boolean fstBkt = true;

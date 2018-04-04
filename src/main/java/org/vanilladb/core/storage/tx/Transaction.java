@@ -41,15 +41,28 @@ public class Transaction {
 	private boolean readOnly;
 
 	/**
-	 * Creates a new transaction and associates it with a recovery manager and a
-	 * concurrency manager. This constructor depends on the file, log, and
-	 * buffer managers from {@link VanillaDb}, which are created during system
-	 * initialization. Thus this constructor cannot be called until
-	 * {@link VanillaDb#init(String)} is called first.
+	 * Creates a new transaction and associates it with a recovery manager, a
+	 * concurrency manager, and a buffer manager. This constructor depends on
+	 * the file, log, and buffer managers from {@link VanillaDb}, which are
+	 * created during system initialization. Thus this constructor cannot be
+	 * called until {@link VanillaDb#init(String)} is called first.
+	 * 
+	 * @param txMgr
+	 *            the transaction manager
+	 * @param concurMgr
+	 *            the associated concurrency manager
+	 * @param recoveryMgr
+	 *            the associated recovery manager
+	 * @param bufferMgr
+	 *            the associated buffer manager
+	 * @param readOnly
+	 *            is read-only mode
+	 * @param txNum
+	 *            the number of the transaction
 	 */
 	public Transaction(TransactionMgr txMgr, TransactionLifecycleListener concurMgr,
-			TransactionLifecycleListener recoveryMgr, TransactionLifecycleListener bufferMgr,
-			boolean readOnly, long txNum) {
+			TransactionLifecycleListener recoveryMgr, TransactionLifecycleListener bufferMgr, boolean readOnly,
+			long txNum) {
 		this.concurMgr = (ConcurrencyMgr) concurMgr;
 		this.recoveryMgr = (RecoveryMgr) recoveryMgr;
 		this.bufferMgr = (BufferMgr) bufferMgr;
@@ -63,14 +76,15 @@ public class Transaction {
 		// <NQCKPT 1,2>
 		//
 		// Although, it may create another scenario like this:
-		// <NQCKPT 2> 
+		// <NQCKPT 2>
 		// <COMMIT 1>
-		// But the current algorithm can still recovery correctly during this scenario.
+		// But the current algorithm can still recovery correctly during this
+		// scenario.
 		addLifecycleListener(txMgr);
 		/*
-		 * A recover manager must be added before a concurrency manager.
-		 * For example, if the transaction need to roll
-		 * back, it must hold all locks until the recovery procedure complete.
+		 * A recover manager must be added before a concurrency manager. For
+		 * example, if the transaction need to roll back, it must hold all locks
+		 * until the recovery procedure complete.
 		 */
 		addLifecycleListener(recoveryMgr);
 		addLifecycleListener(concurMgr);

@@ -29,7 +29,6 @@ import org.vanilladb.core.storage.index.SearchKeyType;
 import org.vanilladb.core.storage.index.btree.BTreeIndex.SearchPurpose;
 import org.vanilladb.core.storage.tx.Transaction;
 import org.vanilladb.core.storage.tx.concurrency.ConcurrencyMgr;
-import org.vanilladb.core.storage.tx.concurrency.LockAbortException;
 
 /**
  * A B-tree directory page that iterates over the B-tree directory blocks in a

@@ -29,7 +29,6 @@ import org.vanilladb.core.storage.index.SearchRange;
 import org.vanilladb.core.storage.record.RecordId;
 import org.vanilladb.core.storage.tx.Transaction;
 import org.vanilladb.core.storage.tx.concurrency.ConcurrencyMgr;
-import org.vanilladb.core.storage.tx.concurrency.LockAbortException;
 
 /**
  * A B-tree leaf page that iterates over the B-tree leaf blocks in a file.

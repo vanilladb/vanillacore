@@ -60,6 +60,8 @@ public class IndexInfo {
 	/**
 	 * Opens the index described by this object.
 	 * 
+	 * @param tx
+	 *            the context of executing transaction
 	 * @return the {@link Index} object associated with this information
 	 */
 	public Index open(Transaction tx) {
