@@ -88,7 +88,7 @@ public class LogReader {
 	}
 
 	public String getLogString() {
-		System.out.println(currentRec.getLSN() + currentRec.toString());
+//		System.out.println(currentRec.getLSN() + currentRec.toString());
 		return currentRec.getLSN() + currentRec.toString();
 	}
 

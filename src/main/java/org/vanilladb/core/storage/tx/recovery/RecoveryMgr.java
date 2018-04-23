@@ -56,9 +56,13 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 	 * @param tx
 	 *            the context of executing transaction
 	 */
-	public static void recover(Transaction tx) {
+	public static void initializeSystem(Transaction tx) {
 		tx.recoveryMgr().doRecover(tx);
 		tx.bufferMgr().flushAll();
+		VanillaDb.logMgr().removeAndCreateNewLog();
+		
+		// Note that we add the records after the new log file is created
+		new StartRecord(tx.getTransactionNumber()).writeToLog();
 		LogSeqNum lsn = new CheckpointRecord().writeToLog();
 		VanillaDb.logMgr().flush(lsn);
 	}
