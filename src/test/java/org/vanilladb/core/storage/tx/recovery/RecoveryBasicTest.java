@@ -249,11 +249,11 @@ public class RecoveryBasicTest {
 
 		// Do partial recovery to simulate crash druing recovery;
 		Transaction partRecoveryTx = VanillaDb.txMgr().newTransaction(Connection.TRANSACTION_SERIALIZABLE, false);
-		RecoveryMgr.partialRecover(partRecoveryTx, 5);
+		partRecoveryTx.recoveryMgr().recoverSystemPartially(partRecoveryTx, 5);
 
 		// Do total recovery again
 		Transaction recoveryTx = VanillaDb.txMgr().newTransaction(Connection.TRANSACTION_SERIALIZABLE, false);
-		RecoveryMgr.initializeSystem(recoveryTx);
+		recoveryTx.recoveryMgr().recoverSystem(recoveryTx);
 
 		// verify that tx1 and tx2 got rolled back
 		buff = recoveryTx.bufferMgr().pin(blk);
@@ -320,14 +320,12 @@ public class RecoveryBasicTest {
 		tx.bufferMgr().unpin(buff);
 
 		// Do partial recovery to simulate crash druing recovery;
-
-		RecoveryMgr.partialRollback(tx1, 5);
-	
-		RecoveryMgr.partialRollback(tx2, 5);
+		tx1.recoveryMgr().rollbackPartially(tx1, 5);
+		tx1.recoveryMgr().rollbackPartially(tx2, 5);
 		
 		// Do total recovery again
 		Transaction recoveryTx = VanillaDb.txMgr().newTransaction(Connection.TRANSACTION_SERIALIZABLE, false);
-		RecoveryMgr.initializeSystem(recoveryTx);
+		recoveryTx.recoveryMgr().recoverSystem(recoveryTx);
 
 		// verify that tx1 and tx2 got rolled back
 		buff = recoveryTx.bufferMgr().pin(blk);
