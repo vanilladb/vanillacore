@@ -61,10 +61,8 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 		tx.bufferMgr().flushAll();
 		VanillaDb.logMgr().removeAndCreateNewLog();
 		
-		// Note that we add the records after the new log file is created
+		// Add a start record for this transaction
 		new StartRecord(tx.getTransactionNumber()).writeToLog();
-		LogSeqNum lsn = new CheckpointRecord().writeToLog();
-		VanillaDb.logMgr().flush(lsn);
 	}
 
 	public static void partialRecover(Transaction tx, int stepsInUndo) {
