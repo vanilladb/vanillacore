@@ -229,7 +229,7 @@ public class ServerInit {
 			// add a checkpoint record to limit rollback
 			tx = VanillaDb.txMgr().newTransaction(
 					Connection.TRANSACTION_SERIALIZABLE, false);
-			RecoveryMgr.recover(tx);
+			RecoveryMgr.initializeSystem(tx);
 			tx.commit();
 			
 			// Set the flag indicating that the data is loaded

@@ -169,7 +169,13 @@ public class LogMgr implements Iterable<BasicLogRecord> {
 	public void removeAndCreateNewLog() {
 		logMgrLock.lock();
 		try {
-			VanillaDb.fileMgr().rebuildLogFile();
+			VanillaDb.fileMgr().delete(logFile);
+			
+			// Reset all the data
+			lastLsn = LogSeqNum.DEFAULT_VALUE;
+			lastFlushedLsn = LogSeqNum.DEFAULT_VALUE;
+			
+			// 'myPage', 'currentBlk' and 'currentPos' are reset in this method
 			appendNewBlock();
 		} finally {
 			logMgrLock.unlock();

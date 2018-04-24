@@ -56,19 +56,13 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 	 * @param tx
 	 *            the context of executing transaction
 	 */
-	public static void recover(Transaction tx) {
-		tx.recoveryMgr().doRecover(tx);
+	public static void initializeSystem(Transaction tx) {
+		tx.recoveryMgr().recoverSystem(tx);
 		tx.bufferMgr().flushAll();
-		LogSeqNum lsn = new CheckpointRecord().writeToLog();
-		VanillaDb.logMgr().flush(lsn);
-	}
-
-	public static void partialRecover(Transaction tx, int stepsInUndo) {
-		tx.recoveryMgr().doPartialRecover(tx, stepsInUndo);
-	}
-
-	public static void partialRollback(Transaction tx, int stepsInUndo) {
-		tx.recoveryMgr().doPartialRollback(tx, stepsInUndo);
+		VanillaDb.logMgr().removeAndCreateNewLog();
+		
+		// Add a start record for this transaction
+		new StartRecord(tx.getTransactionNumber()).writeToLog();
 	}
 
 	private Map<Long, LogSeqNum> txUnDoNextLSN = new HashMap<Long, LogSeqNum>();
@@ -111,7 +105,7 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 	@Override
 	public void onTxRollback(Transaction tx) {
 		if (!tx.isReadOnly() && enableLogging) {
-			doRollback(tx);
+			rollback(tx);
 			LogSeqNum lsn = new RollbackRecord(txNum).writeToLog();
 			VanillaDb.logMgr().flush(lsn);
 		}
@@ -277,7 +271,7 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 	 * calling {@link LogRecord#undo(Transaction)} for each log record it finds
 	 * for the transaction, until it finds the transaction's START record.
 	 */
-	private void doRollback(Transaction tx) {
+	void rollback(Transaction tx) {
 		ReversibleIterator<LogRecord> iter = new LogRecordIterator();
 		LogSeqNum txUnDoNextLSN = null;
 		while (iter.hasNext()) {
@@ -311,7 +305,7 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 		}
 	}
 
-	private void doPartialRollback(Transaction tx, int stepsInUndo) {
+	void rollbackPartially(Transaction tx, int stepsInUndo) {
 		ReversibleIterator<LogRecord> iter = new LogRecordIterator();
 		LogSeqNum txUnDoNextLSN = null;
 		while (iter.hasNext() && stepsInUndo >= 0) {
@@ -348,7 +342,7 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 	 * or when the end of the log is reached. The method then iterates backward
 	 * and redoes all finished transactions. TODO fix comments...
 	 */
-	private void doRecover(Transaction tx) {
+	void recoverSystem(Transaction tx) {
 		Set<Long> finishedTxs = new HashSet<Long>();
 		Set<Long> unCompletedTxs = new HashSet<Long>();
 
@@ -461,7 +455,7 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 		}
 	}
 
-	private void doPartialRecover(Transaction tx, int stepsInUndo) {
+	void recoverSystemPartially(Transaction tx, int stepsInUndo) {
 		Set<Long> finishedTxs = new HashSet<Long>();
 		Set<Long> unCompletedTxs = new HashSet<Long>();
 
