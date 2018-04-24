@@ -71,6 +71,15 @@ public class ModifyData {
 	 * 
 	 * @return the target expression
 	 */
+
+	/**
+	 * Returns an expression. Evaluating this expression for a record produces
+	 * the value that will be stored in the record's target field.
+	 * 
+	 * @param fldName
+	 *            the name of the modified field
+	 * @return the target expression
+	 */
 	public Expression newValue(String fldName) {
 		return fldVals.get(fldName);
 	}

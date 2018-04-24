@@ -38,6 +38,9 @@ public class LogIterator implements ReversibleIterator<BasicLogRecord> {
 	 * Creates an iterator for the records in the log file, positioned after the
 	 * last log record. This constructor is called exclusively by
 	 * {@link LogMgr#iterator()}.
+	 * 
+	 * @param blk
+	 *            the id of the last block of the log file
 	 */
 	public LogIterator(BlockId blk) {
 		this.blk = this.endBlk = blk;
@@ -91,8 +94,8 @@ public class LogIterator implements ReversibleIterator<BasicLogRecord> {
 			isForward = false;
 		}
 		return (blk.number() < endBlk.number())
-				|| (currentRec < (Integer) pg.getVal(LogMgr.LAST_POS, INTEGER)
-						.asJavaVal() && blk.number() <= endBlk.number());
+				|| (currentRec < (Integer) pg.getVal(LogMgr.LAST_POS, INTEGER).asJavaVal()
+						&& blk.number() <= endBlk.number());
 	}
 
 	@Override

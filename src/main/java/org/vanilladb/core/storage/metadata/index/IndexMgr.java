@@ -82,6 +82,8 @@ public class IndexMgr {
 	 * 
 	 * @param isNew
 	 *            indicates whether this is a new database
+	 * @param tblMgr
+	 *            the instance of the table manager, which is used to initialize catalog files
 	 * @param tx
 	 *            the system startup transaction
 	 */
@@ -171,8 +173,10 @@ public class IndexMgr {
 	 * 
 	 * @param tblName
 	 *            the name of the table
+	 * @param fldName
+	 *            the name of the search field
 	 * @param tx
-	 *            the calling transaction
+	 *            the context of executing transaction
 	 * @return a map of IndexInfo objects, keyed by their field names
 	 */
 	public List<IndexInfo> getIndexInfo(String tblName, String fldName, Transaction tx) {

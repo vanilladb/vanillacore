@@ -194,7 +194,7 @@ public class RecoveryBasicTest {
 		}
 
 		Transaction recoveryTx = VanillaDb.txMgr().newTransaction(Connection.TRANSACTION_SERIALIZABLE, false);
-		RecoveryMgr.recover(recoveryTx);
+		RecoveryMgr.initializeSystem(recoveryTx);
 		// verify that tx1 and tx3 got rolled back
 		buff = recoveryTx.bufferMgr().pin(blk);
 		int ti = (Integer) buff.getVal(104, INTEGER).asJavaVal();
@@ -249,11 +249,11 @@ public class RecoveryBasicTest {
 
 		// Do partial recovery to simulate crash druing recovery;
 		Transaction partRecoveryTx = VanillaDb.txMgr().newTransaction(Connection.TRANSACTION_SERIALIZABLE, false);
-		RecoveryMgr.partialRecover(partRecoveryTx, 5);
+		partRecoveryTx.recoveryMgr().recoverSystemPartially(partRecoveryTx, 5);
 
 		// Do total recovery again
 		Transaction recoveryTx = VanillaDb.txMgr().newTransaction(Connection.TRANSACTION_SERIALIZABLE, false);
-		RecoveryMgr.recover(recoveryTx);
+		recoveryTx.recoveryMgr().recoverSystem(recoveryTx);
 
 		// verify that tx1 and tx2 got rolled back
 		buff = recoveryTx.bufferMgr().pin(blk);
@@ -320,14 +320,12 @@ public class RecoveryBasicTest {
 		tx.bufferMgr().unpin(buff);
 
 		// Do partial recovery to simulate crash druing recovery;
-
-		RecoveryMgr.partialRollback(tx1, 5);
-	
-		RecoveryMgr.partialRollback(tx2, 5);
+		tx1.recoveryMgr().rollbackPartially(tx1, 5);
+		tx1.recoveryMgr().rollbackPartially(tx2, 5);
 		
 		// Do total recovery again
 		Transaction recoveryTx = VanillaDb.txMgr().newTransaction(Connection.TRANSACTION_SERIALIZABLE, false);
-		RecoveryMgr.recover(recoveryTx);
+		recoveryTx.recoveryMgr().recoverSystem(recoveryTx);
 
 		// verify that tx1 and tx2 got rolled back
 		buff = recoveryTx.bufferMgr().pin(blk);
@@ -401,7 +399,7 @@ public class RecoveryBasicTest {
 		}
 
 		Transaction recoveryTx = VanillaDb.txMgr().newTransaction(Connection.TRANSACTION_SERIALIZABLE, false);
-		RecoveryMgr.recover(recoveryTx);
+		RecoveryMgr.initializeSystem(recoveryTx);
 		Buffer buff = recoveryTx.bufferMgr().pin(blk);
 
 		int ti1 = (Integer) buff.getVal(204, INTEGER).asJavaVal();
@@ -503,7 +501,7 @@ public class RecoveryBasicTest {
 		
 		// The second tx does recovery (redo)
 		tx = VanillaDb.txMgr().newTransaction(Connection.TRANSACTION_SERIALIZABLE, false);
-		RecoveryMgr.recover(tx);
+		RecoveryMgr.initializeSystem(tx);
 		tx.commit();
 		
 		// The third tx checks the records

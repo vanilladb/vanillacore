@@ -52,20 +52,17 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 	 * all modified blocks. Finally, writes a quiescent checkpoint record to the
 	 * log and flush it. This method should be called only during system
 	 * startup, before user transactions begin.
+	 * 
+	 * @param tx
+	 *            the context of executing transaction
 	 */
-	public static void recover(Transaction tx) {
-		tx.recoveryMgr().doRecover(tx);
+	public static void initializeSystem(Transaction tx) {
+		tx.recoveryMgr().recoverSystem(tx);
 		tx.bufferMgr().flushAll();
-		LogSeqNum lsn = new CheckpointRecord().writeToLog();
-		VanillaDb.logMgr().flush(lsn);
-	}
-
-	public static void partialRecover(Transaction tx, int stepsInUndo) {
-		tx.recoveryMgr().doPartialRecover(tx, stepsInUndo);
-	}
-
-	public static void partialRollback(Transaction tx, int stepsInUndo) {
-		tx.recoveryMgr().doPartialRollback(tx, stepsInUndo);
+		VanillaDb.logMgr().removeAndCreateNewLog();
+		
+		// Add a start record for this transaction
+		new StartRecord(tx.getTransactionNumber()).writeToLog();
 	}
 
 	private Map<Long, LogSeqNum> txUnDoNextLSN = new HashMap<Long, LogSeqNum>();
@@ -77,6 +74,8 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 	 * 
 	 * @param txNum
 	 *            the ID of the specified transaction
+	 * @param isReadOnly
+	 *            is the transaction read-only
 	 */
 	public RecoveryMgr(long txNum, boolean isReadOnly) {
 		this.txNum = txNum;
@@ -87,6 +86,9 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 	/**
 	 * Writes a commit record to the log, and then flushes the log record to
 	 * disk.
+	 * 
+	 * @param tx
+	 *            the context of committing transaction
 	 */
 	@Override
 	public void onTxCommit(Transaction tx) {
@@ -103,7 +105,7 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 	@Override
 	public void onTxRollback(Transaction tx) {
 		if (!tx.isReadOnly() && enableLogging) {
-			doRollback(tx);
+			rollback(tx);
 			LogSeqNum lsn = new RollbackRecord(txNum).writeToLog();
 			VanillaDb.logMgr().flush(lsn);
 		}
@@ -142,8 +144,7 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 			BlockId blk = buff.block();
 			if (isTempBlock(blk))
 				return null;
-			return new SetValueRecord(txNum, blk, offset, buff.getVal(offset,
-					newVal.getType()), newVal).writeToLog();
+			return new SetValueRecord(txNum, blk, offset, buff.getVal(offset, newVal.getType()), newVal).writeToLog();
 		} else
 			return null;
 	}
@@ -160,6 +161,8 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 	/**
 	 * Writes a logical abort record into the log.
 	 * 
+	 * @param txNum
+	 *            the number of aborted transaction
 	 * @param undoNextLSN
 	 *            the LSN which the redo the Abort record should jump to
 	 * 
@@ -173,42 +176,36 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 			return null;
 	}
 
-	public LogSeqNum logRecordFileInsertionEnd(String tblName, long blkNum,
-			int slotId) {
+	public LogSeqNum logRecordFileInsertionEnd(String tblName, long blkNum, int slotId) {
 		if (enableLogging) {
 			if (this.logicalStartLSN == null)
-				throw new RuntimeException(
-						"Logical start LSN is null (in logRecordFileInsertionEnd)");
-			LogSeqNum lsn = new RecordFileInsertEndRecord(txNum, tblName,
-					blkNum, slotId, this.logicalStartLSN).writeToLog();
+				throw new RuntimeException("Logical start LSN is null (in logRecordFileInsertionEnd)");
+			LogSeqNum lsn = new RecordFileInsertEndRecord(txNum, tblName, blkNum, slotId, this.logicalStartLSN)
+					.writeToLog();
 			this.logicalStartLSN = null;
 			return lsn;
 		} else
 			return null;
 	}
 
-	public LogSeqNum logRecordFileDeletionEnd(String tblName, long blkNum,
-			int slotId) {
+	public LogSeqNum logRecordFileDeletionEnd(String tblName, long blkNum, int slotId) {
 		if (enableLogging) {
 			if (this.logicalStartLSN == null)
-				throw new RuntimeException(
-						"Logical start LSN is null (in logRecordFileDeletionEnd)");
-			LogSeqNum lsn = new RecordFileDeleteEndRecord(txNum, tblName,
-					blkNum, slotId, this.logicalStartLSN).writeToLog();
+				throw new RuntimeException("Logical start LSN is null (in logRecordFileDeletionEnd)");
+			LogSeqNum lsn = new RecordFileDeleteEndRecord(txNum, tblName, blkNum, slotId, this.logicalStartLSN)
+					.writeToLog();
 			this.logicalStartLSN = null;
 			return lsn;
 		} else
 			return null;
 	}
 
-	public LogSeqNum logIndexInsertionEnd(String indexName, SearchKey searchKey,
-			long recordBlockNum, int recordSlotId) {
+	public LogSeqNum logIndexInsertionEnd(String indexName, SearchKey searchKey, long recordBlockNum,
+			int recordSlotId) {
 		if (enableLogging) {
 			if (this.logicalStartLSN == null)
-				throw new RuntimeException(
-						"Logical start LSN is null (in logIndexInsertionEnd)");
-			LogSeqNum lsn = new IndexInsertEndRecord(txNum, indexName,
-					searchKey, recordBlockNum, recordSlotId,
+				throw new RuntimeException("Logical start LSN is null (in logIndexInsertionEnd)");
+			LogSeqNum lsn = new IndexInsertEndRecord(txNum, indexName, searchKey, recordBlockNum, recordSlotId,
 					this.logicalStartLSN).writeToLog();
 			this.logicalStartLSN = null;
 			return lsn;
@@ -216,14 +213,11 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 			return null;
 	}
 
-	public LogSeqNum logIndexDeletionEnd(String indexName, SearchKey searchKey,
-			long recordBlockNum, int recordSlotId) {
+	public LogSeqNum logIndexDeletionEnd(String indexName, SearchKey searchKey, long recordBlockNum, int recordSlotId) {
 		if (enableLogging) {
 			if (this.logicalStartLSN == null)
-				throw new RuntimeException(
-						"Logical start LSN is null (in logIndexDeletionEnd)");
-			LogSeqNum lsn = new IndexDeleteEndRecord(txNum, indexName,
-					searchKey, recordBlockNum, recordSlotId,
+				throw new RuntimeException("Logical start LSN is null (in logIndexDeletionEnd)");
+			LogSeqNum lsn = new IndexDeleteEndRecord(txNum, indexName, searchKey, recordBlockNum, recordSlotId,
 					this.logicalStartLSN).writeToLog();
 			this.logicalStartLSN = null;
 			return lsn;
@@ -231,50 +225,43 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 			return null;
 	}
 
-	public LogSeqNum logIndexPageInsertion(BlockId indexBlkId, boolean isDirPage,
-			SearchKeyType keyType, int slotId) {
+	public LogSeqNum logIndexPageInsertion(BlockId indexBlkId, boolean isDirPage, SearchKeyType keyType, int slotId) {
 		if (enableLogging) {
-			return new IndexPageInsertRecord(txNum, indexBlkId, isDirPage,
-					keyType, slotId).writeToLog();
+			return new IndexPageInsertRecord(txNum, indexBlkId, isDirPage, keyType, slotId).writeToLog();
 		} else
 			return null;
 	}
 
-	public LogSeqNum logIndexPageDeletion(BlockId indexBlkId, boolean isDirPage,
-			SearchKeyType keyType, int slotId) {
+	public LogSeqNum logIndexPageDeletion(BlockId indexBlkId, boolean isDirPage, SearchKeyType keyType, int slotId) {
 		if (enableLogging) {
-			return new IndexPageDeleteRecord(txNum, indexBlkId, isDirPage,
-					keyType, slotId).writeToLog();
+			return new IndexPageDeleteRecord(txNum, indexBlkId, isDirPage, keyType, slotId).writeToLog();
 		} else
 			return null;
 	}
 
-	public LogSeqNum logIndexPageInsertionClr(long compTxNum, BlockId indexBlkId,
-			boolean isDirPage, SearchKeyType keyType, int slotId, LogSeqNum undoNextLSN) {
+	public LogSeqNum logIndexPageInsertionClr(long compTxNum, BlockId indexBlkId, boolean isDirPage,
+			SearchKeyType keyType, int slotId, LogSeqNum undoNextLSN) {
 		if (enableLogging) {
-			return new IndexPageInsertClr(compTxNum, indexBlkId, isDirPage,
-					keyType, slotId, undoNextLSN).writeToLog();
+			return new IndexPageInsertClr(compTxNum, indexBlkId, isDirPage, keyType, slotId, undoNextLSN).writeToLog();
 		} else
 			return null;
 	}
 
-	public LogSeqNum logIndexPageDeletionClr(long compTxNum, BlockId indexBlkId,
-			boolean isDirPage, SearchKeyType keyType, int slotId, LogSeqNum undoNextLSN) {
+	public LogSeqNum logIndexPageDeletionClr(long compTxNum, BlockId indexBlkId, boolean isDirPage,
+			SearchKeyType keyType, int slotId, LogSeqNum undoNextLSN) {
 		if (enableLogging) {
-			return new IndexPageDeleteClr(compTxNum, indexBlkId, isDirPage,
-					keyType, slotId, undoNextLSN).writeToLog();
+			return new IndexPageDeleteClr(compTxNum, indexBlkId, isDirPage, keyType, slotId, undoNextLSN).writeToLog();
 		} else
 			return null;
 	}
 
-	public LogSeqNum logSetValClr(long compTxNum, Buffer buff, int offset,
-			Constant newVal, LogSeqNum undoNextLSN) {
+	public LogSeqNum logSetValClr(long compTxNum, Buffer buff, int offset, Constant newVal, LogSeqNum undoNextLSN) {
 		if (enableLogging) {
 			BlockId blk = buff.block();
 			if (isTempBlock(blk))
 				return null;
-			return new SetValueClr(compTxNum, blk, offset, buff.getVal(offset,
-					newVal.getType()), newVal, undoNextLSN).writeToLog();
+			return new SetValueClr(compTxNum, blk, offset, buff.getVal(offset, newVal.getType()), newVal, undoNextLSN)
+					.writeToLog();
 		} else
 			return null;
 	}
@@ -284,7 +271,7 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 	 * calling {@link LogRecord#undo(Transaction)} for each log record it finds
 	 * for the transaction, until it finds the transaction's START record.
 	 */
-	private void doRollback(Transaction tx) {
+	void rollback(Transaction tx) {
 		ReversibleIterator<LogRecord> iter = new LogRecordIterator();
 		LogSeqNum txUnDoNextLSN = null;
 		while (iter.hasNext()) {
@@ -304,8 +291,7 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 					 * Extract the logicalStartLSN form rec by casting it as a
 					 * LogicalEndRecord
 					 */
-					LogSeqNum logicalStartLSN = ((LogicalEndRecord) rec)
-							.getlogicalStartLSN();
+					LogSeqNum logicalStartLSN = ((LogicalEndRecord) rec).getlogicalStartLSN();
 
 					/*
 					 * Save the Logical Start LSN to skip the log records
@@ -319,7 +305,7 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 		}
 	}
 
-	private void doPartialRollback(Transaction tx, int stepsInUndo) {
+	void rollbackPartially(Transaction tx, int stepsInUndo) {
 		ReversibleIterator<LogRecord> iter = new LogRecordIterator();
 		LogSeqNum txUnDoNextLSN = null;
 		while (iter.hasNext() && stepsInUndo >= 0) {
@@ -337,8 +323,7 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 
 					rec.undo(tx);
 
-					LogSeqNum logicalStartLSN = ((LogicalEndRecord) rec)
-							.getlogicalStartLSN();
+					LogSeqNum logicalStartLSN = ((LogicalEndRecord) rec).getlogicalStartLSN();
 
 					txUnDoNextLSN = logicalStartLSN;
 
@@ -357,7 +342,7 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 	 * or when the end of the log is reached. The method then iterates backward
 	 * and redoes all finished transactions. TODO fix comments...
 	 */
-	private void doRecover(Transaction tx) {
+	void recoverSystem(Transaction tx) {
 		Set<Long> finishedTxs = new HashSet<Long>();
 		Set<Long> unCompletedTxs = new HashSet<Long>();
 
@@ -421,8 +406,7 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 			LogRecord rec = iter.next();
 
 			int op = rec.op();
-			if (!unCompletedTxs.contains(rec.txNumber()) || op == OP_COMMIT
-					|| op == OP_ROLLBACK)
+			if (!unCompletedTxs.contains(rec.txNumber()) || op == OP_COMMIT || op == OP_ROLLBACK)
 				continue;
 			/*
 			 * Use UnDoNextLSN to skip unnecessary physical record which have
@@ -443,8 +427,7 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 				 * Extract the logicalStartLSN form rec by casting it as a
 				 * LogicalEndRecord
 				 */
-				LogSeqNum logicalStartLSN = ((LogicalEndRecord) rec)
-						.getlogicalStartLSN();
+				LogSeqNum logicalStartLSN = ((LogicalEndRecord) rec).getlogicalStartLSN();
 
 				/*
 				 * Save the Logical Start LSN to skip the log records between
@@ -457,8 +440,7 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 				 * Extract the logicalStartLSN form rec by casting it as a
 				 * LogicalEndRecord
 				 */
-				LogSeqNum undoNextLSN = ((CompesationLogRecord) rec)
-						.getUndoNextLSN();
+				LogSeqNum undoNextLSN = ((CompesationLogRecord) rec).getUndoNextLSN();
 				/*
 				 * Save the UndoNext LSN to skip the records have been rolled
 				 * back
@@ -473,7 +455,7 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 		}
 	}
 
-	private void doPartialRecover(Transaction tx, int stepsInUndo) {
+	void recoverSystemPartially(Transaction tx, int stepsInUndo) {
 		Set<Long> finishedTxs = new HashSet<Long>();
 		Set<Long> unCompletedTxs = new HashSet<Long>();
 
@@ -531,8 +513,7 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 			// System.out.println(rec.getLSN() + rec.toString());
 			stepsInUndo--;
 			int op = rec.op();
-			if (!unCompletedTxs.contains(rec.txNumber()) || op == OP_COMMIT
-					|| op == OP_ROLLBACK)
+			if (!unCompletedTxs.contains(rec.txNumber()) || op == OP_COMMIT || op == OP_ROLLBACK)
 				continue;
 
 			if (txUnDoNextLSN.containsKey(rec.txNumber())) {
@@ -545,15 +526,13 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 
 				rec.undo(tx);
 
-				LogSeqNum logicalStartLSN = ((LogicalEndRecord) rec)
-						.getlogicalStartLSN();
+				LogSeqNum logicalStartLSN = ((LogicalEndRecord) rec).getlogicalStartLSN();
 
 				txUnDoNextLSN.put(rec.txNumber(), logicalStartLSN);
 
 			} else if (rec instanceof CompesationLogRecord) {
 
-				LogSeqNum undoNextLSN = ((CompesationLogRecord) rec)
-						.getUndoNextLSN();
+				LogSeqNum undoNextLSN = ((CompesationLogRecord) rec).getUndoNextLSN();
 
 				txUnDoNextLSN.put(rec.txNumber(), undoNextLSN);
 			} else

@@ -27,7 +27,6 @@ import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.file.Page;
 import org.vanilladb.core.storage.log.LogSeqNum;
 import org.vanilladb.core.storage.tx.Transaction;
-import org.vanilladb.core.storage.tx.concurrency.LockAbortException;
 
 /**
  * Manages the placement and access of metadata in the file header.
@@ -146,26 +145,16 @@ public class FileHeaderPage {
 	}
 
 	private Constant getVal(int offset, Type type) {
-		try {
-			if (!isTempTable())
-				tx.concurrencyMgr().readBlock(blk);
-		} catch (LockAbortException e) {
-			tx.rollback();
-			throw e;
-		}
+		if (!isTempTable())
+			tx.concurrencyMgr().readBlock(blk);
 		return currentBuff.getVal(offset, type);
 	}
 
 	private void setVal(int offset, Constant val) {
 		if (tx.isReadOnly() && !isTempTable())
 			throw new UnsupportedOperationException();
-		try {
-			if (!isTempTable())
-				tx.concurrencyMgr().modifyBlock(blk);
-		} catch (LockAbortException e) {
-			tx.rollback();
-			throw e;
-		}
+		if (!isTempTable())
+			tx.concurrencyMgr().modifyBlock(blk);
 		LogSeqNum lsn = tx.recoveryMgr().logSetVal(currentBuff, offset, val);
 		currentBuff.setVal(offset, val, tx.getTransactionNumber(), lsn);
 	}

@@ -25,7 +25,6 @@ import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.file.Page;
 import org.vanilladb.core.storage.metadata.TableInfo;
 import org.vanilladb.core.storage.tx.Transaction;
-import org.vanilladb.core.storage.tx.concurrency.LockAbortException;
 
 /**
  * Manages a file of records. There are methods for iterating through the
@@ -82,12 +81,7 @@ public class RecordFile implements Record {
 	 *            the transaction
 	 */
 	public static void formatFileHeader(String fileName, Transaction tx) {
-		try {
-			tx.concurrencyMgr().modifyFile(fileName);
-		} catch (LockAbortException e) {
-			tx.rollback();
-			throw e;
-		}
+		tx.concurrencyMgr().modifyFile(fileName);
 		// header should be the first block of the given file
 		if (VanillaDb.fileMgr().size(fileName) == 0) {
 			FileHeaderFormatter fhf = new FileHeaderFormatter();
@@ -225,13 +219,8 @@ public class RecordFile implements Record {
 
 		// Insertion may change the properties of this file,
 		// so that we need to lock the file.
-		try {
-			if (!isTempTable())
-				tx.concurrencyMgr().modifyFile(fileName);
-		} catch (LockAbortException e) {
-			tx.rollback();
-			throw e;
-		}
+		if (!isTempTable())
+			tx.concurrencyMgr().modifyFile(fileName);
 
 		// Modify the free chain which is start from a pointer in
 		// the header of the file.
@@ -287,13 +276,8 @@ public class RecordFile implements Record {
 
 		// Insertion may change the properties of this file,
 		// so that we need to lock the file.
-		try {
-			if (!isTempTable())
-				tx.concurrencyMgr().modifyFile(fileName);
-		} catch (LockAbortException e) {
-			tx.rollback();
-			throw e;
-		}
+		if (!isTempTable())
+			tx.concurrencyMgr().modifyFile(fileName);
 
 		// Open the header
 		if (fhp == null)
@@ -366,13 +350,8 @@ public class RecordFile implements Record {
 	 * @return the number of blocks in the file
 	 */
 	public long fileSize() {
-		try {
-			if (!isTempTable())
-				tx.concurrencyMgr().readFile(fileName);
-		} catch (LockAbortException e) {
-			tx.rollback();
-			throw e;
-		}
+		if (!isTempTable())
+			tx.concurrencyMgr().readFile(fileName);
 		return VanillaDb.fileMgr().size(fileName);
 	}
 
@@ -389,30 +368,20 @@ public class RecordFile implements Record {
 	}
 
 	private void appendBlock() {
-		try {
-			if (!isTempTable())
-				tx.concurrencyMgr().modifyFile(fileName);
-			RecordFormatter fmtr = new RecordFormatter(ti);
-			Buffer buff = tx.bufferMgr().pinNew(fileName, fmtr);
-			tx.bufferMgr().unpin(buff);
-			if (!isTempTable())
-				tx.concurrencyMgr().insertBlock(buff.block());
-		} catch (LockAbortException e) {
-			tx.rollback();
-			throw e;
-		}
+		if (!isTempTable())
+			tx.concurrencyMgr().modifyFile(fileName);
+		RecordFormatter fmtr = new RecordFormatter(ti);
+		Buffer buff = tx.bufferMgr().pinNew(fileName, fmtr);
+		tx.bufferMgr().unpin(buff);
+		if (!isTempTable())
+			tx.concurrencyMgr().insertBlock(buff.block());
 
 	}
 
 	private FileHeaderPage openHeaderForModification() {
 		// acquires exclusive access to the header
-		try {
-			if (!isTempTable())
-				tx.concurrencyMgr().lockRecordFileHeader(headerBlk);
-		} catch (LockAbortException e) {
-			tx.rollback();
-			throw e;
-		}
+		if (!isTempTable())
+			tx.concurrencyMgr().lockRecordFileHeader(headerBlk);
 		return new FileHeaderPage(fileName, tx);
 	}
 

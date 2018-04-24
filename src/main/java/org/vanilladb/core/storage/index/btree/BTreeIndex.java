@@ -18,7 +18,6 @@ package org.vanilladb.core.storage.index.btree;
 import java.util.List;
 
 import org.vanilladb.core.server.VanillaDb;
-import org.vanilladb.core.sql.Constant;
 import org.vanilladb.core.sql.Schema;
 import org.vanilladb.core.storage.buffer.Buffer;
 import org.vanilladb.core.storage.file.BlockId;
@@ -30,7 +29,6 @@ import org.vanilladb.core.storage.metadata.index.IndexInfo;
 import org.vanilladb.core.storage.record.RecordId;
 import org.vanilladb.core.storage.tx.Transaction;
 import org.vanilladb.core.storage.tx.concurrency.ConcurrencyMgr;
-import org.vanilladb.core.storage.tx.concurrency.LockAbortException;
 
 /**
  * A B-tree implementation of {@link Index}.
@@ -156,7 +154,7 @@ public class BTreeIndex extends Index {
 	 * new leaf page. If the root node splits, then {@link BTreeDir#makeNewRoot}
 	 * is called.
 	 * 
-	 * @see Index#insert(Constant, RecordId, boolean)
+	 * @see Index#insert(SearchKey, RecordId, boolean)
 	 */
 	@Override
 	public void insert(SearchKey key, RecordId dataRecordId, boolean doLogicalLogging) {
@@ -201,7 +199,7 @@ public class BTreeIndex extends Index {
 	 * directory to find the leaf page containing that record; then it deletes
 	 * the record from the page. F
 	 * 
-	 * @see Index#delete(Constant, RecordId, boolean)
+	 * @see Index#delete(SearchKey, RecordId, boolean)
 	 */
 	@Override
 	public void delete(SearchKey key, RecordId dataRecordId, boolean doLogicalLogging) {
@@ -254,22 +252,12 @@ public class BTreeIndex extends Index {
 	}
 
 	private long fileSize(String fileName) {
-		try {
-			ccMgr.readFile(fileName);
-		} catch (LockAbortException e) {
-			tx.rollback();
-			throw e;
-		}
+		ccMgr.readFile(fileName);
 		return VanillaDb.fileMgr().size(fileName);
 	}
 
 	private BlockId appendBlock(String fileName, Schema sch, long[] flags) {
-		try {
-			ccMgr.modifyFile(fileName);
-		} catch (LockAbortException e) {
-			tx.rollback();
-			throw e;
-		}
+		ccMgr.modifyFile(fileName);
 		BTPageFormatter btpf = new BTPageFormatter(sch, flags);
 
 		Buffer buff = tx.bufferMgr().pinNew(fileName, btpf);

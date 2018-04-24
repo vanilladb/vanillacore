@@ -30,8 +30,7 @@ public class SearchRange {
 	private ConstantRange[] ranges;
 	private SearchKey min, max;
 
-	public SearchRange(List<String> indexedFields, Schema tblSch,
-			Map<String, ConstantRange> specifiedRanges) {
+	public SearchRange(List<String> indexedFields, Schema tblSch, Map<String, ConstantRange> specifiedRanges) {
 		ranges = new ConstantRange[indexedFields.size()];
 		Iterator<String> fldNameIter = indexedFields.iterator();
 		String fldName;
@@ -41,14 +40,12 @@ public class SearchRange {
 			ranges[i] = specifiedRanges.get(fldName);
 			if (ranges[i] == null) {
 				Type type = tblSch.type(fldName);
-				ranges[i] = ConstantRange.newInstance(
-						type.minValue(), true, type.maxValue(), true);
+				ranges[i] = ConstantRange.newInstance(type.minValue(), true, type.maxValue(), true);
 			}
 		}
 	}
-	
-	public SearchRange(List<String> indexedFields, SearchKeyType keyType,
-			Map<String, ConstantRange> specifiedRanges) {
+
+	public SearchRange(List<String> indexedFields, SearchKeyType keyType, Map<String, ConstantRange> specifiedRanges) {
 		ranges = new ConstantRange[indexedFields.size()];
 		Iterator<String> fldNameIter = indexedFields.iterator();
 		String fldName;
@@ -58,8 +55,7 @@ public class SearchRange {
 			ranges[i] = specifiedRanges.get(fldName);
 			if (ranges[i] == null) {
 				Type type = keyType.get(i);
-				ranges[i] = ConstantRange.newInstance(
-						type.minValue(), true, type.maxValue(), true);
+				ranges[i] = ConstantRange.newInstance(type.minValue(), true, type.maxValue(), true);
 			}
 		}
 	}
@@ -70,7 +66,7 @@ public class SearchRange {
 			ranges[i] = ConstantRange.newInstance(key.get(i));
 		}
 	}
-	
+
 	public SearchRange(ConstantRange... constantRanges) {
 		ranges = Arrays.copyOf(constantRanges, constantRanges.length);
 	}
@@ -98,24 +94,24 @@ public class SearchRange {
 	public SearchKey getMin() {
 		if (min != null)
 			return min;
-		
+
 		Constant[] vals = new Constant[ranges.length];
 		for (int i = 0; i < vals.length; i++)
 			vals[i] = ranges[i].low();
 		min = new SearchKey(vals);
-		
+
 		return min;
 	}
 
 	public SearchKey getMax() {
 		if (max != null)
 			return max;
-		
+
 		Constant[] vals = new Constant[ranges.length];
 		for (int i = 0; i < vals.length; i++)
 			vals[i] = ranges[i].high();
 		max = new SearchKey(vals);
-		
+
 		return max;
 	}
 
@@ -130,33 +126,35 @@ public class SearchRange {
 		// It will not check if the key does not have the same length
 		if (ranges.length != key.length())
 			return false;
-		
+
 		// Check one by one
 		for (int i = 0; i < ranges.length; i++)
 			if (!ranges[i].contains(key.get(i)))
 				return false;
 		return true;
 	}
-	
+
 	/**
 	 * Check if the given {@link SearchKey} is in the [min, max] of this range.
 	 * Note that a SearchKey may be in the [min, max] but not match the range.
-	 * <br /><br />
+	 * <br>
+	 * <br>
 	 * For example, assume there is a SearchRange is {1, ALL, 5}. The min of the
 	 * range is {1, -INT_MAX, 5} and the max of the range is {1, INT_MAX, 5}. A
 	 * key {1, 2, 3} is the [min, max] but not match {1, ALL, 5}, due to the way
 	 * of comparing SearchKeys.
 	 * 
 	 * @param key
-	 * @return
+	 *            the search key
+	 * @return whether the key is in the range
 	 */
 	public boolean betweenMinAndMax(SearchKey key) {
 		return key.compareTo(getMin()) >= 0 && key.compareTo(getMax()) <= 0;
 	}
-	
+
 	/**
-	 * Check if this range represents a single key. It is also used to check
-	 * if this range can be converted into a {@link SearchKey}.
+	 * Check if this range represents a single key. It is also used to check if
+	 * this range can be converted into a {@link SearchKey}.
 	 * 
 	 * @return if this range represents a single key
 	 */
@@ -166,7 +164,7 @@ public class SearchRange {
 				return false;
 		return true;
 	}
-	
+
 	/**
 	 * Converts this range into a {@link SearchKey}. We expect the caller will
 	 * call {@link #isSingleValue()} before calling this method.

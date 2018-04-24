@@ -45,8 +45,8 @@ public class IndexJoinScan implements Scan {
 	 *            the LHS scan
 	 * @param idx
 	 *            the RHS index
-	 * @param joinField
-	 *            the LHS field used for joining
+	 * @param joinFields
+	 *            the mapping of join fields from LHS to RHS
 	 * @param ts
 	 *            the table scan of data table
 	 */

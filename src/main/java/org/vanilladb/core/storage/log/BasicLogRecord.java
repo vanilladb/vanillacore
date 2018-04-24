@@ -50,12 +50,20 @@ public class BasicLogRecord {
 	 * 
 	 * @return the next value
 	 */
+
+	/**
+	 * Returns the next value of this log record.
+	 * 
+	 * @param type
+	 *            the expected type of the value
+	 * @return the next value
+	 */
 	public Constant nextVal(Type type) {
 		Constant val = pg.getVal(currentPos, type);
 		currentPos += Page.size(val);
 		return val;
 	}
-	
+
 	/**
 	 * Returns the log sequence number of this log record.
 	 * 

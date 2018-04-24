@@ -24,8 +24,7 @@ public class Timer {
 
 	private static final String EXE_TIME_KEY = "Execution Time";
 
-	private static final ThreadLocal<Timer> LOCAL_TIMER = 
-			new ThreadLocal<Timer>() {
+	private static final ThreadLocal<Timer> LOCAL_TIMER = new ThreadLocal<Timer>() {
 		@Override
 		protected Timer initialValue() {
 			return new Timer();
@@ -35,7 +34,7 @@ public class Timer {
 	/**
 	 * Get the timer local to this thread.
 	 * 
-	 * @return
+	 * @return the local timer
 	 */
 	public static Timer getLocalTimer() {
 		return LOCAL_TIMER.get();
@@ -120,7 +119,7 @@ public class Timer {
 	public long getExecutionTime() {
 		return getComponentTime(EXE_TIME_KEY);
 	}
-	
+
 	public void addToGlobalStatistics() {
 		TimerStatistics.add(this);
 	}

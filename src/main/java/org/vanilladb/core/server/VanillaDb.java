@@ -138,17 +138,19 @@ public class VanillaDb {
 		initCatalogMgr(isDbNew, initTx);
 		if (isDbNew) {
 			if (logger.isLoggable(Level.INFO))
-				logger.info("creating new database");
+				logger.info("creating new database...");
 		} else {
 			if (logger.isLoggable(Level.INFO))
 				logger.info("recovering existing database");
 			// add a checkpoint record to limit rollback
-			RecoveryMgr.recover(initTx);
-			logMgr.removeAndCreateNewLog();
+			RecoveryMgr.initializeSystem(initTx);
 		}
 
 		// initialize the statistics manager to build the histogram
 		initStatMgr(initTx);
+		
+		// create a checkpoint
+		txMgr.createCheckpoint(initTx);
 
 		// commit the initializing transaction
 		initTx.commit();

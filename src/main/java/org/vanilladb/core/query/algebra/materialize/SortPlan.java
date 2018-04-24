@@ -263,7 +263,7 @@ public class SortPlan implements Plan {
 		dest.close();
 		return result;
 	}
-
+	
 	private TempTable mergeTwoRuns(TempTable p1, TempTable p2) {
 		Scan src1 = p1.open();
 		Scan src2 = p2.open();

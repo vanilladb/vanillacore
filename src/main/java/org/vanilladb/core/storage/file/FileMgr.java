@@ -106,15 +106,6 @@ public class FileMgr {
 		logDirectory = new File(LOG_FILES_DIR, dbName);
 		isNew = !dbDirectory.exists();
 
-		// deal with the log folder in a new database
-		if (isNew && !dbDirectory.equals(logDirectory)) {
-			// delete the old log file if db is new
-			if (logDirectory.exists()) {
-				deleteLogFiles();
-			} else if (!logDirectory.mkdir())
-				throw new RuntimeException("cannot create log file for" + dbName);
-		}
-
 		// check the existence of log folder
 		if (!isNew && !logDirectory.exists())
 			throw new RuntimeException("log file for the existed " + dbName + " is missing");
@@ -199,7 +190,7 @@ public class FileMgr {
 
 			// Append the block to the file
 			long newSize = fileChannel.append(buffer);
-			
+
 			// Return the new block id
 			return new BlockId(fileName, newSize / BLOCK_SIZE - 1);
 
@@ -237,29 +228,6 @@ public class FileMgr {
 	}
 
 	/**
-	 * Deletes all old log files and builds new log files. XXX: This should not
-	 * be the business of FileMgr
-	 */
-	public void rebuildLogFile() {
-		try {
-			deleteLogFiles();
-
-			// Create a new log file
-			File logFile = new File(logDirectory, DEFAULT_LOG_FILE);
-			IoChannel fileChannel = IoAllocator.newIoChannel(logFile);
-			openFiles.put(DEFAULT_LOG_FILE, fileChannel);
-
-			// Create a new DD log file
-			logFile = new File(logDirectory, "vanilladddb.log");
-			fileChannel = IoAllocator.newIoChannel(logFile);
-			openFiles.put("vanilladddb.log", fileChannel);
-
-		} catch (IOException e) {
-			throw new RuntimeException("rebuild log file fail");
-		}
-	}
-
-	/**
 	 * Returns the file channel for the specified filename. The file channel is
 	 * stored in a map keyed on the filename. If the file is not open, then it
 	 * is opened and the file channel is added to the map.
@@ -287,44 +255,20 @@ public class FileMgr {
 	}
 
 	/**
-	 * Deletes all log files in the log directory. XXX: This should not be the
-	 * business of FileMgr
-	 */
-	private void deleteLogFiles() {
-		try {
-			for (String fileName : logDirectory.list())
-				if (fileName.endsWith(".log")) {
-					synchronized (prepareAnchor(fileName)) {
-						// Close file, if it opened
-						IoChannel fileChannel = openFiles.remove(fileName);
-						if (fileChannel != null)
-							fileChannel.close();
-
-						// Actually delete file
-						boolean hasDeleted = new File(logDirectory, fileName).delete();
-						if (!hasDeleted && logger.isLoggable(Level.WARNING))
-							logger.warning("cannot delete old log file");
-					}
-				}
-		} catch (IOException e) {
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning("there is something wrong when deleting log files");
-			e.printStackTrace();
-		}
-	}
-
-	/**
 	 * Delete the specified file.
+	 * 
+	 * @param fileName
+	 *            the name of the target file
 	 */
 	public void delete(String fileName) {
 		try {
 			synchronized (prepareAnchor(fileName)) {
-				// Close file, if it opened
+				// Close file, if it was opened
 				IoChannel fileChannel = openFiles.remove(fileName);
 				if (fileChannel != null)
 					fileChannel.close();
 
-				// Actually delete file
+				// Delete the file
 				boolean hasDeleted = new File(dbDirectory, fileName).delete();
 				if (!hasDeleted && logger.isLoggable(Level.WARNING))
 					logger.warning("cannot delete file: " + fileName);

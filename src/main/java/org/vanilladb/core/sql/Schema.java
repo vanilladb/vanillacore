@@ -143,11 +143,7 @@ public class Schema implements Serializable {
 	public int hashCode() {
 		return toString().hashCode();
 	}
-
-	/**
-	 * Serialize this {@code Schema} instance.
-	 * 
-	 */
+	
 	private void writeObject(ObjectOutputStream out) throws IOException {
 		Set<String> fldsSet = fields.keySet();
 		out.defaultWriteObject();

@@ -74,6 +74,18 @@ public class TableInfo {
 	 * 
 	 * @return the {@link RecordFile} object associated with this information
 	 */
+
+	/**
+	 * Opens the {@link RecordFile} described by this object.
+	 * 
+	 * @return the {@link RecordFile} object associated with this information
+	 * 
+	 * @param tx
+	 *            the context of executing transaction
+	 * @param doLog
+	 *            will the transaction log the modification
+	 * @return the opened record file
+	 */
 	public RecordFile open(Transaction tx, boolean doLog) {
 		return new RecordFile(this, tx, doLog);
 	}

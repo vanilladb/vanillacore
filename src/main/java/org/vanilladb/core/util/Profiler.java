@@ -33,8 +33,7 @@ import java.util.concurrent.TimeUnit;
  * but accepts filters and can be started/stopped at any time.
  */
 public class Profiler implements Runnable {
-	private static final String LINE_SEPARATOR = System.getProperty(
-			"line.separator", "\n");
+	private static final String LINE_SEPARATOR = System.getProperty("line.separator", "\n");
 	private static final int INTERVAL;
 	private static final int DEPTH;
 	private static final int MAX_PACKAGES;
@@ -44,36 +43,24 @@ public class Profiler implements Runnable {
 	private static final String[] IGNORE_PACKAGES;
 
 	static {
-		INTERVAL = CoreProperties.getLoader().getPropertyAsInteger(
-				Profiler.class.getName() + ".INTERVAL", 10);
-		DEPTH = CoreProperties.getLoader().getPropertyAsInteger(Profiler.class.getName()
-				+ ".DEPTH", 5);
-		MAX_PACKAGES = CoreProperties.getLoader().getPropertyAsInteger(
-				Profiler.class.getName() + ".MAX_PACKAGES", 100);
-		MAX_METHODS = CoreProperties.getLoader().getPropertyAsInteger(
-				Profiler.class.getName() + ".MAX_METHODS", 1000);
-		MAX_LINES = CoreProperties.getLoader().getPropertyAsInteger(
-				Profiler.class.getName() + ".MAX_LINES", 1000);
+		INTERVAL = CoreProperties.getLoader().getPropertyAsInteger(Profiler.class.getName() + ".INTERVAL", 10);
+		DEPTH = CoreProperties.getLoader().getPropertyAsInteger(Profiler.class.getName() + ".DEPTH", 5);
+		MAX_PACKAGES = CoreProperties.getLoader().getPropertyAsInteger(Profiler.class.getName() + ".MAX_PACKAGES", 100);
+		MAX_METHODS = CoreProperties.getLoader().getPropertyAsInteger(Profiler.class.getName() + ".MAX_METHODS", 1000);
+		MAX_LINES = CoreProperties.getLoader().getPropertyAsInteger(Profiler.class.getName() + ".MAX_LINES", 1000);
 
-		String[] defaultIgnoreThreads = new String[] {
-				"java.lang.Thread.dumpThreads",
-				"java.lang.Thread.getThreads",
-				"java.net.PlainSocketImpl.socketAccept",
-				"java.net.SocketInputStream.socketRead0",
-				"java.net.SocketOutputStream.socketWrite0",
-				"java.lang.UNIXProcess.waitForProcessExit",
+		String[] defaultIgnoreThreads = new String[] { "java.lang.Thread.dumpThreads", "java.lang.Thread.getThreads",
+				"java.net.PlainSocketImpl.socketAccept", "java.net.SocketInputStream.socketRead0",
+				"java.net.SocketOutputStream.socketWrite0", "java.lang.UNIXProcess.waitForProcessExit",
 				// "java.lang.Object.wait", "java.lang.Thread.sleep",
 				"un.awt.windows.WToolkit.eventLoop", "sun.misc.Unsafe.park",
-				"dalvik.system.VMStack.getThreadStackTrace",
-				"dalvik.system.NativeStart.run" };
-		IGNORE_THREADS = CoreProperties.getLoader().getPropertyAsStringArray(
-				Profiler.class.getName() + ".IGNORE_THREADS",
-				defaultIgnoreThreads);
-		
+				"dalvik.system.VMStack.getThreadStackTrace", "dalvik.system.NativeStart.run" };
+		IGNORE_THREADS = CoreProperties.getLoader()
+				.getPropertyAsStringArray(Profiler.class.getName() + ".IGNORE_THREADS", defaultIgnoreThreads);
+
 		String[] defaultIgnorePackages = new String[] { "java.", "javax.", "sun.", "net." };
-		IGNORE_PACKAGES = CoreProperties.getLoader().getPropertyAsStringArray(
-				Profiler.class.getName() + ".IGNORE_PACKAGES",
-				defaultIgnorePackages);
+		IGNORE_PACKAGES = CoreProperties.getLoader()
+				.getPropertyAsStringArray(Profiler.class.getName() + ".IGNORE_PACKAGES", defaultIgnorePackages);
 	}
 
 	private Thread thread;
@@ -198,9 +185,8 @@ public class Profiler implements Runnable {
 			StackTraceElement el = trace[i];
 			if (!startsWithAny(el.getClassName(), IGNORE_PACKAGES)) {
 				// ignore direct recursive calls
-				if (last == null
-						|| !(el.getClassName().equals(last.getClassName()) && el
-								.getMethodName().equals(last.getMethodName()))) {
+				if (last == null || !(el.getClassName().equals(last.getClassName())
+						&& el.getMethodName().equals(last.getMethodName()))) {
 					last = el;
 					String methodName = getMethodName(el);
 					if (self) {
@@ -219,18 +205,14 @@ public class Profiler implements Runnable {
 		for (int i = 0, j = 0; i < trace.length && j < DEPTH; i++) {
 			StackTraceElement el = trace[i];
 			// ignore direct recursive calls
-			if (last == null
-					|| !(el.getClassName().equals(last.getClassName()) && el
-							.getMethodName().equals(last.getMethodName()))) {
+			if (last == null || !(el.getClassName().equals(last.getClassName())
+					&& el.getMethodName().equals(last.getMethodName()))) {
 				if (!startsWithAny(el.getClassName(), IGNORE_PACKAGES)) {
 					if (last == null) {
-						buff.append(el.toString()).append("+")
-								.append(LINE_SEPARATOR);
-					} else if (startsWithAny(last.getClassName(),
-							IGNORE_PACKAGES)) {
+						buff.append(el.toString()).append("+").append(LINE_SEPARATOR);
+					} else if (startsWithAny(last.getClassName(), IGNORE_PACKAGES)) {
 						buff.append(last.toString()).append(LINE_SEPARATOR);
-						buff.append(el.toString()).append("+")
-								.append(LINE_SEPARATOR);
+						buff.append(el.toString()).append("+").append(LINE_SEPARATOR);
 					} else {
 						buff.append(el.toString()).append(LINE_SEPARATOR);
 					}
@@ -269,14 +251,14 @@ public class Profiler implements Runnable {
 	 * 
 	 * @param num
 	 *            number of top packages
+	 * @return the top packages
 	 */
 	public String getTopPackages(int num) {
 		stopCollecting();
 		CountMap<String> pkgs = new CountMap<String>(packages);
 		StringBuilder buff = new StringBuilder();
-		buff.append("Top packages over ").append(time).append(" ms (")
-				.append(pauseTime).append(" ms paused), with ").append(total)
-				.append(" counts:").append(LINE_SEPARATOR);
+		buff.append("Top packages over ").append(time).append(" ms (").append(pauseTime).append(" ms paused), with ")
+				.append(total).append(" counts:").append(LINE_SEPARATOR);
 		buff.append("Rank\tSelf\tPackage").append(LINE_SEPARATOR);
 		for (int i = 0, n = 0; pkgs.size() > 0 && n < num; i++) {
 			int highest = 0;
@@ -293,8 +275,7 @@ public class Profiler implements Runnable {
 			for (Map.Entry<String, Integer> e : bests) {
 				pkgs.remove(e.getKey());
 				int percent = 100 * highest / Math.max(total, 1);
-				buff.append(i + 1).append("\t").append(percent).append("%\t")
-						.append(e.getKey()).append(LINE_SEPARATOR);
+				buff.append(i + 1).append("\t").append(percent).append("%\t").append(e.getKey()).append(LINE_SEPARATOR);
 				n++;
 			}
 		}
@@ -304,6 +285,8 @@ public class Profiler implements Runnable {
 	/**
 	 * Stop and obtain the self execution time of packages, each as a row in CSV
 	 * format.
+	 * 
+	 * @return the execution time of packages in CSV format
 	 */
 	public String getPackageCsv() {
 		stopCollecting();
@@ -321,15 +304,16 @@ public class Profiler implements Runnable {
 	 * 
 	 * @param num
 	 *            number of top methods
+	 * 
+	 * @return the top methods
 	 */
 	public String getTopMethods(int num) {
 		stopCollecting();
 		CountMap<String> selfms = new CountMap<String>(selfMethods);
 		CountMap<String> stackms = new CountMap<String>(stackMethods);
 		StringBuilder buff = new StringBuilder();
-		buff.append("Top methods over ").append(time).append(" ms (")
-				.append(pauseTime).append(" ms paused), with ").append(total)
-				.append(" counts:").append(LINE_SEPARATOR);
+		buff.append("Top methods over ").append(time).append(" ms (").append(pauseTime).append(" ms paused), with ")
+				.append(total).append(" counts:").append(LINE_SEPARATOR);
 		buff.append("Rank\tSelf\tStack\tMethod").append(LINE_SEPARATOR);
 		for (int i = 0, n = 0; selfms.size() > 0 && n < num; i++) {
 			int highest = 0;
@@ -346,10 +330,8 @@ public class Profiler implements Runnable {
 			for (Map.Entry<String, Integer> e : bests) {
 				selfms.remove(e.getKey());
 				int selfPercent = 100 * highest / Math.max(total, 1);
-				int stackPercent = 100 * stackms.remove(e.getKey())
-						/ Math.max(total, 1);
-				buff.append(i + 1).append("\t").append(selfPercent)
-						.append("%\t").append(stackPercent).append("%\t")
+				int stackPercent = 100 * stackms.remove(e.getKey()) / Math.max(total, 1);
+				buff.append(i + 1).append("\t").append(selfPercent).append("%\t").append(stackPercent).append("%\t")
 						.append(e.getKey()).append(LINE_SEPARATOR);
 				n++;
 			}
@@ -360,6 +342,8 @@ public class Profiler implements Runnable {
 	/**
 	 * Stop and obtain the self execution time of methods, each as a row in CSV
 	 * format.
+	 * 
+	 * @return the execution time of methods in CSV format
 	 */
 	public String getMethodCsv() {
 		stopCollecting();
@@ -377,14 +361,15 @@ public class Profiler implements Runnable {
 	 * 
 	 * @param num
 	 *            number of top lines
+	 * 
+	 * @return the top lines
 	 */
 	public String getTopLines(int num) {
 		stopCollecting();
 		CountMap<String> ls = new CountMap<String>(lines);
 		StringBuilder buff = new StringBuilder();
-		buff.append("Top lines over ").append(time).append(" ms (")
-				.append(pauseTime).append(" ms paused), with ").append(total)
-				.append(" counts:").append(LINE_SEPARATOR);
+		buff.append("Top lines over ").append(time).append(" ms (").append(pauseTime).append(" ms paused), with ")
+				.append(total).append(" counts:").append(LINE_SEPARATOR);
 		for (int i = 0, n = 0; ls.size() > 0 && n < num; i++) {
 			int highest = 0;
 			List<Map.Entry<String, Integer>> bests = new ArrayList<Map.Entry<String, Integer>>();
@@ -400,10 +385,8 @@ public class Profiler implements Runnable {
 			for (Map.Entry<String, Integer> e : bests) {
 				ls.remove(e.getKey());
 				int percent = 100 * highest / Math.max(total, 1);
-				buff.append("Rank: ").append(i + 1).append(", Self: ")
-						.append(percent).append("%, Trace: ")
-						.append(LINE_SEPARATOR).append(e.getKey())
-						.append(LINE_SEPARATOR);
+				buff.append("Rank: ").append(i + 1).append(", Self: ").append(percent).append("%, Trace: ")
+						.append(LINE_SEPARATOR).append(e.getKey()).append(LINE_SEPARATOR);
 				n++;
 			}
 		}
