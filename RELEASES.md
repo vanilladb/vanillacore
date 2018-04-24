@@ -1,3 +1,15 @@
+# Version 0.3.1 (2018-04-24)
+
+## Bug Fixes
+
+- Fixed the bug causing rolling back a transaction twice ([#32])
+- Fixed the error in JavaDoc ([#33])
+- Fixed a few bugs after restarting a system from a crash ([#34])
+
+[#32]: https://github.com/vanilladb/vanillacore/pull/32
+[#33]: https://github.com/vanilladb/vanillacore/pull/33
+[#34]: https://github.com/vanilladb/vanillacore/pull/34
+
 # Version 0.3.0 (2017-10-11)
 
 ## Enhancements
