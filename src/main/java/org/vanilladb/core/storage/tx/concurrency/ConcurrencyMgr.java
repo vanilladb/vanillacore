@@ -15,9 +15,6 @@
  ******************************************************************************/
 package org.vanilladb.core.storage.tx.concurrency;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.record.RecordId;
 import org.vanilladb.core.storage.tx.Transaction;
@@ -97,12 +94,6 @@ public abstract class ConcurrencyMgr implements TransactionLifecycleListener {
 	 */
 	public abstract void readRecord(RecordId recId);
 
-	/*
-	 * Methods for B-Tree index locking
-	 */
-	private List<BlockId> readIndexBlks = new ArrayList<BlockId>();
-	private List<BlockId> writenIndexBlks = new ArrayList<BlockId>();
-
 	/**
 	 * Sets lock on the data file for modifying its index.
 	 * 
@@ -125,10 +116,7 @@ public abstract class ConcurrencyMgr implements TransactionLifecycleListener {
 	 * @param blk
 	 *            the block id
 	 */
-	public void modifyLeafBlock(BlockId blk) {
-		lockTbl.xLock(blk, txNum);
-		writenIndexBlks.add(blk);
-	}
+	public abstract void modifyLeafBlock(BlockId blk);
 
 	/**
 	 * Sets lock on the leaf block for read.
@@ -136,10 +124,11 @@ public abstract class ConcurrencyMgr implements TransactionLifecycleListener {
 	 * @param blk
 	 *            the block id
 	 */
-	public void readLeafBlock(BlockId blk) {
-		lockTbl.sLock(blk, txNum);
-		readIndexBlks.add(blk);
-	}
+	public abstract void readLeafBlock(BlockId blk);
+	
+	// =========================================================
+	// The following methods are designed for early lock release
+	// =========================================================
 
 	/**
 	 * Sets exclusive lock on the directory block when crabbing down for
@@ -150,7 +139,6 @@ public abstract class ConcurrencyMgr implements TransactionLifecycleListener {
 	 */
 	public void crabDownDirBlockForModification(BlockId blk) {
 		lockTbl.xLock(blk, txNum);
-		writenIndexBlks.add(blk);
 	}
 
 	/**
@@ -161,7 +149,6 @@ public abstract class ConcurrencyMgr implements TransactionLifecycleListener {
 	 */
 	public void crabDownDirBlockForRead(BlockId blk) {
 		lockTbl.sLock(blk, txNum);
-		readIndexBlks.add(blk);
 	}
 
 	/**
@@ -182,15 +169,6 @@ public abstract class ConcurrencyMgr implements TransactionLifecycleListener {
 	 */
 	public void crabBackDirBlockForRead(BlockId blk) {
 		lockTbl.release(blk, txNum, LockTable.S_LOCK);
-	}
-
-	public void releaseIndexLocks() {
-		for (BlockId blk : readIndexBlks)
-			lockTbl.release(blk, txNum, LockTable.S_LOCK);
-		for (BlockId blk : writenIndexBlks)
-			lockTbl.release(blk, txNum, LockTable.X_LOCK);
-		readIndexBlks.clear();
-		writenIndexBlks.clear();
 	}
 
 	public void lockRecordFileHeader(BlockId blk) {

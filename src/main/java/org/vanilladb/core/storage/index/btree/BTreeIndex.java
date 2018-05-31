@@ -231,8 +231,6 @@ public class BTreeIndex extends Index {
 			leaf.close();
 			leaf = null;
 		}
-		// release all locks on index structure
-		ccMgr.releaseIndexLocks();
 		dirsMayBeUpdated = null;
 	}
 
