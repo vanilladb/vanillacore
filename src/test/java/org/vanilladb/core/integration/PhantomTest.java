@@ -1,4 +1,4 @@
-package org.vanilladb.core.integrated;
+package org.vanilladb.core.integration;
 
 import java.sql.Connection;
 import java.util.concurrent.BrokenBarrierException;
