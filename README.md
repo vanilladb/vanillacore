@@ -178,6 +178,6 @@ If you have any question, you can either open an issue here or contact [vanillad
 
 ## License
 
-Copyright 2016 vanilladb.org contributors
+Copyright 2016-2018 vanilladb.org contributors
 
 Licensed under the [Apache License 2.0](LICENSE)
