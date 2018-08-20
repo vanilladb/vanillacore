@@ -120,7 +120,5 @@ public class ReadCommittedConcurrencyMgr extends ConcurrencyMgr {
 	@Override
 	public void readLeafBlock(BlockId blk) {
 		lockTbl.sLock(blk, txNum);
-		// releases S lock to allow phantoms
-		lockTbl.release(blk, txNum, LockTable.S_LOCK);
 	}
 }
