@@ -1,3 +1,11 @@
+# Version 0.3.2 (2018-08-20)
+
+## Bug Fixes
+
+- Fixed the bug of read phantom that created by improper index locking. ([#37])
+
+[#37]: https://github.com/vanilladb/vanillacore/pull/37
+
 # Version 0.3.1 (2018-04-24)
 
 ## Bug Fixes
