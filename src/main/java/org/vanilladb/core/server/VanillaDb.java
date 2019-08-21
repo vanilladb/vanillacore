@@ -141,12 +141,16 @@ public class VanillaDb {
 				logger.info("creating new database...");
 		} else {
 			if (logger.isLoggable(Level.INFO))
-				logger.info("recovering existing database");
+				logger.info("recovering existing database...");
 			// add a checkpoint record to limit rollback
 			RecoveryMgr.initializeSystem(initTx);
+			if (logger.isLoggable(Level.INFO))
+				logger.info("the database has been recovered to a consistent state.");
 		}
 
 		// initialize the statistics manager to build the histogram
+		if (logger.isLoggable(Level.INFO))
+			logger.info("refreshing statistics...");
 		initStatMgr(initTx);
 		
 		// create a checkpoint

@@ -48,7 +48,7 @@ class BufferPoolMgr {
 	 */
 	BufferPoolMgr(int numBuffs) {
 		bufferPool = new Buffer[numBuffs];
-		blockMap = new ConcurrentHashMap<BlockId, Buffer>();
+		blockMap = new ConcurrentHashMap<BlockId, Buffer>(numBuffs);
 		numAvailable = new AtomicInteger(numBuffs);
 		lastReplacedBuff = 0;
 		for (int i = 0; i < numBuffs; i++)

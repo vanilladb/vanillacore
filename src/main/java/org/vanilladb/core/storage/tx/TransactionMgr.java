@@ -184,6 +184,12 @@ public class TransactionMgr implements TransactionLifecycleListener {
 			return nextTxNum;
 		}
 	}
+	
+	public int getActiveTxCount() {
+		synchronized (this) {
+			return activeTxs.size();
+		}
+	}
 
 	private Transaction createTransaction(int isolationLevel, boolean readOnly, long txNum) {
 		if (logger.isLoggable(Level.FINE))

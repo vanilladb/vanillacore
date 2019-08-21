@@ -102,7 +102,11 @@ public class IndexMgr {
 		}
 		
 		idxTi = tblMgr.getTableInfo(ICAT, tx);
+		if (idxTi == null)
+			throw new RuntimeException("cannot find the catalog file for indices");
 		keyTi = tblMgr.getTableInfo(KCAT, tx);
+		if (keyTi == null)
+			throw new RuntimeException("cannot find the catalog file for the keys of indices");
 		
 		/*
 		 * Optimization: store the ii. WARNING: if allowing run-time index

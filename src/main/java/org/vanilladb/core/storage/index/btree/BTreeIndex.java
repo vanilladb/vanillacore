@@ -232,6 +232,8 @@ public class BTreeIndex extends Index {
 			leaf = null;
 		}
 		dirsMayBeUpdated = null;
+		
+		tx.concurrencyMgr().onIndexClosed();
 	}
 
 	private void search(SearchRange searchRange, SearchPurpose purpose) {

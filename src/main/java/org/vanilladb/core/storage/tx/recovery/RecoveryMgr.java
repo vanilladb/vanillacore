@@ -41,7 +41,7 @@ import org.vanilladb.core.storage.tx.TransactionLifecycleListener;
  */
 public class RecoveryMgr implements TransactionLifecycleListener {
 
-	private static boolean enableLogging = true;
+	private static boolean enableLogging = false;
 
 	public static void enableLogging(boolean log) {
 		enableLogging = log;

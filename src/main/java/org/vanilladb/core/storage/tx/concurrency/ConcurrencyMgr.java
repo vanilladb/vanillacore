@@ -178,4 +178,8 @@ public abstract class ConcurrencyMgr implements TransactionLifecycleListener {
 	public void releaseRecordFileHeader(BlockId blk) {
 		lockTbl.release(blk, txNum, LockTable.X_LOCK);
 	}
+	
+	public void onIndexClosed() {
+		// Leave for Conservative CC Mgr
+	}
 }
