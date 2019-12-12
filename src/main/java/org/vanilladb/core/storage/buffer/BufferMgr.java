@@ -62,19 +62,22 @@ public class BufferMgr implements TransactionLifecycleListener {
 				.getPropertyAsInteger(BufferMgr.class.getName() + ".BUFFER_POOL_SIZE", 1024);
 	}
 
-	class PinnedBuffer {
+	class PinningBuffer {
 		Buffer buffer;
-		int pinnedCount = 1;
+		int pinCount = 1;
 
-		PinnedBuffer(Buffer buffer) {
+		PinningBuffer(Buffer buffer) {
 			this.buffer = buffer;
 		}
 	}
 
 	protected static BufferPoolMgr bufferPool = new BufferPoolMgr(BUFFER_POOL_SIZE);
 	protected static List<Thread> waitingThreads = new LinkedList<Thread>();
-
-	private Map<BlockId, PinnedBuffer> pinnedBuffers = new HashMap<BlockId, PinnedBuffer>();
+	
+	// Record the buffers that is being pinned by the transaction
+	private Map<BlockId, PinningBuffer> pinningBuffers = new HashMap<BlockId, PinningBuffer>();
+	// Record all the buffers that the transaction ever pins in order to flush them later
+	private Set<Buffer> buffersToFlush = new HashSet<Buffer>();
 	private long txNum;
 	
 	public BufferMgr(long txNum) {
@@ -107,14 +110,14 @@ public class BufferMgr implements TransactionLifecycleListener {
 	 */
 	public Buffer pin(BlockId blk) {
 		// Try to find out if this block has been pinned by this transaction
-		PinnedBuffer pinnedBuff = pinnedBuffers.get(blk);
+		PinningBuffer pinnedBuff = pinningBuffers.get(blk);
 		if (pinnedBuff != null) {
-			pinnedBuff.pinnedCount++;
+			pinnedBuff.pinCount++;
 			return pinnedBuff.buffer;
 		}
 		
 		// This transaction has pinned too many buffers
-		if (pinnedBuffers.size() == BUFFER_POOL_SIZE)
+		if (pinningBuffers.size() == BUFFER_POOL_SIZE)
 			throw new BufferAbortException();
 		
 		// Pinning process
@@ -149,7 +152,8 @@ public class BufferMgr implements TransactionLifecycleListener {
 				repin();
 				buff = pin(blk);
 			} else {
-				pinnedBuffers.put(buff.block(), new PinnedBuffer(buff));
+				pinningBuffers.put(buff.block(), new PinningBuffer(buff));
+				buffersToFlush.add(buff);
 			}
 
 			// TODO: Add some comment here
@@ -177,7 +181,7 @@ public class BufferMgr implements TransactionLifecycleListener {
 	 * @return the buffer pinned to that block
 	 */
 	public Buffer pinNew(String fileName, PageFormatter fmtr) {
-		if (pinnedBuffers.size() == BUFFER_POOL_SIZE)
+		if (pinningBuffers.size() == BUFFER_POOL_SIZE)
 			throw new BufferAbortException();
 		try {
 			Buffer buff;
@@ -210,7 +214,8 @@ public class BufferMgr implements TransactionLifecycleListener {
 				repin();
 				buff = pinNew(fileName, fmtr);
 			} else {
-				pinnedBuffers.put(buff.block(), new PinnedBuffer(buff));
+				pinningBuffers.put(buff.block(), new PinningBuffer(buff));
+				buffersToFlush.add(buff);
 			}
 
 			// TODO: Add some comment here
@@ -236,14 +241,14 @@ public class BufferMgr implements TransactionLifecycleListener {
 	 */
 	public void unpin(Buffer buff) {
 		BlockId blk = buff.block();
-		PinnedBuffer pinnedBuff = pinnedBuffers.get(blk);
+		PinningBuffer pinnedBuff = pinningBuffers.get(blk);
 		
 		if (pinnedBuff != null) {
-			pinnedBuff.pinnedCount--;
+			pinnedBuff.pinCount--;
 			
-			if (pinnedBuff.pinnedCount == 0) {
+			if (pinnedBuff.pinCount == 0) {
 				bufferPool.unpin(buff);
-				pinnedBuffers.remove(blk);
+				pinningBuffers.remove(blk);
 				
 				synchronized (bufferPool) {
 					bufferPool.notifyAll();
@@ -260,13 +265,12 @@ public class BufferMgr implements TransactionLifecycleListener {
 	}
 
 	/**
-	 * Flushes the dirty buffers modified by the specified transaction.
-	 * 
-	 * @param txNum
-	 *            the transaction's id number
+	 * Flushes the dirty buffers modified by the host transaction.
 	 */
-	public void flushAll(long txNum) {
-		bufferPool.flushAll(txNum);
+	public void flushAllMyBuffers() {
+		for (Buffer buff : buffersToFlush) {
+			buff.flush();
+		}
 	}
 
 	/**
@@ -280,9 +284,9 @@ public class BufferMgr implements TransactionLifecycleListener {
 
 	private void unpinAll(Transaction tx) {
 		// Copy the set of pinned buffers to avoid ConcurrentModificationException
-		Set<PinnedBuffer> pinnedBuffs = new HashSet<PinnedBuffer>(pinnedBuffers.values());
+		Set<PinningBuffer> pinnedBuffs = new HashSet<PinningBuffer>(pinningBuffers.values());
 		if (pinnedBuffs != null) {
-			for (PinnedBuffer pinnedBuff : pinnedBuffs)
+			for (PinningBuffer pinnedBuff : pinnedBuffs)
 				bufferPool.unpin(pinnedBuff.buffer);
 		}
 
@@ -306,9 +310,9 @@ public class BufferMgr implements TransactionLifecycleListener {
 			List<Buffer> buffersToBeUnpinned = new LinkedList<Buffer>();
 			
 			// Record the buffers to be un-pinned and the blocks to be re-pinned
-			for (Entry<BlockId, PinnedBuffer> entry : pinnedBuffers.entrySet()) {
+			for (Entry<BlockId, PinningBuffer> entry : pinningBuffers.entrySet()) {
 				blksToBeRepinned.add(entry.getKey());
-				pinCounts.put(entry.getKey(), entry.getValue().pinnedCount);
+				pinCounts.put(entry.getKey(), entry.getValue().pinCount);
 				buffersToBeUnpinned.add(entry.getValue().buffer);
 			}
 			
