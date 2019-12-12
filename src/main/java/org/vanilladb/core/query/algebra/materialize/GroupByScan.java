@@ -47,7 +47,6 @@ public class GroupByScan implements Scan {
 		this.ss = s;
 		this.groupFlds = groupFlds;
 		this.aggFns = aggFns;
-		beforeFirst();
 	}
 
 	/**

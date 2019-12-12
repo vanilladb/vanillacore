@@ -45,7 +45,6 @@ public class IndexSelectScan implements UpdateScan {
 		this.idx = idx;
 		this.searchRange = searchRange;
 		this.ts = ts;
-		beforeFirst();
 	}
 
 	/**

@@ -26,29 +26,28 @@ import org.vanilladb.core.storage.tx.Transaction;
  */
 public class MultiBufferProductScan implements Scan {
 	private Scan lhsScan, rhsScan = null, prodScan;
-	private TableInfo ti;
+	private TableInfo rhsTi;
 	private Transaction tx;
-	private int chunkSize;
-	private long nextBlkNum, fileSize;
+	private int rhsChunkSize;
+	private long nextBlkNum, rhsFileSize;
 
 	/**
 	 * Creates the scan class for the product of the LHS scan and a table.
 	 * 
 	 * @param lhsScan
 	 *            the LHS scan
-	 * @param ti
+	 * @param rhsTi
 	 *            the metadata for the RHS table
 	 * @param tx
 	 *            the current transaction
 	 */
-	public MultiBufferProductScan(Scan lhsScan, TableInfo ti, Transaction tx) {
+	public MultiBufferProductScan(Scan lhsScan, TableInfo rhsTi, Transaction tx) {
 		this.lhsScan = lhsScan;
-		this.ti = ti;
+		this.rhsTi = rhsTi;
 		this.tx = tx;
 
-		fileSize = ti.open(tx, true).fileSize();
-		chunkSize = BufferNeeds.bestFactor(fileSize, tx);
-		beforeFirst();
+		rhsFileSize = rhsTi.open(tx, true).fileSize();
+		rhsChunkSize = BufferNeeds.bestFactor(rhsFileSize, tx);
 	}
 
 	/**
@@ -117,14 +116,14 @@ public class MultiBufferProductScan implements Scan {
 	private boolean useNextChunk() {
 		if (rhsScan != null)
 			rhsScan.close();
-		if (nextBlkNum >= fileSize)
+		if (nextBlkNum >= rhsFileSize)
 			return false;
-		long end = nextBlkNum + chunkSize - 1;
-		if (end >= fileSize)
-			end = fileSize - 1;
-		rhsScan = new ChunkScan(ti, nextBlkNum, end, tx);
-		lhsScan.beforeFirst();
+		long end = nextBlkNum + rhsChunkSize - 1;
+		if (end >= rhsFileSize)
+			end = rhsFileSize - 1;
+		rhsScan = new ChunkScan(rhsTi, nextBlkNum, end, tx);
 		prodScan = new ProductScan(lhsScan, rhsScan);
+		prodScan.beforeFirst();
 		nextBlkNum = end + 1;
 		return true;
 	}

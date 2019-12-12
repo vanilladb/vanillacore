@@ -48,6 +48,7 @@ public class ExplainScan implements Scan {
 			numRecs++;
 		s.close();
 		this.result = result + "\nActual #recs: " + numRecs;
+		isBeforeFirst = true;
 	}
 
 	@Override
