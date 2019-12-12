@@ -114,6 +114,8 @@ public class RepeatableReadConcurrencyMgr extends ConcurrencyMgr {
 	
 	@Override
 	public void modifyLeafBlock(BlockId blk) {
+		// Hold the index locks until the end of the transaction
+		// in order to prevent Serializable transactions from phantoms
 		lockTbl.xLock(blk, txNum);
 	}
 	

@@ -15,11 +15,16 @@
  *******************************************************************************/
 package org.vanilladb.core.storage.tx.concurrency;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.record.RecordId;
 import org.vanilladb.core.storage.tx.Transaction;
 
 public class ReadCommittedConcurrencyMgr extends ConcurrencyMgr {
+	
+	private List<Object> toReleaseSLockAtEndStatement = new ArrayList<Object>();
 
 	public ReadCommittedConcurrencyMgr(long txNumber) {
 		txNum = txNumber;
@@ -40,7 +45,8 @@ public class ReadCommittedConcurrencyMgr extends ConcurrencyMgr {
 	 */
 	@Override
 	public void onTxEndStatement(Transaction tx) {
-		lockTbl.releaseAll(txNum, true);
+		for (Object obj : toReleaseSLockAtEndStatement)
+			lockTbl.release(obj, txNum, LockTable.S_LOCK);
 	}
 
 	@Override
@@ -74,8 +80,8 @@ public class ReadCommittedConcurrencyMgr extends ConcurrencyMgr {
 		lockTbl.release(blk.fileName(), txNum, LockTable.IS_LOCK);
 		
 		lockTbl.sLock(blk, txNum);
-		// releases S lock to allow unrepeatable Read
-		lockTbl.release(blk, txNum, LockTable.S_LOCK);
+		// releases S lock at the end of statement to allow unrepeatable Read
+		toReleaseSLockAtEndStatement.add(blk);
 	}
 	
 	@Override
@@ -96,8 +102,8 @@ public class ReadCommittedConcurrencyMgr extends ConcurrencyMgr {
 		lockTbl.release(recId.block(), txNum, LockTable.IS_LOCK);
 		
 		lockTbl.sLock(recId, txNum);
-		// releases S lock to allow unrepeatable Read
-		lockTbl.release(recId, txNum, LockTable.S_LOCK);
+		// releases S lock at the end of statement to allow unrepeatable Read
+		toReleaseSLockAtEndStatement.add(recId);
 	}
 
 	@Override
@@ -114,11 +120,14 @@ public class ReadCommittedConcurrencyMgr extends ConcurrencyMgr {
 	
 	@Override
 	public void modifyLeafBlock(BlockId blk) {
+		// Hold the index locks until the end of the transaction
+		// in order to prevent Serializable transactions from phantoms
 		lockTbl.xLock(blk, txNum);
 	}
 	
 	@Override
 	public void readLeafBlock(BlockId blk) {
-		lockTbl.sLock(blk, txNum);
+		// releases S lock at the end of statement to allow unrepeatable Read
+		toReleaseSLockAtEndStatement.add(blk);
 	}
 }
