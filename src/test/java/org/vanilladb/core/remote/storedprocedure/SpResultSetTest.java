@@ -34,7 +34,6 @@ import org.vanilladb.core.sql.IntegerConstant;
 import org.vanilladb.core.sql.Record;
 import org.vanilladb.core.sql.Schema;
 import org.vanilladb.core.sql.Type;
-import org.vanilladb.core.sql.VarcharConstant;
 import org.vanilladb.core.sql.storedprocedure.SpResultRecord;
 
 public class SpResultSetTest {
@@ -56,7 +55,6 @@ public class SpResultSetTest {
 	public void testInsertData() {
 		try {
 			Schema schema = new Schema();
-			schema.addField("status", Type.VARCHAR(10));
 			schema.addField("totalAoumnt", Type.DOUBLE);
 			schema.addField("cid", Type.INTEGER);
 			schema.addField("date", Type.BIGINT);
@@ -64,13 +62,12 @@ public class SpResultSetTest {
 			Record[] recs = new Record[10];
 			for (int i = 0; i < recs.length; i++) {
 				SpResultRecord r = new SpResultRecord();
-				r.setVal("status", new VarcharConstant("commit"));
 				r.setVal("totaFlAoumnt", new DoubleConstant(5962348.1));
 				r.setVal("cid", new IntegerConstant(i));
 				r.setVal("date", new BigIntConstant(i * 698));
 				recs[i] = r;
 			}
-			SpResultSet sp = new SpResultSet(schema, recs);
+			SpResultSet sp = new SpResultSet(true, schema, recs);
 
 			FileOutputStream fos;
 

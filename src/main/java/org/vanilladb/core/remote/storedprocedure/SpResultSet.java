@@ -22,11 +22,13 @@ import org.vanilladb.core.sql.Schema;
 
 public class SpResultSet implements Serializable {
 
-	private static final long serialVersionUID = -8409489171990111489L;
-	private Record[] records;
-	private Schema schema;
+	private static final long serialVersionUID = 1L;
 
-	public SpResultSet(Schema schema, Record... records) {
+	private boolean isCommitted;
+	private Schema schema;
+	private Record[] records;
+
+	public SpResultSet(boolean isCommitted, Schema schema, Record... records) {
 		this.records = records;
 		this.schema = schema;
 	}
@@ -37,5 +39,9 @@ public class SpResultSet implements Serializable {
 
 	public Schema getSchema() {
 		return schema;
+	}
+	
+	public boolean isCommitted() {
+		return isCommitted;
 	}
 }
