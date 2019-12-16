@@ -28,7 +28,7 @@ public class ExplainScan implements Scan {
 	private String result;
 	private int numRecs;
 	private Schema schema;
-	private boolean isBeforeFirst;
+	private boolean isBeforeFirsted;
 
 	/**
 	 * Creates a explain scan having the specified underlying query.
@@ -48,7 +48,7 @@ public class ExplainScan implements Scan {
 			numRecs++;
 		s.close();
 		this.result = result + "\nActual #recs: " + numRecs;
-		isBeforeFirst = true;
+		isBeforeFirsted = true;
 	}
 
 	@Override
@@ -61,13 +61,13 @@ public class ExplainScan implements Scan {
 
 	@Override
 	public void beforeFirst() {
-		isBeforeFirst = true;
+		isBeforeFirsted = true;
 	}
 
 	@Override
 	public boolean next() {
-		if (isBeforeFirst) {
-			isBeforeFirst = false;
+		if (isBeforeFirsted) {
+			isBeforeFirsted = false;
 			return true;
 		} else
 			return false;
