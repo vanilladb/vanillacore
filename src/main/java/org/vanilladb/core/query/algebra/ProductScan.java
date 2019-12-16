@@ -36,8 +36,6 @@ public class ProductScan implements Scan {
 	public ProductScan(Scan s1, Scan s2) {
 		this.s1 = s1;
 		this.s2 = s2;
-		s1.beforeFirst();
-		isLhsEmpty = !s1.next();
 	}
 
 	/**

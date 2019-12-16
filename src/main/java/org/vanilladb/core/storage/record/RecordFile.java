@@ -49,6 +49,7 @@ public class RecordFile implements Record {
 	private FileHeaderPage fhp;
 	private long currentBlkNum;
 	private boolean doLog;
+	private boolean isBeforeFirsted;
 
 	/**
 	 * Constructs an object to manage a file of records. If the file does not
@@ -116,6 +117,7 @@ public class RecordFile implements Record {
 	public void beforeFirst() {
 		close();
 		currentBlkNum = 0; // first data block is block 1
+		isBeforeFirsted = true;
 	}
 
 	/**
@@ -124,6 +126,10 @@ public class RecordFile implements Record {
 	 * @return false if there is no next record.
 	 */
 	public boolean next() {
+		if (!isBeforeFirsted)
+			throw new IllegalStateException("You must call beforeFirst() before iterating table '"
+					+ ti.tableName() + "'");
+		
 		if (currentBlkNum == 0 && !moveTo(1))
 			return false;
 		while (true) {

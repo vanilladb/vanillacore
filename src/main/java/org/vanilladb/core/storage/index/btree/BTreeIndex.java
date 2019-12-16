@@ -41,8 +41,8 @@ public class BTreeIndex extends Index {
 	private String leafFileName, dirFileName;
 	private BTreeLeaf leaf = null;
 	private BlockId rootBlk;
-
 	private List<BlockId> dirsMayBeUpdated;
+	private boolean isBeforeFirsted;
 
 	public static long searchCost(SearchKeyType keyType, long totRecs, long matchRecs) {
 		int dirRpb = Buffer.BUFFER_SIZE / BTreePage.slotSize(BTreeDir.schema(keyType));
@@ -121,6 +121,7 @@ public class BTreeIndex extends Index {
 			return;
 
 		search(searchRange, SearchPurpose.READ);
+		isBeforeFirsted = true;
 	}
 
 	/**
@@ -132,6 +133,10 @@ public class BTreeIndex extends Index {
 	 */
 	@Override
 	public boolean next() {
+		if (!isBeforeFirsted)
+			throw new IllegalStateException("You must call beforeFirst() before iterating index '"
+					+ ii.indexName() + "'");
+		
 		return leaf == null ? false : leaf.next();
 	}
 

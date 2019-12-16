@@ -20,6 +20,8 @@ import static org.vanilladb.core.storage.metadata.TableMgr.TCAT_TBLNAME;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.Schema;
@@ -35,6 +37,8 @@ import org.vanilladb.core.util.CoreProperties;
  * startup, keeps the information in memory, and periodically refreshes it.
  */
 public class StatMgr {
+	private static Logger logger = Logger.getLogger(StatMgr.class.getName());
+	
 	// if REFRESH_THRESHOLD == 0, the refresh process will be turned off
 	private static final int REFRESH_THRESHOLD;
 	private static final int NUM_BUCKETS;
@@ -61,10 +65,16 @@ public class StatMgr {
 	 * @param tx
 	 *            the startup transaction
 	 */
-	public StatMgr(Transaction tx) {
+	public StatMgr(Transaction tx) {	
+		if (logger.isLoggable(Level.INFO)) 
+			logger.info("building statistics...");
+		
 		initStatistics(tx);
 		// Check refresh_threshold value to turn on/off the statistics
 		isRefreshStatOn = !(REFRESH_THRESHOLD == REFRESH_STAT_OFF);
+		
+		if (logger.isLoggable(Level.INFO)) 
+			logger.info("the statistics is up to date.");
 	}
 
 	/**

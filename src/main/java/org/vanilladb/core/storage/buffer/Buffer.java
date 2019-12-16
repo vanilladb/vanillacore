@@ -15,8 +15,6 @@
  *******************************************************************************/
 package org.vanilladb.core.storage.buffer;
 
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -52,7 +50,7 @@ public class Buffer {
 	private BlockId blk = null;
 	private int pins = 0;
 	private boolean isNew = false;
-	private Set<Long> modifiedBy = new HashSet<Long>();
+	private boolean isModified = false;
 	// TODO: We use (-1, -1) for the default value. Will this be a problem ?
 	private LogSeqNum lastLsn = LogSeqNum.DEFAULT_VALUE;
 	
@@ -121,7 +119,7 @@ public class Buffer {
 	public void setVal(int offset, Constant val, long txNum, LogSeqNum lsn) {
 		internalLock.writeLock().lock();
 		try {
-			modifiedBy.add(txNum);
+			isModified = true;
 			if (lsn != null && lsn.compareTo(lastLsn) > 0)
 				lastLsn = lsn;
 			
@@ -207,10 +205,10 @@ public class Buffer {
 		internalLock.writeLock().lock();
 		flushLock.lock();
 		try {
-			if (isNew || modifiedBy.size() > 0) {
+			if (isNew || isModified) {
 				VanillaDb.logMgr().flush(lastLsn);
 				contents.write(blk);
-				modifiedBy.clear();
+				isModified = false;
 				isNew = false;
 			}
 		} finally {
@@ -259,17 +257,14 @@ public class Buffer {
 	}
 
 	/**
-	 * Returns true if the buffer is dirty due to a modification by the
-	 * specified transaction.
+	 * Returns true if the buffer is dirty due to a modification.
 	 * 
-	 * @param txNum
-	 *            the id of the transaction
-	 * @return true if the transaction modified the buffer
+	 * @return true if the buffer is dirty
 	 */
-	boolean isModifiedBy(long txNum) {
+	boolean isModified() {
 		internalLock.writeLock().lock();
 		try {
-			return modifiedBy.contains(txNum);
+			return isModified;
 		} finally {
 			internalLock.writeLock().unlock();
 		}

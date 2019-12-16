@@ -84,6 +84,7 @@ public class HashIndex extends Index {
 	
 	private SearchKey searchKey;
 	private RecordFile rf;
+	private boolean isBeforeFirsted;
 
 	/**
 	 * Opens a hash index for the specified index.
@@ -139,6 +140,8 @@ public class HashIndex extends Index {
 		if (rf.fileSize() == 0)
 			RecordFile.formatFileHeader(ti.fileName(), tx);
 		rf.beforeFirst();
+		
+		isBeforeFirsted = true;
 	}
 
 	/**
@@ -148,6 +151,10 @@ public class HashIndex extends Index {
 	 */
 	@Override
 	public boolean next() {
+		if (!isBeforeFirsted)
+			throw new IllegalStateException("You must call beforeFirst() before iterating index '"
+					+ ii.indexName() + "'");
+		
 		while (rf.next())
 			if (getKey().equals(searchKey))
 				return true;

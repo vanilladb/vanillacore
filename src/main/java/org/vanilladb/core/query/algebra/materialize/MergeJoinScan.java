@@ -45,7 +45,6 @@ public class MergeJoinScan implements Scan {
 		this.ss2 = ss2;
 		this.fldName1 = fldName1;
 		this.fldName2 = fldName2;
-		beforeFirst();
 	}
 
 	/**

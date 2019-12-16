@@ -51,6 +51,12 @@ public class ConcurrencyTest {
 
 	@BeforeClass
 	public static void init() {
+		// Make the waiting time shorter
+		System.setProperty(
+			"org.vanilladb.core.storage.tx.concurrency.LockTable.MAX_TIME",
+			"1000"
+		);
+		
 		ServerInit.init(ConcurrencyTest.class);
 		ServerInit.loadTestbed();
 
