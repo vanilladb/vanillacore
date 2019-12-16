@@ -17,8 +17,6 @@ package org.vanilladb.core.sql.storedprocedure;
 
 import org.vanilladb.core.remote.storedprocedure.SpResultSet;
 import org.vanilladb.core.sql.Schema;
-import org.vanilladb.core.sql.Type;
-import org.vanilladb.core.sql.VarcharConstant;
 
 public abstract class StoredProcedureParamHelper {
 
@@ -48,12 +46,8 @@ public abstract class StoredProcedureParamHelper {
 			public SpResultSet createResultSet() {
 				// Return the result
 				Schema sch = new Schema();
-				Type t = Type.VARCHAR(10);
-				sch.addField("status", t);
 				SpResultRecord rec = new SpResultRecord();
-				String status = isCommitted ? "committed" : "abort";
-				rec.setVal("status", new VarcharConstant(status, t));
-				return new SpResultSet(sch, rec);
+				return new SpResultSet(isCommitted, sch, rec);
 			}
 		};
 	}
@@ -73,5 +67,4 @@ public abstract class StoredProcedureParamHelper {
 	public boolean isCommitted() {
 		return isCommitted;
 	}
-
 }

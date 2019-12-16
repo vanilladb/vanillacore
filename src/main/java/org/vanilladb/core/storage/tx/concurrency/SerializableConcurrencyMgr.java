@@ -94,11 +94,15 @@ public class SerializableConcurrencyMgr extends ConcurrencyMgr {
 	
 	@Override
 	public void modifyLeafBlock(BlockId blk) {
+		// Hold the index locks until the end of the transaction
+		// in order to prevent phantoms
 		lockTbl.xLock(blk, txNum);
 	}
 	
 	@Override
 	public void readLeafBlock(BlockId blk) {
+		// Hold the index locks until the end of the transaction
+		// in order to prevent phantoms
 		lockTbl.sLock(blk, txNum);
 	}
 }

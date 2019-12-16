@@ -46,7 +46,6 @@ public class HashJoinScan implements Scan {
 		Expression exp2 = new FieldNameExpression(fldname2);
 		Term t = new Term(exp1, OP_EQ, exp2);
 		pred = new Predicate(t);
-		beforeFirst();
 	}
 
 	@Override

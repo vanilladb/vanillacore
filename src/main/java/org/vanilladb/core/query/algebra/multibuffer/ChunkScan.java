@@ -59,7 +59,6 @@ public class ChunkScan implements Scan {
 			BlockId blk = new BlockId(fileName, i);
 			pages.add(new RecordPage(blk, ti, tx, true));
 		}
-		beforeFirst();
 	}
 
 	/**

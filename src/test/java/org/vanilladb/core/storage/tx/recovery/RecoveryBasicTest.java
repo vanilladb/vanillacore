@@ -117,7 +117,7 @@ public class RecoveryBasicTest {
 		buff.setVal(504, new IntegerConstant(0), txNum, null);
 		buff.setVal(520, new VarcharConstant("aaaa"), txNum, null);
 		buff.setVal(540, new VarcharConstant("AAAA"), txNum, null);
-		tx.bufferMgr().flushAll(txNum);
+		tx.bufferMgr().flushAllMyBuffers();
 		tx.bufferMgr().unpin(buff);
 		tx.commit();
 	}
@@ -139,7 +139,7 @@ public class RecoveryBasicTest {
 		buff.setVal(20, new VarcharConstant("xyz"), txNum, lsn);
 
 		bm.unpin(buff);
-		bm.flushAll(txNum);
+		bm.flushAllMyBuffers();
 
 		// verify that the changes got made
 		buff = bm.pin(blk);

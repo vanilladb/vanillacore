@@ -55,7 +55,6 @@ public class IndexJoinScan implements Scan {
 		this.idx = idx;
 		this.joinFields = joinFields;
 		this.ts = ts;
-		beforeFirst();
 	}
 
 	/**
