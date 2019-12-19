@@ -15,15 +15,71 @@
  *******************************************************************************/
 package org.vanilladb.core.sql.storedprocedure;
 
+import java.sql.Connection;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.vanilladb.core.remote.storedprocedure.SpResultSet;
+import org.vanilladb.core.server.VanillaDb;
+import org.vanilladb.core.storage.tx.Transaction;
+import org.vanilladb.core.storage.tx.concurrency.LockAbortException;
 
 /**
  * An abstract class that denotes the stored procedure supported in VanillaDb.
  */
-public interface StoredProcedure {
+public abstract class StoredProcedure<H extends StoredProcedureParamHelper> {
+	private static Logger logger = Logger.getLogger(StoredProcedure.class
+			.getName());
+	
+	private H paramHelper;
+	private Transaction tx;
+	
+	public StoredProcedure(H helper) {
+		if (helper == null)
+			throw new IllegalArgumentException("paramHelper should not be null");
+		
+		paramHelper = helper;
+	}
+	
+	public void prepare(Object... pars) {
+		// prepare parameters
+		paramHelper.prepareParameters(pars);
+		
+		// create a transaction
+		boolean isReadOnly = paramHelper.isReadOnly();
+		tx = VanillaDb.txMgr().newTransaction(
+			Connection.TRANSACTION_SERIALIZABLE, isReadOnly);
+	}
+	
+	public SpResultSet execute() {
+		try {
+			executeSql();
+			
+			// The transaction finishes normally
+			tx.commit();
+			paramHelper.setCommitted(true);
+			
+		} catch (LockAbortException lockAbortEx) {
+			if (logger.isLoggable(Level.WARNING))
+				logger.warning(lockAbortEx.getMessage());
+			tx.rollback();
+			paramHelper.setCommitted(false);
+		} catch (Exception e) {
+			e.printStackTrace();
+			tx.rollback();
+			paramHelper.setCommitted(false);
+		}
 
-	void prepare(Object... pars);
-
-	SpResultSet execute();
-
+		return paramHelper.createResultSet();
+	}
+	
+	protected abstract void executeSql();
+	
+	protected H getParamHelper() {
+		return paramHelper;
+	}
+	
+	protected Transaction getTransaction() {
+		return tx;
+	}
 }
