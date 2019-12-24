@@ -29,6 +29,7 @@ public class SpResultSet implements Serializable {
 	private Record[] records;
 
 	public SpResultSet(boolean isCommitted, Schema schema, Record... records) {
+		this.isCommitted = isCommitted;
 		this.records = records;
 		this.schema = schema;
 	}
