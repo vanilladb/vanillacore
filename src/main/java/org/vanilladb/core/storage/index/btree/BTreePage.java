@@ -46,7 +46,7 @@ public class BTreePage {
 	private BlockId blk;
 	private Schema schema;
 	private Transaction tx;
-	private int slotSize, headerSize;
+	private int slotSize, headerSize, numberOfSlots, numberOfFlags;
 	private Buffer currentBuff;
 	private Map<String, Integer> myOffsetMap;
 	// Optimization: Materialize the number of records of B-Tree Page.
@@ -107,7 +107,7 @@ public class BTreePage {
 		return pos;
 	}
 
-	public static int maxNumOfSlots(int numOfFlags, Schema sch) {
+	public static int numOfSlots(int numOfFlags, Schema sch) {
 		int slotSize = slotSize(sch);
 		int flagSize = numOfFlags * Type.BIGINT.maxSize();
 		return (Buffer.BUFFER_SIZE - flagSize) / slotSize;
@@ -132,9 +132,14 @@ public class BTreePage {
 		currentBuff = tx.bufferMgr().pin(blk);
 
 		slotSize = slotSize(schema);
+		// Slot: a place to hold a record. The number of slots are fixed.
+		// Record: a record that contains meaningful information for index.
+		// Note that a slot may not have a record. It could be empty.
+		numberOfRecords = -1; // Cache number of records. Lazily evaluated.
+		numberOfFlags = numFlags;
+		numberOfSlots = numOfSlots(numFlags, schema);
 		headerSize = Page.maxSize(INTEGER) + Page.maxSize(BIGINT) * numFlags;
 		myOffsetMap = offsetMap(schema);
-		numberOfRecords = -1;
 	}
 
 	/**
@@ -172,9 +177,15 @@ public class BTreePage {
 		int offset = Page.maxSize(INTEGER) + Page.maxSize(BIGINT) * i;
 		Constant v = new BigIntConstant(val);
 		setVal(offset, v);
+//		System.out.println(String.format("%s setFlag %d with val %d", blk, i, val));
 	}
 
 	public Constant getVal(int slot, String fldName) {
+		if (slot >= getNumRecords())
+			throw new IndexOutOfBoundsException(
+					String.format("Cannot get value at slot %d "
+							+ "from BTreePage %s (which has only %d slot)",
+							slot, blk, getNumRecords()));
 		Type type = schema.type(fldName);
 		return getVal(fieldPosition(slot, fldName), type);
 	}
@@ -190,9 +201,16 @@ public class BTreePage {
 	 *            the new value
 	 */
 	public void setVal(int slot, String fldName, Constant val) {
+		if (slot >= numberOfSlots) {
+			throw new IndexOutOfBoundsException(
+					String.format("Cannot set value at slot %d "
+							+ "in BTreePage %s (which can only have %d slot)",
+							slot, blk, numberOfSlots));
+		}
 		Type type = schema.type(fldName);
 		Constant v = val.castTo(type);
 		setVal(fieldPosition(slot, fldName), v);
+//		System.out.println(String.format("%s setVal %s at slot %d with val '%s'", blk, fldName, slot, val));
 	}
 
 	/**
@@ -343,6 +361,44 @@ public class BTreePage {
 		if (numberOfRecords == -1)
 			numberOfRecords = (Integer) getVal(0, INTEGER).asJavaVal();
 		return numberOfRecords;
+	}
+	
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder("{");
+		
+		// Record count
+		int recordCount = getNumRecords();
+		sb.append("# of records: ");
+		sb.append(recordCount);
+		sb.append(", ");
+		
+		// Flags
+		sb.append("flags: [");
+		for (int i = 0; i < numberOfFlags; i++) {
+			sb.append(getFlag(i));
+			if (i < numberOfFlags - 1)
+				sb.append(", ");
+		}
+		sb.append("], ");
+		
+		// Records
+		sb.append("records: [");
+		for (int i = 0; i < recordCount; i++) {
+			sb.append("{");
+			for (String fld : schema.fields()) {
+				sb.append(fld);
+				sb.append(": ");
+				sb.append(getVal(i, fld));
+				sb.append(", ");
+			}
+			sb.delete(sb.length() - 2, sb.length());
+			if (i < recordCount - 1)
+				sb.append("}, ");
+		}
+		sb.append("}]}");
+		
+		return sb.toString();
 	}
 
 	private void setNumRecords(int n) {
