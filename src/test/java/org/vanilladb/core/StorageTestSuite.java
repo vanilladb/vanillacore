@@ -26,6 +26,7 @@ import org.vanilladb.core.storage.buffer.BufferTest;
 import org.vanilladb.core.storage.buffer.LastLSNTest;
 import org.vanilladb.core.storage.file.FileTest;
 import org.vanilladb.core.storage.file.PageConcurrencyTest;
+import org.vanilladb.core.storage.index.btree.BTreeIndexConcurrentTest;
 import org.vanilladb.core.storage.index.btree.BTreeIndexTest;
 import org.vanilladb.core.storage.index.btree.BTreeLeafTest;
 import org.vanilladb.core.storage.index.btree.BTreePageTest;
@@ -59,7 +60,7 @@ import org.vanilladb.core.storage.tx.recovery.RecoveryBasicTest;
 	
 	// storage.index.btree
 	BTreeIndexTest.class, BTreeLeafTest.class,
-	BTreePageTest.class,
+	BTreePageTest.class, BTreeIndexConcurrentTest.class,
 	
 	// storage.index.hash
 	HashIndexTest.class,
