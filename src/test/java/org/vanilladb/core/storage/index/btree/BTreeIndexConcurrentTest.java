@@ -1,5 +1,8 @@
 package org.vanilladb.core.storage.index.btree;
 
+import static org.junit.Assert.fail;
+
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,9 +29,12 @@ import org.vanilladb.core.storage.tx.concurrency.LockAbortException;
 
 public class BTreeIndexConcurrentTest {
 	private static Logger logger = Logger.getLogger(BTreeIndexConcurrentTest.class.getName());
+
+	private static final Type ID_TYPE = Type.VARCHAR(33);
+	private static final int THREAD_COUNT = 100;
 	
 	private static AtomicInteger nextInsertId = new AtomicInteger(1);
-	private static final Type ID_TYPE = Type.VARCHAR(33);
+	private static Throwable exception = null;
 	
 	@BeforeClass
 	public static void init() {
@@ -66,11 +72,16 @@ public class BTreeIndexConcurrentTest {
 	public void testConcurrentInsert() {
 		List<Thread> threads = new ArrayList<Thread>(100);
 		
-		for (int i = 0; i < 100; i++) {
+		for (int i = 0; i < THREAD_COUNT; i++) {
 			Thread thread = new Thread(new Insertor());
+			thread.setUncaughtExceptionHandler(new ExceptionCatcher());
 			thread.start();
 			threads.add(thread);
 		}
+		
+		Thread r = new Thread(new Rollbacker());
+		r.setUncaughtExceptionHandler(new ExceptionCatcher());
+		r.start();
 		
 		for (Thread t : threads) {
 			try {
@@ -79,6 +90,26 @@ public class BTreeIndexConcurrentTest {
 				e.printStackTrace();
 			}
 		}
+		
+		try {
+			r.join();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		
+		if (exception != null) {
+			exception.printStackTrace();
+			fail("Found exception: " + exception);
+		}
+	}
+	
+	static class ExceptionCatcher implements UncaughtExceptionHandler {
+
+		@Override
+		public void uncaughtException(Thread t, Throwable e) {
+			exception = e;
+		}
+		
 	}
 	
 	static class Insertor implements Runnable {
@@ -100,6 +131,31 @@ public class BTreeIndexConcurrentTest {
 				idx.insert(new SearchKey(idCon), fakeRid, true);
 				
 				tx.commit();
+			} catch (LockAbortException l) {
+				tx.rollback();
+			}
+		}
+	}
+	
+	static class Rollbacker implements Runnable {
+
+		@Override
+		public void run() {
+			Transaction tx = VanillaDb.txMgr().newTransaction(
+					Connection.TRANSACTION_SERIALIZABLE, false);
+			
+			try {
+				IndexInfo ii = VanillaDb.catalogMgr().getIndexInfo("test", "id", tx).get(0);
+				Index idx = ii.open(tx);
+				
+				int insertId = nextInsertId.getAndIncrement();
+				String idStr = String.format("%033d", insertId);
+				Constant idCon = new VarcharConstant(idStr, ID_TYPE);
+				RecordId fakeRid = new RecordId(new BlockId("test", insertId), 1);
+				
+				idx.insert(new SearchKey(idCon), fakeRid, true);
+				
+				tx.rollback();
 			} catch (LockAbortException l) {
 				tx.rollback();
 			}

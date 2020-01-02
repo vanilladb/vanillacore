@@ -324,9 +324,6 @@ public class BTreeDir {
 
 	private long findChildBlockNumber(SearchKey searchKey) {
 		int slot = findMatchingSlot(searchKey);
-		System.out.println("Find slot " + slot);
-//		if (getKey(currentPage, slot + 1, keyType.length()).equals(searchKey))
-//			slot++;
 		return getChildBlockNumber(currentPage, slot);
 	}
 

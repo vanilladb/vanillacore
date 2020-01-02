@@ -89,6 +89,7 @@ public class SpResultRecord implements Record, Serializable {
 			byte[] bytes = val.asBytes();
 			out.writeObject(fld);
 			out.writeInt(val.getType().getSqlType());
+			out.writeInt(val.getType().getArgument());
 			out.writeInt(bytes.length);
 			out.write(bytes);
 		}
@@ -104,10 +105,11 @@ public class SpResultRecord implements Record, Serializable {
 		for (int i = 0; i < numFlds; i++) {
 			String fld = (String) in.readObject();
 			int sqlType = in.readInt();
+			int sqlArg = in.readInt();
 			byte[] bytes = new byte[in.readInt()];
 			in.read(bytes);
-			Constant val = Constant.newInstance(Type.newInstance(sqlType),
-					bytes);
+			Constant val = Constant.newInstance(
+					Type.newInstance(sqlType, sqlArg), bytes);
 			fldValueMap.put(fld, val);
 		}
 
