@@ -52,25 +52,29 @@ public abstract class StoredProcedure<H extends StoredProcedureParamHelper> {
 	}
 	
 	public SpResultSet execute() {
+		boolean isCommitted = false;
+		
 		try {
 			executeSql();
 			
 			// The transaction finishes normally
 			tx.commit();
-			paramHelper.setCommitted(true);
+			isCommitted = true;
 			
 		} catch (LockAbortException lockAbortEx) {
 			if (logger.isLoggable(Level.WARNING))
 				logger.warning(lockAbortEx.getMessage());
 			tx.rollback();
-			paramHelper.setCommitted(false);
 		} catch (Exception e) {
 			e.printStackTrace();
 			tx.rollback();
-			paramHelper.setCommitted(false);
 		}
 
-		return paramHelper.createResultSet();
+		return new SpResultSet(
+			isCommitted,
+			paramHelper.getResultSetSchema(),
+			paramHelper.newResultSetRecord()
+		);
 	}
 	
 	protected abstract void executeSql();
