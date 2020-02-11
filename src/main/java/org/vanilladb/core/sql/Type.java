@@ -15,10 +15,12 @@
  *******************************************************************************/
 package org.vanilladb.core.sql;
 
+import java.io.Serializable;
+
 /**
  * An abstract class that denotes a supported SQL type.
  */
-public abstract class Type {
+public abstract class Type implements Serializable {
 	public static final Type INTEGER = new IntegerType();
 	public static final Type BIGINT = new BigIntType();
 	public static final Type DOUBLE = new DoubleType();

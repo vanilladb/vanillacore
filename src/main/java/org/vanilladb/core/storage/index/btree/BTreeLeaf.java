@@ -52,7 +52,7 @@ public class BTreeLeaf {
 	/**
 	 * A field name of the schema of B-tree leaf records.
 	 */
-	static final String SCH_KEY = "key", SCH_RID_BLOCK = "block", SCH_RID_ID = "id";
+	static final String SCH_KEY = "key", SCH_RID_BLOCK = "block", SCH_RID_ID = "id", SCH_RID_MIGRATION = "migration";
 
 	static int NUM_FLAGS = 2;
 	
@@ -102,6 +102,7 @@ public class BTreeLeaf {
 			sch.addField(keyFieldName(i), keyType.get(i));
 		sch.addField(SCH_RID_BLOCK, BIGINT);
 		sch.addField(SCH_RID_ID, INTEGER);
+		sch.addField(SCH_RID_MIGRATION, INTEGER);
 		return sch;
 	}
 
@@ -132,6 +133,11 @@ public class BTreeLeaf {
 		long blkNum = (Long) p.getVal(slot, SCH_RID_BLOCK).asJavaVal();
 		int id = (Integer) p.getVal(slot, SCH_RID_ID).asJavaVal();
 		return new RecordId(new BlockId(dataFileName, blkNum), id);
+	}
+	
+	static boolean isMigrated(BTreePage p, int slot) {
+		int migrated = (Integer) p.getVal(slot, SCH_RID_MIGRATION).asJavaVal();
+		return migrated == 1 ? true : false;
 	}
 
 	private Schema schema;
@@ -414,6 +420,14 @@ public class BTreeLeaf {
 		}
 	}
 	
+	public boolean isMigrated() {
+		return isMigrated(currentPage, currentSlot);
+	}
+	
+	public void setMigrated() {
+		setMigrated(currentSlot);
+	}
+	
 	public int getNumRecords() {
 		return currentPage.getNumRecords();
 	}
@@ -479,11 +493,15 @@ public class BTreeLeaf {
 			currentPage.setVal(slot, keyFieldName(i), key.get(i));
 		currentPage.setVal(slot, SCH_RID_BLOCK, new BigIntConstant(rid.block().number()));
 		currentPage.setVal(slot, SCH_RID_ID, new IntegerConstant(rid.id()));
+		currentPage.setVal(slot, SCH_RID_MIGRATION, new IntegerConstant(0));
 	}
 	
 	private void delete(int slot) {
 		// Delete an entry of the page
 		tx.recoveryMgr().logIndexPageDeletion(currentPage.currentBlk(), false, keyType, slot);
 		currentPage.delete(slot);
+	}
+	private void setMigrated(int slot) {
+		currentPage.setVal(slot, SCH_RID_MIGRATION, new IntegerConstant(1));
 	}
 }

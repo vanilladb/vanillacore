@@ -66,6 +66,7 @@ public class TransactionMgr implements TransactionLifecycleListener {
 	// Old method for maintaining active transaction list
 	// When the above optimization ready, switch to that one
 	private Set<Long> activeTxs = new HashSet<Long>();
+	private Set<Long> InsertTxs = new HashSet<Long>();
 
 	private long nextTxNum = 0;
 	// Optimization: Use separate lock for nextTxNum
@@ -92,6 +93,7 @@ public class TransactionMgr implements TransactionLifecycleListener {
 
 		synchronized (this) {
 			activeTxs.remove(tx.getTransactionNumber());
+			InsertTxs.remove(tx.getTransactionNumber());
 		}
 	}
 
@@ -107,6 +109,7 @@ public class TransactionMgr implements TransactionLifecycleListener {
 
 		synchronized (this) {
 			activeTxs.remove(tx.getTransactionNumber());
+			InsertTxs.remove(tx.getTransactionNumber());
 
 		}
 	}
@@ -176,7 +179,16 @@ public class TransactionMgr implements TransactionLifecycleListener {
 			if (txNum >= nextTxNum)
 				nextTxNum = txNum + 1;
 		}
-		return createTransaction(isolationLevel, readOnly, txNum);
+		return createTransaction(isolationLevel, readOnly, txNum, false);
+	}
+	
+	public Transaction newTransaction(int isolationLevel, boolean readOnly, long txNum, boolean isInsert) {
+		// Update next transaction number
+		synchronized (txNumLock) {
+			if (txNum >= nextTxNum)
+				nextTxNum = txNum + 1;
+		}
+		return createTransaction(isolationLevel, readOnly, txNum, isInsert);
 	}
 
 	public long getNextTxNum() {
@@ -190,8 +202,14 @@ public class TransactionMgr implements TransactionLifecycleListener {
 			return activeTxs.size();
 		}
 	}
+	
+	public int getInsertTxCount() {
+		synchronized (this) {
+			return InsertTxs.size();
+		}
+	}
 
-	private Transaction createTransaction(int isolationLevel, boolean readOnly, long txNum) {
+	private Transaction createTransaction(int isolationLevel, boolean readOnly, long txNum, boolean isInsert) {
 		if (logger.isLoggable(Level.FINE))
 			logger.fine("new transaction: " + txNum);
 
@@ -259,6 +277,9 @@ public class TransactionMgr implements TransactionLifecycleListener {
 
 		synchronized (this) {
 			activeTxs.add(tx.getTransactionNumber());
+			if(isInsert) {
+				InsertTxs.add(tx.getTransactionNumber());
+			}
 		}
 		return tx;
 	}

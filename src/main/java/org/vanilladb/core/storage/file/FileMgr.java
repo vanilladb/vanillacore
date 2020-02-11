@@ -20,6 +20,8 @@ import static org.vanilladb.core.storage.log.LogMgr.DEFAULT_LOG_FILE;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
@@ -278,5 +280,19 @@ public class FileMgr {
 				logger.warning("there is something wrong when deleting " + fileName);
 			e.printStackTrace();
 		}
+	}
+	
+	public List<File> FindAllIndex() {
+		File [] list = dbDirectory.listFiles();
+		List<File> IndexList = new ArrayList<File>();
+		for (File f : list) {
+			if(f.getName().indexOf(".idx") != -1) {
+				IndexList.add(f);
+			}
+		}
+		return IndexList;
+	}
+	public File getFile(String filename) {
+		return new File(dbDirectory, filename);
 	}
 }

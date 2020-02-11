@@ -15,6 +15,7 @@
  *******************************************************************************/
 package org.vanilladb.core.storage.metadata.index;
 
+import java.io.Serializable;
 import java.util.List;
 
 import org.vanilladb.core.server.VanillaDb;
@@ -33,7 +34,7 @@ import org.vanilladb.core.storage.tx.Transaction;
  * Note that if two IndexInfos have the same index name, they will be treated
  *  as the same IndexInfo.
  */
-public class IndexInfo {
+public class IndexInfo implements Serializable {
 	private String idxName, tblName;
 	private List<String> fldNames;
 	private IndexType idxType;

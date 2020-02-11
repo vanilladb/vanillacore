@@ -15,6 +15,7 @@
  *******************************************************************************/
 package org.vanilladb.core.storage.index;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -26,7 +27,7 @@ import org.vanilladb.core.sql.Type;
 /**
  * A SearchKeyType represents an array of types for a list of indexed fields.
  */
-public class SearchKeyType {
+public class SearchKeyType implements Serializable {
 
 	private Type[] types;
 	

@@ -15,10 +15,12 @@
  *******************************************************************************/
 package org.vanilladb.core.storage.index;
 
+import java.io.Serializable;
+
 /**
  * Supported index types.
  */
-public enum IndexType {
+public enum IndexType implements Serializable {
 	HASH, BTREE;
 	
 	public static IndexType fromInteger(int typeVal) {

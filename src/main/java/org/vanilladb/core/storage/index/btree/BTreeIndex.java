@@ -145,6 +145,17 @@ public class BTreeIndex extends Index {
 	public RecordId getDataRecordId() {
 		return leaf.getDataRecordId();
 	}
+	
+	public boolean isMigrated() {
+		return leaf.isMigrated();
+	}
+	
+	public void setMigrated() {
+		//if (tx.isReadOnly())
+			//throw new UnsupportedOperationException();
+
+		leaf.setMigrated();
+	}
 
 	/**
 	 * Inserts the specified record into the index. The method first traverses
