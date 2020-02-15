@@ -19,6 +19,7 @@ import java.sql.Connection;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.vanilladb.core.query.planner.BadSemanticException;
 import org.vanilladb.core.remote.storedprocedure.SpResultSet;
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.storage.tx.Transaction;
@@ -65,6 +66,14 @@ public abstract class StoredProcedure<H extends StoredProcedureParamHelper> {
 			if (logger.isLoggable(Level.WARNING))
 				logger.warning(lockAbortEx.getMessage());
 			tx.rollback();
+		} catch (ManuallyAbortException me) {
+			if (logger.isLoggable(Level.WARNING))
+				logger.warning("Manually aborted by the procedure: " + me.getMessage());
+			tx.rollback();
+		} catch (BadSemanticException be) {
+			if (logger.isLoggable(Level.SEVERE))
+				logger.warning("Semantic error: " + be.getMessage());
+			tx.rollback();
 		} catch (Exception e) {
 			e.printStackTrace();
 			tx.rollback();
@@ -85,5 +94,13 @@ public abstract class StoredProcedure<H extends StoredProcedureParamHelper> {
 	
 	protected Transaction getTransaction() {
 		return tx;
+	}
+	
+	protected void abort() {
+		throw new ManuallyAbortException();
+	}
+	
+	protected void abort(String message) {
+		throw new ManuallyAbortException(message);
 	}
 }
