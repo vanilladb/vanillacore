@@ -15,6 +15,7 @@
  *******************************************************************************/
 package org.vanilladb.core.storage.index.btree;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.vanilladb.core.sql.Type.BIGINT;
 import static org.vanilladb.core.sql.Type.INTEGER;
@@ -243,67 +244,67 @@ public class BTreeIndexTest {
 	public void testBTreeIndex() {
 		List<IndexInfo> idxList = catMgr.getIndexInfo(DATA_TABLE_NAME, "deptid", tx);
 		Index index = idxList.get(0).open(tx);
-		BlockId blk = new BlockId(DATA_TABLE_NAME + ".tbl", 0);
-		BlockId blk1 = new BlockId(DATA_TABLE_NAME + ".tbl", 23);
+		BlockId blk0 = new BlockId(DATA_TABLE_NAME + ".tbl", 0);
+		BlockId blk23 = new BlockId(DATA_TABLE_NAME + ".tbl", 23);
 		int maxValue = 300;
 		int repeat = 200;
-		for (int k = 0; k < maxValue; k++) {
+		
+		// Insert data set (maxValue x repeat)
+		for (int fieldVal = 0; fieldVal < maxValue; fieldVal++) {
 			for (int i = 0; i < repeat; i++) {
-				SearchKey key = new SearchKey(new BigIntConstant(k));
-				index.insert(key, new RecordId(blk, k * repeat + i), false);
+				SearchKey key = new SearchKey(new BigIntConstant(fieldVal));
+				index.insert(key, new RecordId(blk0, fieldVal * repeat + i), false);
 			}
 		}
-
-		int count = 0;
+		
+		// Insert 500 records with the same key (integer 7)
 		SearchKey int7 = new SearchKey(new IntegerConstant(7));
-		while (count < 500) {
-			index.insert(int7, new RecordId(blk1, 2500 + count), false);
-			count++;
-		}
+		for (int count = 0; count < 500; count++)
+			index.insert(int7, new RecordId(blk23, 2500 + count), false);
 
-		// test larger than 50
+		// Search for the records each of which key is large than 50
 		ConstantRange range = ConstantRange.newInstance(new IntegerConstant(50),
 				false, null, false);
 		index.beforeFirst(new SearchRange(range));
-		int j = 0;
+		int count = 0;
 		while (index.next())
-			j++;
-		assertTrue("*****BTreeIndexTest: bad > selection", j == (maxValue - 51)
-				* repeat);
+			count++;
+		assertEquals("*****BTreeIndexTest: bad > selection", (maxValue - 51)
+				* repeat, count);
 
 		Constant int5con = new IntegerConstant(5);
 		// test less than
 		range = ConstantRange.newInstance(null, false, int5con, false);
 		index.beforeFirst(new SearchRange(range));
-		j = 0;
+		count = 0;
 		while (index.next())
-			j++;
-		assertTrue("*****BTreeIndexTest: bad < selection", j == (5 * repeat));
+			count++;
+		assertEquals("*****BTreeIndexTest: bad < selection", 5 * repeat, count);
 
 		// test equality
 		index.beforeFirst(new SearchRange(new SearchKey(int5con)));
-		j = 0;
+		count = 0;
 		while (index.next())
-			j++;
-		assertTrue("*****BTreeIndexTest: bad equal with", j == repeat);
+			count++;
+		assertEquals("*****BTreeIndexTest: bad equal with", repeat, count);
 
 		// test delete
 		for (int k = 0; k < maxValue; k++) {
 			for (int i = 0; i < repeat; i++) {
 				SearchKey key = new SearchKey(new BigIntConstant(k));
-				index.delete(key, new RecordId(blk, k * repeat + i), false);
+				index.delete(key, new RecordId(blk0, k * repeat + i), false);
 			}
 		}
 		index.beforeFirst(new SearchRange(new SearchKey(int5con)));
-		assertTrue("*****BTreeIndexTest: bad delete", index.next() == false);
+		assertEquals("*****BTreeIndexTest: bad delete", false, index.next());
 
 		count = 0;
 		while (count < 500) {
-			index.delete(int7, new RecordId(blk1, 2500 + count), false);
+			index.delete(int7, new RecordId(blk23, 2500 + count), false);
 			count++;
 		}
 		index.beforeFirst(new SearchRange(int7));
-		assertTrue("*****BTreeIndexTest: bad delete", index.next() == false);
+		assertEquals("*****BTreeIndexTest: bad delete", false, index.next());
 
 		index.close();
 	}

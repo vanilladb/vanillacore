@@ -202,10 +202,16 @@ public class BTreeDir {
 	}
 
 	public DirEntry insert(DirEntry e) {
-		int newslot = 1 + findSlotBefore(e.key());
-		insert(newslot, e.key(), e.blockNumber());
+		// Find a slot for the entry
+		int newSlot = 0;
+		if (currentPage.getNumRecords() > 0)
+			newSlot = findMatchingSlot(e.key()) + 1;
+		
+		// Insert the entry to the slot (the data in the slot will be moved to the next slot) 
+		insert(newSlot, e.key(), e.blockNumber());
 		if (!currentPage.isFull())
 			return null;
+		
 		// split full page
 		int splitPos = currentPage.getNumRecords() / 2;
 		SearchKey splitVal = getKey(currentPage, splitPos, keyType.length());
@@ -317,26 +323,27 @@ public class BTreeDir {
 	}
 
 	private long findChildBlockNumber(SearchKey searchKey) {
-		int slot = findSlotBefore(searchKey);
-		if (getKey(currentPage, slot + 1, keyType.length()).equals(searchKey))
-			slot++;
+		int slot = findMatchingSlot(searchKey);
 		return getChildBlockNumber(currentPage, slot);
 	}
 
 	/**
-	 * Calculates the slot right before the one having the specified search key.
+	 * Finds the slot that contains a key that equals to or is smaller than the
+	 * specified search key while the key in the next slot is larger than the 
+	 * search key or there is no more slot behind.
 	 * 
 	 * @param searchKey
-	 *            the search key
-	 * @return the position before where the search key goes
+	 *            the key to search the slot
+	 * @return the id of the matching slot
 	 */
-	private int findSlotBefore(SearchKey searchKey) {
+	private int findMatchingSlot(SearchKey searchKey) {
+		// Sequential search
 		/*
 		 * int slot = 0; while (slot < contents.getNumRecords() &&
 		 * getKey(contents, slot).compareTo(searchKey) < 0) slot++; return slot
 		 * - 1;
 		 */
-		// Optimization: Use binary search rather than sequential search
+		// Optimization: Use binary search, instead of sequential search
 		int startSlot = 0, endSlot = currentPage.getNumRecords() - 1;
 		int middleSlot = (startSlot + endSlot) / 2;
 
@@ -351,15 +358,12 @@ public class BTreeDir {
 				middleSlot = (startSlot + endSlot) / 2;
 			}
 
-			if (getKey(currentPage, endSlot, keyType.length()).compareTo(searchKey) < 0)
+			if (getKey(currentPage, endSlot, keyType.length()).compareTo(searchKey) <= 0)
 				return endSlot;
-			else if (getKey(currentPage, startSlot, keyType.length())
-					.compareTo(searchKey) < 0)
-				return startSlot;
 			else
-				return startSlot - 1;
+				return startSlot;
 		} else
-			return -1;
+			return 0;
 	}
 
 	private void insert(int slot, SearchKey key, long blkNum) {

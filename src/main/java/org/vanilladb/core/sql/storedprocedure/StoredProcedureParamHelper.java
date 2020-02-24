@@ -15,12 +15,29 @@
  *******************************************************************************/
 package org.vanilladb.core.sql.storedprocedure;
 
-import org.vanilladb.core.remote.storedprocedure.SpResultSet;
 import org.vanilladb.core.sql.Schema;
 
 public abstract class StoredProcedureParamHelper {
 
-	protected boolean isCommitted = true;
+	public static StoredProcedureParamHelper newDefaultParamHelper() {
+		return new StoredProcedureParamHelper() {
+			@Override
+			public void prepareParameters(Object... pars) {
+				// do nothing
+			}
+			
+			@Override
+			public Schema getResultSetSchema() {
+				return new Schema();
+			}
+
+			@Override
+			public SpResultRecord newResultSetRecord() {
+				return new SpResultRecord();
+			}
+		};
+	}
+
 	private boolean isReadOnly = false;
 
 	/**
@@ -31,26 +48,10 @@ public abstract class StoredProcedureParamHelper {
 	 *            procedure.
 	 */
 	public abstract void prepareParameters(Object... pars);
-
-	public abstract SpResultSet createResultSet();
-
-	public static StoredProcedureParamHelper DefaultParamHelper() {
-		return new StoredProcedureParamHelper() {
-
-			@Override
-			public void prepareParameters(Object... pars) {
-				// do nothing
-			}
-
-			@Override
-			public SpResultSet createResultSet() {
-				// Return the result
-				Schema sch = new Schema();
-				SpResultRecord rec = new SpResultRecord();
-				return new SpResultSet(isCommitted, sch, rec);
-			}
-		};
-	}
+	
+	public abstract Schema getResultSetSchema();
+	
+	public abstract SpResultRecord newResultSetRecord();
 	
 	protected void setReadOnly(boolean isReadOnly) {
 		this.isReadOnly = isReadOnly;
@@ -58,13 +59,5 @@ public abstract class StoredProcedureParamHelper {
 	
 	public boolean isReadOnly() {
 		return isReadOnly;
-	}
-
-	public void setCommitted(boolean b) {
-		isCommitted = b;
-	}
-
-	public boolean isCommitted() {
-		return isCommitted;
 	}
 }
