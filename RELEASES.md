@@ -1,8 +1,33 @@
 # Release Notes
 
+## Version 0.4.0 (2020-02-24)
+
+API changes for stored procedures and bug fixes for B-Tree and recovery. ([#44])
+
+## Stored Procedures
+
+- Ensure that `SpResultSet` saves commit status
+- Add missing generic parameters for stored procedures
+- Fix the `toString` of `SpResultRecord`
+- Update the visibility of the methods of `StoredProcedureParamHelper`
+- Refactor the design and APIs of stored procedures
+- Add a method to manually abort in a stored procedure
+
+## BTree
+
+- Add `BTreeIndexRecoveryTest` for the recovery of B-Tree
+- Add `BTreeIndexConcurrentTest` for the concurrency of B-Tree
+- Implement `toString` for `BTreePage`
+- Fix the bug of searching an entry in `BTreeDir`
+- Fix the bug of inserting an entry in `BTreeDir`
+- Add a size check in `BTreePage`
+- Fix a bug that causes overflow while rolling back in BTree
+
+[#44]: https://github.com/vanilladb/vanillacore/pull/44
+
 ## Version 0.3.3 (2019-12-16)
 
-All the following changes were merged in [#37].
+All the following changes were merged in [#40].
 
 ### Refactoring
 
