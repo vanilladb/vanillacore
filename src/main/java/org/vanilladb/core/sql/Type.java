@@ -29,28 +29,6 @@ public abstract class Type {
 	};
 
 	/**
-	 * Constructs a new instance corresponding to the specified SQL type.
-	 * 
-	 * @param sqlType
-	 *            the corresponding SQL type
-	 * @return a new instance corresponding to the specified SQL type
-	 */
-	public static Type newInstance(int sqlType) {
-		switch (sqlType) {
-		case (java.sql.Types.INTEGER):
-			return INTEGER;
-		case (java.sql.Types.BIGINT):
-			return BIGINT;
-		case (java.sql.Types.DOUBLE):
-			return DOUBLE;
-		case (java.sql.Types.VARCHAR):
-			return VARCHAR;
-		}
-		throw new UnsupportedOperationException("Unspported SQL type: "
-				+ sqlType);
-	}
-
-	/**
 	 * Constructs a new instance corresponding to the specified SQL type and
 	 * argument.
 	 * 

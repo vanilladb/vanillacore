@@ -36,6 +36,7 @@ import org.vanilladb.core.storage.record.RecordTest;
 import org.vanilladb.core.storage.tx.TxTest;
 import org.vanilladb.core.storage.tx.concurrency.ConcurrencyTest;
 import org.vanilladb.core.storage.tx.concurrency.LockTableTest;
+import org.vanilladb.core.storage.tx.recovery.BTreeIndexRecoveryTest;
 import org.vanilladb.core.storage.tx.recovery.RecoveryBasicTest;
 
 @RunWith(IsolatedClassLoaderSuite.class)
@@ -71,7 +72,7 @@ import org.vanilladb.core.storage.tx.recovery.RecoveryBasicTest;
 	ConcurrencyTest.class, LockTableTest.class,
 	
 	// storage.tx.recovery
-	RecoveryBasicTest.class,
+	RecoveryBasicTest.class, BTreeIndexRecoveryTest.class,
 })
 @IsolationRoot(VanillaDb.class)
 public class StorageTestSuite {

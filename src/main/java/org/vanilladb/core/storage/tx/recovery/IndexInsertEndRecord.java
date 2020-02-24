@@ -65,7 +65,8 @@ public class IndexInsertEndRecord extends LogicalEndRecord implements LogRecord 
 		Constant[] vals = new Constant[keyLen];
 		for (int i = 0; i < keyLen; i++) {
 			int type = (Integer) rec.nextVal(INTEGER).asJavaVal();
-			vals[i] = rec.nextVal(Type.newInstance(type));
+			int argument = (Integer) rec.nextVal(INTEGER).asJavaVal();
+			vals[i] = rec.nextVal(Type.newInstance(type, argument));
 		}
 		searchKey = new SearchKey(vals);
 		
@@ -142,6 +143,7 @@ public class IndexInsertEndRecord extends LogicalEndRecord implements LogRecord 
 		for (int i = 0; i < searchKey.length(); i++) {
 			Constant val = searchKey.get(i);
 			rec.add(new IntegerConstant(val.getType().getSqlType()));
+			rec.add(new IntegerConstant(val.getType().getArgument()));
 			rec.add(val);
 		}
 		

@@ -47,6 +47,8 @@ public class IndexPageInsertRecord implements LogRecord {
 
 	public IndexPageInsertRecord(long txNum, BlockId indexBlkId, boolean isDirPage,
 			SearchKeyType keyType, int slotId) {
+//		System.out.println(String.format("Tx.%d logs inserts on %s", txNum, indexBlkId));
+		
 		this.txNum = txNum;
 		this.isDirPage = isDirPage;
 		this.keyType = keyType;
@@ -63,7 +65,8 @@ public class IndexPageInsertRecord implements LogRecord {
 		Type[] types = new Type[keyLen];
 		for (int i = 0; i < keyLen; i++) {
 			int type = (Integer) rec.nextVal(INTEGER).asJavaVal();
-			types[i] = Type.newInstance(type);
+			int argument = (Integer) rec.nextVal(INTEGER).asJavaVal();
+			types[i] = Type.newInstance(type, argument);
 		}
 		keyType = new SearchKeyType(types);
 		
@@ -93,16 +96,18 @@ public class IndexPageInsertRecord implements LogRecord {
 
 	@Override
 	public void undo(Transaction tx) {
+//		System.out.println(String.format("Tx.%d undo inserting slot %d to %s", tx.getTransactionNumber(), slotId, indexBlkId));
+		
 		// Note that UndoNextLSN should be set to this log record's lsn in order
 		// to let RecoveryMgr to skip this log record. Since this record should
 		// be undo by the Clr append there.
 		// Since Clr is Undo's redo log , here we should log
 		// "IndexPageDeletionClr" to make this undo procedure be redo during
 		// repeat history
-		Buffer BlockBuff;
+		Buffer buff;
 		if (isDirPage) {
-			BlockBuff = tx.bufferMgr().pin(indexBlkId);
-			if (this.lsn.compareTo(BlockBuff.lastLsn()) == 1) {
+			buff = tx.bufferMgr().pin(indexBlkId);
+			if (this.lsn.compareTo(buff.lastLsn()) < 0) {
 				BTreeDir.deleteASlot(tx, indexBlkId, keyType, slotId);
 				LogSeqNum lsn = tx.recoveryMgr().logIndexPageDeletionClr(
 						txNum, indexBlkId, isDirPage, keyType, slotId, this.lsn);
@@ -110,15 +115,15 @@ public class IndexPageInsertRecord implements LogRecord {
 			}
 
 		} else {
-			BlockBuff = tx.bufferMgr().pin(indexBlkId);
-			if (this.lsn.compareTo(BlockBuff.lastLsn()) == 1) {
+			buff = tx.bufferMgr().pin(indexBlkId);
+			if (this.lsn.compareTo(buff.lastLsn()) < 0) {
 				BTreeLeaf.deleteASlot(tx, indexBlkId, keyType, slotId);
 				LogSeqNum lsn = tx.recoveryMgr().logIndexPageDeletionClr(
 						txNum, indexBlkId, isDirPage, keyType, slotId, this.lsn);
 				VanillaDb.logMgr().flush(lsn);
 			}
 		}
-		tx.bufferMgr().unpin(BlockBuff);
+		tx.bufferMgr().unpin(buff);
 
 	}
 
@@ -128,12 +133,12 @@ public class IndexPageInsertRecord implements LogRecord {
 		if (isDirPage) {
 			BlockBuff = tx.bufferMgr().pin(indexBlkId);
 
-			if (this.lsn.compareTo(BlockBuff.lastLsn()) == 1) {
+			if (this.lsn.compareTo(BlockBuff.lastLsn()) > 0) {
 				BTreeDir.insertASlot(tx, indexBlkId, keyType, slotId);
 			}
 		} else {
 			BlockBuff = tx.bufferMgr().pin(indexBlkId);
-			if (this.lsn.compareTo(BlockBuff.lastLsn()) == 1) {
+			if (this.lsn.compareTo(BlockBuff.lastLsn()) > 0) {
 				BTreeLeaf.insertASlot(tx, indexBlkId, keyType, slotId);
 			}
 		}
@@ -160,6 +165,7 @@ public class IndexPageInsertRecord implements LogRecord {
 		for (int i = 0; i < keyType.length(); i++) {
 			Type type = keyType.get(i);
 			rec.add(new IntegerConstant(type.getSqlType()));
+			rec.add(new IntegerConstant(type.getArgument()));
 		}
 		
 		rec.add(new VarcharConstant(indexBlkId.fileName()));

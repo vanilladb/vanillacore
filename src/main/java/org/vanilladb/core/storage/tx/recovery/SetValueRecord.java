@@ -37,7 +37,7 @@ import org.vanilladb.core.storage.tx.Transaction;
 class SetValueRecord implements LogRecord {
 	private long txNum;
 	private int offset;
-	private int type;
+	private Type type;
 	private Constant val;
 	private Constant newVal;
 	private BlockId blk;
@@ -61,7 +61,7 @@ class SetValueRecord implements LogRecord {
 		this.txNum = txNum;
 		this.blk = blk;
 		this.offset = offset;
-		this.type = val.getType().getSqlType();
+		this.type = val.getType();
 		this.val = val;
 		this.newVal = newVal;
 		this.lsn = null;
@@ -79,9 +79,11 @@ class SetValueRecord implements LogRecord {
 		txNum = (Long) rec.nextVal(BIGINT).asJavaVal();
 		blk = new BlockId((String) rec.nextVal(VARCHAR).asJavaVal(), (Long) rec.nextVal(BIGINT).asJavaVal());
 		offset = (Integer) rec.nextVal(INTEGER).asJavaVal();
-		type = (Integer) rec.nextVal(INTEGER).asJavaVal();
-		val = rec.nextVal(Type.newInstance(type));
-		newVal = rec.nextVal(Type.newInstance(type));
+		int sqlType = (Integer) rec.nextVal(INTEGER).asJavaVal();
+		int sqlArg = (Integer) rec.nextVal(INTEGER).asJavaVal();
+		type = Type.newInstance(sqlType, sqlArg);
+		val = rec.nextVal(type);
+		newVal = rec.nextVal(type);
 		lsn = rec.getLSN();
 	}
 
@@ -163,7 +165,8 @@ class SetValueRecord implements LogRecord {
 		rec.add(new VarcharConstant(blk.fileName()));
 		rec.add(new BigIntConstant(blk.number()));
 		rec.add(new IntegerConstant(offset));
-		rec.add(new IntegerConstant(type));
+		rec.add(new IntegerConstant(type.getSqlType()));
+		rec.add(new IntegerConstant(type.getArgument()));
 		rec.add(val);
 		rec.add(newVal);
 		return rec;
