@@ -4,7 +4,7 @@
 
 API changes for stored procedures and bug fixes for B-Tree and recovery. ([#44])
 
-## Stored Procedures
+### Stored Procedures
 
 - Ensure that `SpResultSet` saves commit status
 - Add missing generic parameters for stored procedures
@@ -13,7 +13,7 @@ API changes for stored procedures and bug fixes for B-Tree and recovery. ([#44])
 - Refactor the design and APIs of stored procedures
 - Add a method to manually abort in a stored procedure
 
-## BTree
+### BTree
 
 - Add `BTreeIndexRecoveryTest` for the recovery of B-Tree
 - Add `BTreeIndexConcurrentTest` for the concurrency of B-Tree
