@@ -11,7 +11,7 @@
 
 	<groupId>org.vanilladb</groupId>
 	<artifactId>core</artifactId>
-	<version>0.3.3</version>
+	<version>0.4.0</version>
 	<packaging>jar</packaging>
 
 	<name>vanillacore</name>
@@ -49,11 +49,19 @@
 		</developer>
 		<developer>
 			<name>Yu-Shan Lin</name>
-			<email>yslin@netdb.cs.nthu.edu.tw</email>
+			<email>yslin@datalab.cs.nthu.edu.tw</email>
 		</developer>
 		<developer>
 			<name>Ching Tsai</name>
-			<email>ctsai@netdb.cs.nthu.edu.tw</email>
+			<email>ctsai@datalab.cs.nthu.edu.tw</email>
+		</developer>
+		<developer>
+			<name>Tz-Yu Lin</name>
+			<email>tylin@datalab.cs.nthu.edu.tw</email>
+		</developer>
+		<developer>
+			<name>Yun-Sheng Chang</name>
+			<email>yschang@datalab.cs.nthu.edu.tw</email>
 		</developer>
 	</developers>
 

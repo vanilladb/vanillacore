@@ -85,6 +85,9 @@ public class Buffer {
 	public Constant getVal(int offset, Type type) {
 		internalLock.readLock().lock();
 		try {
+			if (offset < 0 || offset >= BUFFER_SIZE)
+				throw new IndexOutOfBoundsException("" + offset);
+				
 			return contents.getVal(DATA_START_OFFSET + offset, type);
 		} finally {
 			internalLock.readLock().unlock();
@@ -94,6 +97,9 @@ public class Buffer {
 	void setVal(int offset, Constant val) {
 		internalLock.writeLock().lock();
 		try {
+			if (offset < 0 || offset >= BUFFER_SIZE)
+				throw new IndexOutOfBoundsException("" + offset);
+			
 			contents.setVal(DATA_START_OFFSET + offset, val);
 		} finally {
 			internalLock.writeLock().unlock();
@@ -119,6 +125,9 @@ public class Buffer {
 	public void setVal(int offset, Constant val, long txNum, LogSeqNum lsn) {
 		internalLock.writeLock().lock();
 		try {
+			if (offset < 0 || offset >= BUFFER_SIZE)
+				throw new IndexOutOfBoundsException("" + offset);
+			
 			isModified = true;
 			if (lsn != null && lsn.compareTo(lastLsn) > 0)
 				lastLsn = lsn;

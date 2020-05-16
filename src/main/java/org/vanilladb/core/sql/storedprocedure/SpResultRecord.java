@@ -48,14 +48,17 @@ public class SpResultRecord implements Record, Serializable {
 
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder("[");
-		Set<String> flds = new TreeSet<String>(fldValueMap.keySet());
-		for (String fld : flds)
-			sb.append(fld).append("=").append(fldValueMap.get(fld))
-					.append(", ");
-		int end = sb.length();
-		sb.replace(end - 2, end, "] ");
-		return sb.toString();
+		if (fldValueMap.size() > 0) {
+			StringBuilder sb = new StringBuilder("[");
+			Set<String> flds = new TreeSet<String>(fldValueMap.keySet());
+			for (String fld : flds)
+				sb.append(fld).append("=").append(fldValueMap.get(fld))
+						.append(", ");
+			int end = sb.length();
+			sb.replace(end - 2, end, "] ");
+			return sb.toString();
+		} else
+			return "[]";
 	}
 
 	@Override
@@ -86,6 +89,7 @@ public class SpResultRecord implements Record, Serializable {
 			byte[] bytes = val.asBytes();
 			out.writeObject(fld);
 			out.writeInt(val.getType().getSqlType());
+			out.writeInt(val.getType().getArgument());
 			out.writeInt(bytes.length);
 			out.write(bytes);
 		}
@@ -101,10 +105,11 @@ public class SpResultRecord implements Record, Serializable {
 		for (int i = 0; i < numFlds; i++) {
 			String fld = (String) in.readObject();
 			int sqlType = in.readInt();
+			int sqlArg = in.readInt();
 			byte[] bytes = new byte[in.readInt()];
 			in.read(bytes);
-			Constant val = Constant.newInstance(Type.newInstance(sqlType),
-					bytes);
+			Constant val = Constant.newInstance(
+					Type.newInstance(sqlType, sqlArg), bytes);
 			fldValueMap.put(fld, val);
 		}
 

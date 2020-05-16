@@ -18,6 +18,7 @@ package org.vanilladb.core.storage.index.btree;
 import static org.vanilladb.core.sql.Type.BIGINT;
 import static org.vanilladb.core.sql.Type.INTEGER;
 
+import java.nio.BufferOverflowException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -46,7 +47,7 @@ public class BTreePage {
 	private BlockId blk;
 	private Schema schema;
 	private Transaction tx;
-	private int slotSize, headerSize;
+	private int slotSize, headerSize, numberOfSlots, numberOfFlags;
 	private Buffer currentBuff;
 	private Map<String, Integer> myOffsetMap;
 	// Optimization: Materialize the number of records of B-Tree Page.
@@ -101,13 +102,17 @@ public class BTreePage {
 	 * @return the size of a record, in bytes
 	 */
 	public static int slotSize(Schema sch) {
-		int pos = 0;
+		int size = 0;
 		for (String fldname : sch.fields())
-			pos += Page.maxSize(sch.type(fldname));
-		return pos;
+			size += Page.maxSize(sch.type(fldname));
+		
+		if (size > Buffer.BUFFER_SIZE || size < 0)
+			throw new RuntimeException("Slot size overflow: " + size + ", schema: " + sch);
+		
+		return size;
 	}
 
-	public static int maxNumOfSlots(int numOfFlags, Schema sch) {
+	public static int numOfSlots(int numOfFlags, Schema sch) {
 		int slotSize = slotSize(sch);
 		int flagSize = numOfFlags * Type.BIGINT.maxSize();
 		return (Buffer.BUFFER_SIZE - flagSize) / slotSize;
@@ -132,9 +137,14 @@ public class BTreePage {
 		currentBuff = tx.bufferMgr().pin(blk);
 
 		slotSize = slotSize(schema);
+		// Slot: a place to hold a record. The number of slots are fixed.
+		// Record: a record that contains meaningful information for index.
+		// Note that a slot may not have a record. It could be empty.
+		numberOfRecords = -1; // Cache number of records. Lazily evaluated.
+		numberOfFlags = numFlags;
+		numberOfSlots = numOfSlots(numFlags, schema);
 		headerSize = Page.maxSize(INTEGER) + Page.maxSize(BIGINT) * numFlags;
 		myOffsetMap = offsetMap(schema);
-		numberOfRecords = -1;
 	}
 
 	/**
@@ -175,6 +185,11 @@ public class BTreePage {
 	}
 
 	public Constant getVal(int slot, String fldName) {
+		if (slot >= getNumRecords())
+			throw new IndexOutOfBoundsException(
+					String.format("Cannot get value at slot %d "
+							+ "from BTreePage %s (which has only %d slot)",
+							slot, blk, getNumRecords()));
 		Type type = schema.type(fldName);
 		return getVal(fieldPosition(slot, fldName), type);
 	}
@@ -190,9 +205,18 @@ public class BTreePage {
 	 *            the new value
 	 */
 	public void setVal(int slot, String fldName, Constant val) {
-		Type type = schema.type(fldName);
-		Constant v = val.castTo(type);
-		setVal(fieldPosition(slot, fldName), v);
+		if (slot >= numberOfSlots) {
+			throw new IndexOutOfBoundsException(
+					String.format("Cannot set value at slot %d "
+							+ "in BTreePage %s (which can only have %d slot)",
+							slot, blk, numberOfSlots));
+		} else if (slot >= numberOfRecords) {
+			throw new IndexOutOfBoundsException(
+				String.format("Cannot set value at slot %d "
+						+ "in BTreePage %s because there are only %d records",
+						slot, blk, numberOfRecords));
+		}
+		setValUnchecked(slot, fldName, val);
 	}
 
 	/**
@@ -225,6 +249,15 @@ public class BTreePage {
 	public void insert(int slot) {
 		currentBuff.lockFlushing();
 		try {
+			if (slot >= numberOfSlots) {
+				throw new IndexOutOfBoundsException(
+						String.format("Cannot insert a record at slot %d "
+								+ "in BTreePage %s because there are only %d slots",
+								slot, blk, numberOfSlots));
+			} else if (numberOfRecords + 1 > numberOfSlots) {
+				throw new BufferOverflowException();
+			}
+			
 			for (int i = getNumRecords(); i > slot; i--)
 				copyRecordWithoutLogging(i - 1, i);
 			setNumRecordsWithoutLogging(getNumRecords() + 1);
@@ -316,7 +349,7 @@ public class BTreePage {
 		// Copy the records from the source page to the destination page
 		for (int i = 0; i < num; i++)
 			for (String fld : schema.fields())
-				dest.setVal(destStart + i, fld, getVal(start + i, fld));
+				dest.setValUnchecked(destStart + i, fld, getVal(start + i, fld));
 
 		// Move the rest records in the source page for deletion
 		for (int i = 0; i < getNumRecords() - 1 - num; i++)
@@ -344,6 +377,44 @@ public class BTreePage {
 			numberOfRecords = (Integer) getVal(0, INTEGER).asJavaVal();
 		return numberOfRecords;
 	}
+	
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder("{");
+		
+		// Record count
+		int recordCount = getNumRecords();
+		sb.append("# of records: ");
+		sb.append(recordCount);
+		sb.append(", ");
+		
+		// Flags
+		sb.append("flags: [");
+		for (int i = 0; i < numberOfFlags; i++) {
+			sb.append(getFlag(i));
+			if (i < numberOfFlags - 1)
+				sb.append(", ");
+		}
+		sb.append("], ");
+		
+		// Records
+		sb.append("records: [");
+		for (int i = 0; i < recordCount; i++) {
+			sb.append("{");
+			for (String fld : schema.fields()) {
+				sb.append(fld);
+				sb.append(": ");
+				sb.append(getVal(i, fld));
+				sb.append(", ");
+			}
+			sb.delete(sb.length() - 2, sb.length());
+			if (i < recordCount - 1)
+				sb.append("}, ");
+		}
+		sb.append("}]}");
+		
+		return sb.toString();
+	}
 
 	private void setNumRecords(int n) {
 		Constant v = new IntegerConstant(n);
@@ -361,7 +432,7 @@ public class BTreePage {
 
 	private void copyRecord(int from, int to) {
 		for (String fldname : schema.fields())
-			setVal(to, fldname, getVal(from, fldname));
+			setValUnchecked(to, fldname, getVal(from, fldname));
 	}
 
 	private void copyRecordWithoutLogging(int from, int to) {
@@ -384,6 +455,12 @@ public class BTreePage {
 		Buffer buff = tx.bufferMgr().pinNew(blk.fileName(), btpf);
 		tx.bufferMgr().unpin(buff);
 		return buff.block();
+	}
+	
+	private void setValUnchecked(int slot, String fldName, Constant val) {
+		Type type = schema.type(fldName);
+		Constant v = val.castTo(type);
+		setVal(fieldPosition(slot, fldName), v);
 	}
 
 	private void setVal(int offset, Constant val) {

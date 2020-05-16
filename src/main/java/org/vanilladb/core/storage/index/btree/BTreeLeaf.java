@@ -300,7 +300,7 @@ public class BTreeLeaf {
 			setSiblingFlag(currentPage, newBlkNum);
 			return new DirEntry(splitKey, newBlkNum);
 		}
-		
+
 		if (!currentPage.isFull())
 			return null;
 		

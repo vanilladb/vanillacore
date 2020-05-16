@@ -63,7 +63,8 @@ public class IndexPageDeleteRecord implements LogRecord {
 		Type[] types = new Type[keyLen];
 		for (int i = 0; i < keyLen; i++) {
 			int type = (Integer) rec.nextVal(INTEGER).asJavaVal();
-			types[i] = Type.newInstance(type);
+			int argument = (Integer) rec.nextVal(INTEGER).asJavaVal();
+			types[i] = Type.newInstance(type, argument);
 		}
 		keyType = new SearchKeyType(types);
 		
@@ -103,7 +104,7 @@ public class IndexPageDeleteRecord implements LogRecord {
 		if (isDirPage) {
 			BlockBuff = tx.bufferMgr().pin(indexBlkId);
 
-			if (this.lsn.compareTo(BlockBuff.lastLsn()) == 1) {
+			if (this.lsn.compareTo(BlockBuff.lastLsn()) < 0) {
 				BTreeDir.insertASlot(tx, indexBlkId, keyType, slotId);
 				LogSeqNum lsn = tx.recoveryMgr().logIndexPageInsertionClr(
 						txNum, indexBlkId, isDirPage, keyType, slotId, this.lsn);
@@ -111,7 +112,7 @@ public class IndexPageDeleteRecord implements LogRecord {
 			}
 		} else {
 			BlockBuff = tx.bufferMgr().pin(indexBlkId);
-			if (this.lsn.compareTo(BlockBuff.lastLsn()) == 1) {
+			if (this.lsn.compareTo(BlockBuff.lastLsn()) < 0) {
 				BTreeLeaf.insertASlot(tx, indexBlkId, keyType, slotId);
 				LogSeqNum lsn = tx.recoveryMgr().logIndexPageInsertionClr(
 						txNum, indexBlkId, isDirPage, keyType, slotId, this.lsn);
@@ -128,12 +129,12 @@ public class IndexPageDeleteRecord implements LogRecord {
 		if (isDirPage) {
 			BlockBuff = tx.bufferMgr().pin(indexBlkId);
 
-			if (this.lsn.compareTo(BlockBuff.lastLsn()) == 1) {
+			if (this.lsn.compareTo(BlockBuff.lastLsn()) > 0) {
 				BTreeDir.deleteASlot(tx, indexBlkId, keyType, slotId);
 			}
 		} else {
 			BlockBuff = tx.bufferMgr().pin(indexBlkId);
-			if (this.lsn.compareTo(BlockBuff.lastLsn()) == 1) {
+			if (this.lsn.compareTo(BlockBuff.lastLsn()) > 0) {
 				BTreeLeaf.deleteASlot(tx, indexBlkId, keyType, slotId);
 			}
 		}
@@ -159,6 +160,7 @@ public class IndexPageDeleteRecord implements LogRecord {
 		for (int i = 0; i < keyType.length(); i++) {
 			Type type = keyType.get(i);
 			rec.add(new IntegerConstant(type.getSqlType()));
+			rec.add(new IntegerConstant(type.getArgument()));
 		}
 		
 		rec.add(new VarcharConstant(indexBlkId.fileName()));

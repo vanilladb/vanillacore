@@ -114,10 +114,8 @@ public class Transaction {
 	 * all locks, and unpins any pinned blocks.
 	 */
 	public void rollback() {
-		for (TransactionLifecycleListener l : lifecycleListeners) {
-
+		for (TransactionLifecycleListener l : lifecycleListeners)
 			l.onTxRollback(this);
-		}
 
 		if (logger.isLoggable(Level.FINE))
 			logger.fine("transaction " + txNum + " rolled back");
