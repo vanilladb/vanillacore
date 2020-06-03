@@ -434,44 +434,37 @@ class LockTable {
 	private void releaseLock(Lockers lks, Object anchor, long txNum, int lockType) {
 		if (lks == null)
 			return;
+		
+		// notify all waiting threads and let them check whether they are able to lock
 		anchor.notifyAll();
+		
 		switch (lockType) {
 		case X_LOCK:
 			if (lks.xLocker == txNum) {
 				lks.xLocker = -1;
-
-				anchor.notifyAll();
 			}
 			return;
 		case SIX_LOCK:
 			if (lks.sixLocker == txNum) {
 				lks.sixLocker = -1;
-
-				anchor.notifyAll();
 			}
 			return;
 		case S_LOCK:
 			Set<Long> sl = lks.sLockers;
 			if (sl != null && sl.contains(txNum)) {
 				sl.remove((Long) txNum);
-				if (sl.isEmpty())
-					anchor.notifyAll();
 			}
 			return;
 		case IS_LOCK:
 			Set<Long> isl = lks.isLockers;
 			if (isl != null && isl.contains(txNum)) {
 				isl.remove((Long) txNum);
-				if (isl.isEmpty())
-					anchor.notifyAll();
 			}
 			return;
 		case IX_LOCK:
 			Set<Long> ixl = lks.ixLockers;
 			if (ixl != null && ixl.contains(txNum)) {
 				ixl.remove((Long) txNum);
-				if (ixl.isEmpty())
-					anchor.notifyAll();
 			}
 			return;
 		default:
