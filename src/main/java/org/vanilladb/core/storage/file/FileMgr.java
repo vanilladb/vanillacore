@@ -53,7 +53,7 @@ public class FileMgr {
 
 	private File dbDirectory, logDirectory;
 	private boolean isNew;
-	private Map<String, IoChannel> openFiles = new ConcurrentHashMap<String, IoChannel>();
+	private Map<String, IoChannel> openFiles = new ConcurrentHashMap<String, IoChannel>();// 每个文件都会创建一个FileChannel
 
 	static {
 		String dbDir = CoreProperties.getLoader().getPropertyAsString(FileMgr.class.getName() + ".DB_FILES_DIR",
