@@ -126,35 +126,35 @@ class LockTable {
 		if (lockType == IX_LOCK || lockType == SIX_LOCK || lockType == X_LOCK) {
 			for (Long tx : lks.sLockers) {
 				if (tx > txNum) {
-					abortAndNotify(tx);
+					toBeAbortedAndNotified(tx);
 				}
 			}
 		}
 		if (lockType == S_LOCK || lockType == SIX_LOCK || lockType == X_LOCK) {
 			for (Long tx : lks.ixLockers) {
 				if (tx > txNum) {
-					abortAndNotify(tx);
+					toBeAbortedAndNotified(tx);
 				}
 			}
 		}
 		if (lockType == X_LOCK) {
 			for (Long tx : lks.isLockers) {
 				if (tx > txNum) {
-					abortAndNotify(tx);
+					toBeAbortedAndNotified(tx);
 				}
 			}
 		}
 		if (lockType == IX_LOCK || lockType == S_LOCK || lockType == SIX_LOCK || lockType == X_LOCK) {
 			if (lks.sixLocker > txNum) {
-				abortAndNotify(lks.sixLocker);
+				toBeAbortedAndNotified(lks.sixLocker);
 			}
 		}
 		if (lks.xLocker > txNum) {
-			abortAndNotify(lks.xLocker);
+			toBeAbortedAndNotified(lks.xLocker);
 		}
 	}
 
-	private void abortAndNotify(long txNum) {
+	private void toBeAbortedAndNotified(long txNum) {
 		txnsToBeAborted.add(txNum);
 		if (!toBeNotified.contains(txNum))
 			toBeNotified.add(txNum);
@@ -434,10 +434,10 @@ class LockTable {
 	private void releaseLock(Lockers lks, Object anchor, long txNum, int lockType) {
 		if (lks == null)
 			return;
-		
+
 		// notify all waiting threads and let them check whether they are able to lock
 		anchor.notifyAll();
-		
+
 		switch (lockType) {
 		case X_LOCK:
 			if (lks.xLocker == txNum) {
