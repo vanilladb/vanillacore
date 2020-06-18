@@ -18,7 +18,7 @@ public class ServerInitTest {
     @Test
     public void init() {
         ServerInit.init(ServerInitTest.class);
-        // loadTestbed();
+        loadTestbed();
         
         if (logger.isLoggable(Level.INFO))
             logger.info("BEGIN PHANTOM TEST");
