@@ -17,6 +17,7 @@ package org.vanilladb.core.remote.jdbc;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.sql.DatabaseMetaData;
 
 /**
  * The RMI remote interface corresponding to Connection. The methods are
@@ -44,5 +45,6 @@ public interface RemoteConnection extends Remote {
 	void commit() throws RemoteException;
 
 	void rollback() throws RemoteException;
-
+	
+	RemoteDatabaseMetaData getDatabaseMetaData() throws RemoteException;
 }

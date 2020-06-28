@@ -17,6 +17,7 @@ package org.vanilladb.core.storage.metadata;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.vanilladb.core.sql.Schema;
@@ -46,6 +47,10 @@ public class CatalogMgr {
 
 	public TableInfo getTableInfo(String tblName, Transaction tx) {
 		return tblMgr.getTableInfo(tblName, tx);
+	}
+	
+	public Map<String,TableInfo> showTables() {
+		return tblMgr.getAllTableInfo();
 	}
 
 	public void createView(String viewName, String viewDef, Transaction tx) {

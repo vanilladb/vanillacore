@@ -253,4 +253,8 @@ public class TableMgr {
 		String fileName = tblName + ".tbl";
 		RecordFile.formatFileHeader(fileName, tx);
 	}
+	
+	public Map<String, TableInfo> getAllTableInfo() {
+		return  tiMap;
+	}
 }

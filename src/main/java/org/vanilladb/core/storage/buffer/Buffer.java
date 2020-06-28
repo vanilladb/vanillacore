@@ -305,7 +305,7 @@ public class Buffer {
 	 * appends the page to the specified file. If the buffer was dirty, then the
 	 * contents of the previous page are first written to disk.
 	 * 
-	 * @param filename
+	 * @param fileName
 	 *            the name of the file
 	 * @param fmtr
 	 *            a page formatter, used to initialize the page

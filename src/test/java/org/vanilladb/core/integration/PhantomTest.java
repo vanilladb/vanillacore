@@ -159,12 +159,14 @@ private static Logger logger = Logger.getLogger(BufferConcurrencyTest.class.getN
 		@Override
 		public void phase1() {
 			maxScore = queryMaxScore();
+			System.out.println("-----------------------maxScore="+ maxScore);
 			tx.endStatement();
 		}
 		
 		@Override
 		public void phase3() {
 			Constant newMaxScore = queryMaxScore();
+			System.out.println("-----------------------newMaxScore="+ newMaxScore);
 			isSame = maxScore.equals(newMaxScore);
 			tx.commit();
 		}
