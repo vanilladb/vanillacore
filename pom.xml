@@ -63,6 +63,10 @@
 			<name>Yun-Sheng Chang</name>
 			<email>yschang@datalab.cs.nthu.edu.tw</email>
 		</developer>
+		<developer>
+			<name>Pin-Yu Wang</name>
+			<email>pywang@datalab.cs.nthu.edu.tw</email>
+		</developer>
 	</developers>
 
 	<scm>
@@ -86,6 +90,11 @@
 			<groupId>net.smacke</groupId>
 			<artifactId>jaydio</artifactId>
 			<version>0.1</version>
+		</dependency>
+		<dependency>
+		  <groupId>com.google.googlejavaformat</groupId>
+		  <artifactId>google-java-format</artifactId>
+		  <version>1.9</version>
 		</dependency>
 	</dependencies>
 

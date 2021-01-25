@@ -33,6 +33,7 @@ import org.vanilladb.core.query.parse.DeleteData;
 import org.vanilladb.core.query.parse.InsertData;
 import org.vanilladb.core.query.parse.ModifyData;
 import org.vanilladb.core.query.parse.Parser;
+import org.vanilladb.core.query.parse.QueryData;
 import org.vanilladb.core.server.ServerInit;
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.storage.tx.Transaction;
@@ -67,6 +68,22 @@ public class VerifierTest {
 	@After
 	public void finishTx() {
 		tx = null;
+	}
+	
+	@Test
+	public void testQueryData() {
+		try {
+			String qry = "select count(grade), eid from enroll group by eid order by count(grade) asc";
+			Parser psr = new Parser(qry);
+			QueryData data = (QueryData) psr.queryCommand();
+			Verifier.verifyQueryData(data, tx);
+			tx.commit();
+			
+		} catch(BadSemanticException e) {
+			tx.rollback();
+			System.err.println(e);
+			fail("QueryVerifierTest: bad verification");
+		}
 	}
 
 	@Test
