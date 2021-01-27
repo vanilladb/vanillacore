@@ -271,7 +271,6 @@ public class Verifier {
 
 	private static boolean verifyField(List<Schema> schs,
 			List<QueryData> views, String fld) {
-		boolean isValid = false;
 		for (Schema s : schs) {
 			if (s.hasField(fld)) {
 				return true;
@@ -284,6 +283,6 @@ public class Verifier {
 			}
 		}
 		
-		return isValid;
+		return false;
 	}
 }

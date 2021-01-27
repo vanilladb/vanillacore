@@ -91,11 +91,6 @@
 			<artifactId>jaydio</artifactId>
 			<version>0.1</version>
 		</dependency>
-		<dependency>
-		  <groupId>com.google.googlejavaformat</groupId>
-		  <artifactId>google-java-format</artifactId>
-		  <version>1.9</version>
-		</dependency>
 	</dependencies>
 
 	<!-- For deploying to the central repository -->
