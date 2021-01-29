@@ -63,6 +63,10 @@
 			<name>Yun-Sheng Chang</name>
 			<email>yschang@datalab.cs.nthu.edu.tw</email>
 		</developer>
+		<developer>
+			<name>Pin-Yu Wang</name>
+			<email>pywang@datalab.cs.nthu.edu.tw</email>
+		</developer>
 	</developers>
 
 	<scm>
