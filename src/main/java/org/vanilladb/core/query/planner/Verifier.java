@@ -100,7 +100,18 @@ public class Verifier {
 		// Examine the sorting field name
 		if (data.sortFields() != null)
 			for (String sortFld : data.sortFields()) {
-				if (!verifyField(schs, views, sortFld))
+				boolean isValid = verifyField(schs, views, sortFld);
+				
+				// aggregation field may appear after order by
+				// example: select count(fld1), fld2 from table group by fld2 order by count(fld1);
+				// we need the following checks to make count(fld1) valid
+				if (!isValid && data.aggregationFn() != null)
+					for (AggregationFn aggFn : data.aggregationFn())
+						if (sortFld.compareTo(aggFn.fieldName()) == 0) {
+							isValid = true;
+							break;
+						}
+				if (!isValid)
 					throw new BadSemanticException("field " + sortFld
 							+ " does not exist");
 			}
@@ -133,6 +144,7 @@ public class Verifier {
 		for (int i = 0; i < fields.size(); i++) {
 			String field = fields.get(i);
 			Constant val = vals.get(i);
+			
 			// check field existence
 			if (!sch.hasField(field))
 				throw new BadSemanticException("field " + field
@@ -259,18 +271,18 @@ public class Verifier {
 
 	private static boolean verifyField(List<Schema> schs,
 			List<QueryData> views, String fld) {
-		boolean isValid = false;
-		for (Schema s : schs)
+		for (Schema s : schs) {
 			if (s.hasField(fld)) {
-				isValid = true;
-				break;
+				return true;
 			}
-		if (!isValid)
-			for (QueryData queryData : views)
-				if (queryData.projectFields().contains(fld)) {
-					isValid = true;
-					break;
-				}
-		return isValid;
+		}
+
+		for (QueryData queryData : views) {
+			if (queryData.projectFields().contains(fld)) {
+				return true;
+			}
+		}
+		
+		return false;
 	}
 }

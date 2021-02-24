@@ -44,14 +44,11 @@ import org.vanilladb.core.util.CoreProperties;
 class LockTable {
 	private static final long MAX_TIME;
 	private static final long EPSILON;
-	final static int IS_LOCK = 0, IX_LOCK = 1, S_LOCK = 2, SIX_LOCK = 3,
-			X_LOCK = 4;
+	final static int IS_LOCK = 0, IX_LOCK = 1, S_LOCK = 2, SIX_LOCK = 3, X_LOCK = 4;
 
 	static {
-		MAX_TIME = CoreProperties.getLoader().getPropertyAsLong(
-				LockTable.class.getName() + ".MAX_TIME", 10000);
-		EPSILON = CoreProperties.getLoader().getPropertyAsLong(LockTable.class.getName()
-				+ ".EPSILON", 50);
+		MAX_TIME = CoreProperties.getLoader().getPropertyAsLong(LockTable.class.getName() + ".MAX_TIME", 10000);
+		EPSILON = CoreProperties.getLoader().getPropertyAsLong(LockTable.class.getName() + ".EPSILON", 50);
 	}
 
 	class Lockers {
@@ -68,11 +65,11 @@ class LockTable {
 			xLocker = NONE;
 			requestSet = new HashSet<Long>();
 		}
-		
+
 		@Override
 		public String toString() {
-			return "S: " + sLockers + ",IX: " + ixLockers + ",IS: " + isLockers
-					+ ",SIX: " + sixLocker + ",X: " + xLocker + ", request set: " + requestSet;
+			return "S: " + sLockers + ",IX: " + ixLockers + ",IS: " + isLockers + ",SIX: " + sixLocker + ",X: "
+					+ xLocker + ", request set: " + requestSet;
 		}
 	}
 
@@ -100,11 +97,9 @@ class LockTable {
 
 	private Map<Object, Lockers> lockerMap = new HashMap<Object, Lockers>();
 	private Map<Long, Set<Object>> lockByMap = new ConcurrentHashMap<Long, Set<Object>>();
-	private Set<Long> txnsToBeAborted = Collections
-			.synchronizedSet(new HashSet<Long>());
+	private Set<Long> txnsToBeAborted = Collections.synchronizedSet(new HashSet<Long>());
 	private Map<Long, Object> txWaitMap = new ConcurrentHashMap<Long, Object>();
-	private BlockingQueue<Long> toBeNotified = new ArrayBlockingQueue<Long>(
-			1000);
+	private BlockingQueue<Long> toBeNotified = new ArrayBlockingQueue<Long>(1000);
 	private final Object anchors[] = new Object[1009];
 
 	public LockTable() {
@@ -122,8 +117,7 @@ class LockTable {
 		return anchors[code];
 	}
 
-	private void avoidDeadlock(Lockers lks, long txNum, int lockType)
-			throws LockAbortException {
+	private void avoidDeadlock(Lockers lks, long txNum, int lockType) throws LockAbortException {
 		// IS_LOCK = 0, IX_LOCK = 1, S_LOCK = 2, SIX_LOCK = 3, X_LOCK = 4
 
 		if (txnsToBeAborted.contains(txNum))
@@ -132,55 +126,48 @@ class LockTable {
 		if (lockType == IX_LOCK || lockType == SIX_LOCK || lockType == X_LOCK) {
 			for (Long tx : lks.sLockers) {
 				if (tx > txNum) {
-					txnsToBeAborted.add(tx);
-					if (!toBeNotified.contains(tx))
-						toBeNotified.add(tx);
+					toBeAbortedAndNotified(tx);
 				}
 			}
 		}
 		if (lockType == S_LOCK || lockType == SIX_LOCK || lockType == X_LOCK) {
 			for (Long tx : lks.ixLockers) {
 				if (tx > txNum) {
-					txnsToBeAborted.add(tx);
-					if (!toBeNotified.contains(tx))
-						toBeNotified.add(tx);
+					toBeAbortedAndNotified(tx);
 				}
 			}
 		}
 		if (lockType == X_LOCK) {
 			for (Long tx : lks.isLockers) {
 				if (tx > txNum) {
-					txnsToBeAborted.add(tx);
-					if (!toBeNotified.contains(tx))
-						toBeNotified.add(tx);
+					toBeAbortedAndNotified(tx);
 				}
 			}
 		}
-		if (lockType == IX_LOCK || lockType == S_LOCK || lockType == SIX_LOCK
-				|| lockType == X_LOCK) {
+		if (lockType == IX_LOCK || lockType == S_LOCK || lockType == SIX_LOCK || lockType == X_LOCK) {
 			if (lks.sixLocker > txNum) {
-				txnsToBeAborted.add(lks.sixLocker);
-				if (!toBeNotified.contains(lks.sixLocker))
-					toBeNotified.add(lks.sixLocker);
+				toBeAbortedAndNotified(lks.sixLocker);
 			}
 		}
 		if (lks.xLocker > txNum) {
-			txnsToBeAborted.add(lks.xLocker);
-			if (!toBeNotified.contains(lks.xLocker))
-				toBeNotified.add(lks.xLocker);
+			toBeAbortedAndNotified(lks.xLocker);
 		}
 	}
 
+	private void toBeAbortedAndNotified(long txNum) {
+		txnsToBeAborted.add(txNum);
+		if (!toBeNotified.contains(txNum))
+			toBeNotified.add(txNum);
+	}
+
 	/**
-	 * Grants an slock on the specified item. If any conflict lock exists when
-	 * the method is called, then the calling thread will be placed on a wait
-	 * list until the lock is released. If the thread remains on the wait list
-	 * for a certain amount of time, then an exception is thrown.
+	 * Grants an slock on the specified item. If any conflict lock exists when the
+	 * method is called, then the calling thread will be placed on a wait list until
+	 * the lock is released. If the thread remains on the wait list for a certain
+	 * amount of time, then an exception is thrown.
 	 * 
-	 * @param obj
-	 *            a lockable item
-	 * @param txNum
-	 *            a transaction number
+	 * @param obj   a lockable item
+	 * @param txNum a transaction number
 	 * 
 	 */
 	void sLock(Object obj, long txNum) {
@@ -197,7 +184,7 @@ class LockTable {
 				while (!sLockable(lks, txNum) && !waitingTooLong(timestamp)) {
 					avoidDeadlock(lks, txNum, S_LOCK);
 					lks.requestSet.add(txNum);
-					
+
 					anchor.wait(MAX_TIME);
 					lks.requestSet.remove(txNum);
 				}
@@ -213,15 +200,13 @@ class LockTable {
 	}
 
 	/**
-	 * Grants an xlock on the specified item. If any conflict lock exists when
-	 * the method is called, then the calling thread will be placed on a wait
-	 * list until the lock is released. If the thread remains on the wait list
-	 * for a certain amount of time, then an exception is thrown.
+	 * Grants an xlock on the specified item. If any conflict lock exists when the
+	 * method is called, then the calling thread will be placed on a wait list until
+	 * the lock is released. If the thread remains on the wait list for a certain
+	 * amount of time, then an exception is thrown.
 	 * 
-	 * @param obj
-	 *            a lockable item
-	 * @param txNum
-	 *            a transaction number
+	 * @param obj   a lockable item
+	 * @param txNum a transaction number
 	 * 
 	 */
 	void xLock(Object obj, long txNum) {
@@ -238,7 +223,7 @@ class LockTable {
 				while (!xLockable(lks, txNum) && !waitingTooLong(timestamp)) {
 					avoidDeadlock(lks, txNum, X_LOCK);
 					lks.requestSet.add(txNum);
-					
+
 					anchor.wait(MAX_TIME);
 					lks.requestSet.remove(txNum);
 				}
@@ -254,15 +239,13 @@ class LockTable {
 	}
 
 	/**
-	 * Grants an sixlock on the specified item. If any conflict lock exists when
-	 * the method is called, then the calling thread will be placed on a wait
-	 * list until the lock is released. If the thread remains on the wait list
-	 * for a certain amount of time, then an exception is thrown.
+	 * Grants an sixlock on the specified item. If any conflict lock exists when the
+	 * method is called, then the calling thread will be placed on a wait list until
+	 * the lock is released. If the thread remains on the wait list for a certain
+	 * amount of time, then an exception is thrown.
 	 * 
-	 * @param obj
-	 *            a lockable item
-	 * @param txNum
-	 *            a transaction number
+	 * @param obj   a lockable item
+	 * @param txNum a transaction number
 	 * 
 	 */
 	void sixLock(Object obj, long txNum) {
@@ -279,7 +262,7 @@ class LockTable {
 				while (!sixLockable(lks, txNum) && !waitingTooLong(timestamp)) {
 					avoidDeadlock(lks, txNum, SIX_LOCK);
 					lks.requestSet.add(txNum);
-					
+
 					anchor.wait(MAX_TIME);
 					lks.requestSet.remove(txNum);
 				}
@@ -295,15 +278,13 @@ class LockTable {
 	}
 
 	/**
-	 * Grants an islock on the specified item. If any conflict lock exists when
-	 * the method is called, then the calling thread will be placed on a wait
-	 * list until the lock is released. If the thread remains on the wait list
-	 * for a certain amount of time, then an exception is thrown.
+	 * Grants an islock on the specified item. If any conflict lock exists when the
+	 * method is called, then the calling thread will be placed on a wait list until
+	 * the lock is released. If the thread remains on the wait list for a certain
+	 * amount of time, then an exception is thrown.
 	 * 
-	 * @param obj
-	 *            a lockable item
-	 * @param txNum
-	 *            a transaction number
+	 * @param obj   a lockable item
+	 * @param txNum a transaction number
 	 */
 	void isLock(Object obj, long txNum) {
 		Object anchor = getAnchor(obj);
@@ -317,7 +298,7 @@ class LockTable {
 				while (!isLockable(lks, txNum) && !waitingTooLong(timestamp)) {
 					avoidDeadlock(lks, txNum, IS_LOCK);
 					lks.requestSet.add(txNum);
-					
+
 					anchor.wait(MAX_TIME);
 					lks.requestSet.remove(txNum);
 				}
@@ -333,15 +314,13 @@ class LockTable {
 	}
 
 	/**
-	 * Grants an ixlock on the specified item. If any conflict lock exists when
-	 * the method is called, then the calling thread will be placed on a wait
-	 * list until the lock is released. If the thread remains on the wait list
-	 * for a certain amount of time, then an exception is thrown.
+	 * Grants an ixlock on the specified item. If any conflict lock exists when the
+	 * method is called, then the calling thread will be placed on a wait list until
+	 * the lock is released. If the thread remains on the wait list for a certain
+	 * amount of time, then an exception is thrown.
 	 * 
-	 * @param obj
-	 *            a lockable item
-	 * @param txNum
-	 *            a transaction number
+	 * @param obj   a lockable item
+	 * @param txNum a transaction number
 	 */
 	void ixLock(Object obj, long txNum) {
 		Object anchor = getAnchor(obj);
@@ -357,7 +336,7 @@ class LockTable {
 				while (!ixLockable(lks, txNum) && !waitingTooLong(timestamp)) {
 					avoidDeadlock(lks, txNum, IX_LOCK);
 					lks.requestSet.add(txNum);
-					
+
 					anchor.wait(MAX_TIME);
 					lks.requestSet.remove(txNum);
 				}
@@ -373,38 +352,33 @@ class LockTable {
 	}
 
 	/**
-	 * Releases the specified type of lock on an item holding by a transaction.
-	 * If a lock is the last lock on that block, then the waiting transactions
-	 * are notified.
+	 * Releases the specified type of lock on an item holding by a transaction. If a
+	 * lock is the last lock on that block, then the waiting transactions are
+	 * notified.
 	 * 
-	 * @param obj
-	 *            a lockable item
-	 * @param txNum
-	 *            a transaction number
-	 * @param lockType
-	 *            the type of lock
+	 * @param obj      a lockable item
+	 * @param txNum    a transaction number
+	 * @param lockType the type of lock
 	 */
 	void release(Object obj, long txNum, int lockType) {
 		Object anchor = getAnchor(obj);
 		synchronized (anchor) {
 			Lockers lks = lockerMap.get(obj);
 			/*
-			 * In some situation, tx will release the lock of the object that
-			 * have been released.
+			 * In some situation, tx will release the lock of the object that have been
+			 * released.
 			 */
 			if (lks != null) {
 				releaseLock(lks, anchor, txNum, lockType);
 
 				// Check if this transaction have any other lock on this object
-				if (!hasSLock(lks, txNum) && !hasXLock(lks, txNum)
-						&& !hasSixLock(lks, txNum) && !hasIsLock(lks, txNum)
+				if (!hasSLock(lks, txNum) && !hasXLock(lks, txNum) && !hasSixLock(lks, txNum) && !hasIsLock(lks, txNum)
 						&& !hasIxLock(lks, txNum)) {
 					getObjectSet(txNum).remove(obj);
 
 					// Remove the locker, if there is no other transaction
 					// having it
-					if (!sLocked(lks) && !xLocked(lks) && !sixLocked(lks)
-							&& !isLocked(lks) && !ixLocked(lks)
+					if (!sLocked(lks) && !xLocked(lks) && !sixLocked(lks) && !isLocked(lks) && !ixLocked(lks)
 							&& lks.requestSet.isEmpty())
 						lockerMap.remove(obj);
 				}
@@ -413,14 +387,12 @@ class LockTable {
 	}
 
 	/**
-	 * Releases all locks held by a transaction. If a lock is the last lock on
-	 * that block, then the waiting transactions are notified.
+	 * Releases all locks held by a transaction. If a lock is the last lock on that
+	 * block, then the waiting transactions are notified.
 	 * 
-	 * @param txNum
-	 *            a transaction number
+	 * @param txNum     a transaction number
 	 * 
-	 * @param sLockOnly
-	 *            release slocks only
+	 * @param sLockOnly release slocks only
 	 */
 	void releaseAll(long txNum, boolean sLockOnly) {
 		Set<Object> objectsToRelease = getObjectSet(txNum);
@@ -448,8 +420,7 @@ class LockTable {
 
 					// Remove the locker, if there is no other transaction
 					// having it
-					if (!sLocked(lks) && !xLocked(lks) && !sixLocked(lks)
-							&& !isLocked(lks) && !ixLocked(lks)
+					if (!sLocked(lks) && !xLocked(lks) && !sixLocked(lks) && !isLocked(lks) && !ixLocked(lks)
 							&& lks.requestSet.isEmpty())
 						lockerMap.remove(obj);
 				}
@@ -460,48 +431,40 @@ class LockTable {
 		lockByMap.remove(txNum);
 	}
 
-	private void releaseLock(Lockers lks, Object anchor, long txNum,
-			int lockType) {
+	private void releaseLock(Lockers lks, Object anchor, long txNum, int lockType) {
 		if (lks == null)
 			return;
+
+		// notify all waiting threads and let them check whether they are able to lock
 		anchor.notifyAll();
+
 		switch (lockType) {
 		case X_LOCK:
 			if (lks.xLocker == txNum) {
 				lks.xLocker = -1;
-				
-				anchor.notifyAll();
 			}
 			return;
 		case SIX_LOCK:
 			if (lks.sixLocker == txNum) {
 				lks.sixLocker = -1;
-				
-				anchor.notifyAll();
 			}
 			return;
 		case S_LOCK:
 			Set<Long> sl = lks.sLockers;
 			if (sl != null && sl.contains(txNum)) {
 				sl.remove((Long) txNum);
-				if (sl.isEmpty())
-					anchor.notifyAll();
 			}
 			return;
 		case IS_LOCK:
 			Set<Long> isl = lks.isLockers;
 			if (isl != null && isl.contains(txNum)) {
 				isl.remove((Long) txNum);
-				if (isl.isEmpty())
-					anchor.notifyAll();
 			}
 			return;
 		case IX_LOCK:
 			Set<Long> ixl = lks.ixLockers;
 			if (ixl != null && ixl.contains(txNum)) {
 				ixl.remove((Long) txNum);
-				if (ixl.isEmpty())
-					anchor.notifyAll();
 			}
 			return;
 		default:
@@ -580,18 +543,15 @@ class LockTable {
 	}
 
 	private boolean isTheOnlySLocker(Lockers lks, long txNum) {
-		return lks != null && lks.sLockers.size() == 1
-				&& lks.sLockers.contains(txNum);
+		return lks != null && lks.sLockers.size() == 1 && lks.sLockers.contains(txNum);
 	}
 
 	private boolean isTheOnlyIsLocker(Lockers lks, long txNum) {
-		return lks != null && lks.isLockers.size() == 1
-				&& lks.isLockers.contains(txNum);
+		return lks != null && lks.isLockers.size() == 1 && lks.isLockers.contains(txNum);
 	}
 
 	private boolean isTheOnlyIxLocker(Lockers lks, long txNum) {
-		return lks != null && lks.ixLockers.size() == 1
-				&& lks.ixLockers.contains(txNum);
+		return lks != null && lks.ixLockers.size() == 1 && lks.ixLockers.contains(txNum);
 	}
 
 	/*
@@ -599,29 +559,23 @@ class LockTable {
 	 */
 
 	private boolean sLockable(Lockers lks, long txNum) {
-		return (!xLocked(lks) || hasXLock(lks, txNum))
-				&& (!sixLocked(lks) || hasSixLock(lks, txNum))
+		return (!xLocked(lks) || hasXLock(lks, txNum)) && (!sixLocked(lks) || hasSixLock(lks, txNum))
 				&& (!ixLocked(lks) || isTheOnlyIxLocker(lks, txNum));
 	}
 
 	private boolean xLockable(Lockers lks, long txNum) {
-		return (!sLocked(lks) || isTheOnlySLocker(lks, txNum))
-				&& (!sixLocked(lks) || hasSixLock(lks, txNum))
+		return (!sLocked(lks) || isTheOnlySLocker(lks, txNum)) && (!sixLocked(lks) || hasSixLock(lks, txNum))
 				&& (!ixLocked(lks) || isTheOnlyIxLocker(lks, txNum))
-				&& (!isLocked(lks) || isTheOnlyIsLocker(lks, txNum))
-				&& (!xLocked(lks) || hasXLock(lks, txNum));
+				&& (!isLocked(lks) || isTheOnlyIsLocker(lks, txNum)) && (!xLocked(lks) || hasXLock(lks, txNum));
 	}
 
 	private boolean sixLockable(Lockers lks, long txNum) {
-		return (!sixLocked(lks) || hasSixLock(lks, txNum))
-				&& (!ixLocked(lks) || isTheOnlyIxLocker(lks, txNum))
-				&& (!sLocked(lks) || isTheOnlySLocker(lks, txNum))
-				&& (!xLocked(lks) || hasXLock(lks, txNum));
+		return (!sixLocked(lks) || hasSixLock(lks, txNum)) && (!ixLocked(lks) || isTheOnlyIxLocker(lks, txNum))
+				&& (!sLocked(lks) || isTheOnlySLocker(lks, txNum)) && (!xLocked(lks) || hasXLock(lks, txNum));
 	}
 
 	private boolean ixLockable(Lockers lks, long txNum) {
-		return (!sLocked(lks) || isTheOnlySLocker(lks, txNum))
-				&& (!sixLocked(lks) || hasSixLock(lks, txNum))
+		return (!sLocked(lks) || isTheOnlySLocker(lks, txNum)) && (!sixLocked(lks) || hasSixLock(lks, txNum))
 				&& (!xLocked(lks) || hasXLock(lks, txNum));
 	}
 

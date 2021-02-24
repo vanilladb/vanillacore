@@ -11,7 +11,7 @@
 
 	<groupId>org.vanilladb</groupId>
 	<artifactId>core</artifactId>
-	<version>0.4.0</version>
+	<version>0.4.1</version>
 	<packaging>jar</packaging>
 
 	<name>vanillacore</name>
@@ -56,12 +56,16 @@
 			<email>ctsai@datalab.cs.nthu.edu.tw</email>
 		</developer>
 		<developer>
-			<name>Ching Tsai</name>
+			<name>Tz-Yu Lin</name>
 			<email>tylin@datalab.cs.nthu.edu.tw</email>
 		</developer>
 		<developer>
 			<name>Yun-Sheng Chang</name>
 			<email>yschang@datalab.cs.nthu.edu.tw</email>
+		</developer>
+		<developer>
+			<name>Pin-Yu Wang</name>
+			<email>pywang@datalab.cs.nthu.edu.tw</email>
 		</developer>
 	</developers>
 
@@ -79,7 +83,7 @@
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
-			<version>4.9</version>
+			<version>4.13.2</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>

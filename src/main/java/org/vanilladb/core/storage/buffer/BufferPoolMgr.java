@@ -110,7 +110,7 @@ class BufferPoolMgr {
 					if (buff.getExternalLock().tryLock()) {
 						try {
 							// Check if there is no one use it
-							if (!buff.isPinned()) {
+							if (!buff.isPinned() && !buff.checkRecentlyPinnedAndReset()) {
 								this.lastReplacedBuff = currBlk;
 								
 								// Swap
@@ -182,7 +182,7 @@ class BufferPoolMgr {
 				// Get the lock of buffer if it is free
 				if (buff.getExternalLock().tryLock()) {
 					try {
-						if (!buff.isPinned()) {
+						if (!buff.isPinned() && !buff.checkRecentlyPinnedAndReset()) {
 							this.lastReplacedBuff = currBlk;
 							
 							// Swap

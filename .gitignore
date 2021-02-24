@@ -1,6 +1,7 @@
 
 ### Eclipse ###
 .settings/
+.metadata/
 .recommenders
 .classpath
 .project
