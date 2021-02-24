@@ -33,7 +33,7 @@ Running the test cases may take very long time (about 3 minutes in our case). If
 > mvn package -Dmaven.test.skip=true
 ```
 
-The jar file will be named as `core-0.4.0.jar` and in the `target` folder of the project.
+The jar file will be named as `core-0.4.1.jar` and in the `target` folder of the project.
 
 ### Starting up a VanillaCore server
 
@@ -42,7 +42,7 @@ To start up a VanillaCore server, use the following command:
 (Please replace `{DB Name}` with **your database name**, which will be the name of the folder of your database files)
 
 ```
-> java -classpath core-0.4.0.jar org.vanilladb.core.server.StartUp {DB Name}
+> java -classpath core-0.4.1.jar org.vanilladb.core.server.StartUp {DB Name}
 ```
 
 If it works correctly, you should see `database server ready` like this:
@@ -63,7 +63,7 @@ The server provides a JDBC interface, which you can connect to with any JDBC cli
 To start up a SQL interpreter, use the following command:
 
 ```
-> java -classpath core-0.4.0.jar org.vanilladb.core.util.ConsoleSQLInterpreter
+> java -classpath core-0.4.1.jar org.vanilladb.core.util.ConsoleSQLInterpreter
 ```
 
 Now you should see a console prompt like:
@@ -83,7 +83,7 @@ We assume that the jar file and the properties files are always in the same dire
 You can also put the properties file at other location. To make VanillaCore know where the file is, you need to specify the path as an argument of the JVM while starting up a server:
 
 ```
-> java -Dorg.vanilladb.core.config.file={path to vanilladb.properties} -classpath core-0.4.0.jar org.vanilladb.core.server.StartUp {DB Name}
+> java -Dorg.vanilladb.core.config.file={path to vanilladb.properties} -classpath core-0.4.1.jar org.vanilladb.core.server.StartUp {DB Name}
 ```
 
 Remember to replace `{path to vanilladb.properties}` to **the path of the file**.
@@ -164,7 +164,7 @@ We have a series of educational slides to make the people who are not familiar w
 <dependency>
   <groupId>org.vanilladb</groupId>
   <artifactId>core</artifactId>
-  <version>0.4.0</version>
+  <version>0.4.1</version>
 </dependency>
 ```
 
