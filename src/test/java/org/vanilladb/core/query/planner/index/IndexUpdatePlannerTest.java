@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2016, 2017 vanilladb.org contributors
+ * Copyright 2016, 2020 vanilladb.org contributors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,11 +69,11 @@ public class IndexUpdatePlannerTest {
 		
 		List<String> indexedFlds = new LinkedList<String>();
 		indexedFlds.add("tid");
-		md.createIndex("_tempIUP1", TABLE_NAME, indexedFlds, IndexType.BTREE, tx);
+		md.createIndex("idx_indextest_tid", TABLE_NAME, indexedFlds, IndexType.BTREE, tx);
 		
 		indexedFlds = new LinkedList<String>();
 		indexedFlds.add("tdate");
-		md.createIndex("_tempIUP2", TABLE_NAME, indexedFlds, IndexType.BTREE, tx);
+		md.createIndex("idx_indextest_tdate", TABLE_NAME, indexedFlds, IndexType.BTREE, tx);
 
 		tx.commit();
 
@@ -97,7 +97,7 @@ public class IndexUpdatePlannerTest {
 
 	@After
 	public void finishTx() {
-		tx.rollback();
+		tx.commit();
 	}
 	
 	@Test
@@ -112,7 +112,7 @@ public class IndexUpdatePlannerTest {
 					"*****IndexUpdatePlannerTest: bad insertion return value",
 					1, n);
 
-		String qry = "select tid, tname, tdate from indextest where tid = 1";
+		String qry = "SELECT tid, tname, tdate FROM indextest WHERE tid = 1";
 		psr = new Parser(qry);
 		QueryData qd = psr.queryCommand();
 		Plan p = new HeuristicQueryPlanner().createPlan(qd, tx);
@@ -137,8 +137,8 @@ public class IndexUpdatePlannerTest {
 	@Test
 	public void testDelete() {
 		// Insert the data that will be deleted
-		for (int tid = 2; tid < 5; tid++) {
-			String cmd = "insert into indextest(tid,tname,tdate) values(" + tid
+		for (int tid = 11; tid < 20; tid++) {
+			String cmd = "INSERT INTO indextest (tid, tname, tdate) VALUES (" + tid
 					+ ", 'test" + tid + "', 1000000" + tid + ")";
 			Parser psr = new Parser(cmd);
 			InsertData id = (InsertData) psr.updateCommand();
@@ -146,14 +146,14 @@ public class IndexUpdatePlannerTest {
 		}
 
 		// Execute deletion
-		String cmd = "delete from indextest where tid > 1";
+		String cmd = "DELETE FROM indextest WHERE tid > 10 AND tid < 20";
 		Parser psr = new Parser(cmd);
 		DeleteData dd = (DeleteData) psr.updateCommand();
 		IndexUpdatePlanner iup = new IndexUpdatePlanner();
 		iup.executeDelete(dd, tx);
 
 		// Check if the data has been deleted
-		String qry = "select tid from indextest where tid > 1";
+		String qry = "SELECT tid FROM indextest WHERE tid > 10 AND tid < 20";
 		psr = new Parser(qry);
 		QueryData qd = psr.queryCommand();
 		Plan p = new HeuristicQueryPlanner().createPlan(qd, tx);
@@ -167,8 +167,8 @@ public class IndexUpdatePlannerTest {
 	@Test
 	public void testModify() {
 		// Insert the data that will be deleted
-		for (int tid = 2; tid < 5; tid++) {
-			String cmd = "insert into indextest(tid,tname,tdate) values(" + tid
+		for (int tid = 21; tid < 30; tid++) {
+			String cmd = "INSERT INTO indextest (tid ,tname, tdate) VALUES (" + tid
 					+ ", 'test" + tid + "', 1000000" + tid + ")";
 			Parser psr = new Parser(cmd);
 			InsertData id = (InsertData) psr.updateCommand();
@@ -176,14 +176,14 @@ public class IndexUpdatePlannerTest {
 		}
 
 		// Execute modification
-		String cmd = "update indextest set tname = 'kkk', tdate=999999999 where tid > 1";
+		String cmd = "UPDATE indextest SET tname = 'kkk', tdate=999999999 WHERE tid > 20 AND tid < 30";
 		Parser psr = new Parser(cmd);
 		ModifyData md = (ModifyData) psr.updateCommand();
 		int n = new IndexUpdatePlanner().executeModify(md, tx);
 		assertTrue("*****IndexUpdatePlannerTest: bad modification", n > 0);
 
 		// Check if the data has been modified
-		String qry = "select tid, tname, tdate from indextest tid > 1";
+		String qry = "SELECT tid, tname, tdate FROM indextest WHERE tid > 20 AND tid < 30";
 		psr = new Parser(qry);
 		QueryData qd = psr.queryCommand();
 		Plan p = new HeuristicQueryPlanner().createPlan(qd, tx);
@@ -204,8 +204,8 @@ public class IndexUpdatePlannerTest {
 	public void testModifyOnSelectFld() {
 		int insertCount = 0;
 		// Insert the data that will be deleted
-		for (int tid = 2; tid < 15; tid++) {
-			String cmd = "insert into indextest(tid,tname,tdate) values(" + tid
+		for (int tid = 31; tid < 40; tid++) {
+			String cmd = "INSERT INTO indextest(tid, tname, tdate) VALUES (" + tid
 					+ ", 'test" + tid + "', 1000000" + tid + ")";
 			Parser psr = new Parser(cmd);
 			InsertData id = (InsertData) psr.updateCommand();
@@ -214,7 +214,7 @@ public class IndexUpdatePlannerTest {
 		}
 
 		// Execute modification
-		String cmd = "update indextest set tid = 999, tname = 'kkk', tdate=999999999 where tid > 1 and tid < 15";
+		String cmd = "UPDATE indextest SET tid = 999, tname = 'kkk', tdate=999999999 WHERE tid > 30 AND tid < 40";
 		Parser psr = new Parser(cmd);
 		ModifyData md = (ModifyData) psr.updateCommand();
 		int n = new IndexUpdatePlanner().executeModify(md, tx);
@@ -223,7 +223,7 @@ public class IndexUpdatePlannerTest {
 				n == insertCount);
 
 		// Check if the data has been modified
-		String qry = "select tid, tname, tdate from indextest tid = 999";
+		String qry = "SELECT tid, tname, tdate FROM indextest WHERE tid = 999";
 		psr = new Parser(qry);
 		QueryData qd = psr.queryCommand();
 		Plan p = new HeuristicQueryPlanner().createPlan(qd, tx);

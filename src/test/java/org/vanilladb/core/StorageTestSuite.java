@@ -20,7 +20,6 @@ import org.junit.runners.Suite.SuiteClasses;
 import org.vanilladb.core.IsolatedClassLoaderSuite.IsolationRoot;
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.storage.buffer.BufferConcurrencyTest;
-import org.vanilladb.core.storage.buffer.BufferMgrConcurrencyTest;
 import org.vanilladb.core.storage.buffer.BufferPoolConcurrencyTest;
 import org.vanilladb.core.storage.buffer.BufferTest;
 import org.vanilladb.core.storage.buffer.LastLSNTest;
@@ -46,7 +45,7 @@ import org.vanilladb.core.storage.tx.recovery.RecoveryBasicTest;
 	
 	// storage.buffer
 	BufferTest.class, BufferConcurrencyTest.class,
-	BufferMgrConcurrencyTest.class, BufferPoolConcurrencyTest.class,
+	BufferPoolConcurrencyTest.class,
 	LastLSNTest.class,
 	
 	// storage.record

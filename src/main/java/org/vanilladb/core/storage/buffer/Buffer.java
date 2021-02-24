@@ -15,6 +15,7 @@
  *******************************************************************************/
 package org.vanilladb.core.storage.buffer;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -49,6 +50,7 @@ public class Buffer {
 	private Page contents = new Page();
 	private BlockId blk = null;
 	private int pins = 0;
+	private AtomicBoolean isRecentlyPinned = new AtomicBoolean(false);
 	private boolean isNew = false;
 	private boolean isModified = false;
 	// TODO: We use (-1, -1) for the default value. Will this be a problem ?
@@ -233,6 +235,7 @@ public class Buffer {
 		internalLock.writeLock().lock();
 		try {
 			pins++;
+			isRecentlyPinned.set(true);
 		} finally {
 			internalLock.writeLock().unlock();
 		}
@@ -263,6 +266,10 @@ public class Buffer {
 		} finally {
 			internalLock.readLock().unlock();
 		}
+	}
+	
+	boolean checkRecentlyPinnedAndReset() {
+		return isRecentlyPinned.getAndSet(false);
 	}
 
 	/**
