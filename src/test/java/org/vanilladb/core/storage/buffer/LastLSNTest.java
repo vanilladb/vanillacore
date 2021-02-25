@@ -31,7 +31,7 @@ import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.file.Page;
 import org.vanilladb.core.storage.log.LogSeqNum;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 public class LastLSNTest {
 	private static Logger logger = Logger.getLogger(LastLSNTest.class.getName());
