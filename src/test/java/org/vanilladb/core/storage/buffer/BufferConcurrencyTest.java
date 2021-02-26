@@ -1,90 +1,70 @@
-/*******************************************************************************
- * Copyright 2016, 2017 vanilladb.org contributors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *******************************************************************************/
+/* Copyright 2016-2021 vanilladb.org contributors*/
 package org.vanilladb.core.storage.buffer;
 
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.vanilladb.core.server.ServerInit;
 import org.vanilladb.core.util.BarrierStartRunner;
 
-import org.junit.Assert;
-
 public class BufferConcurrencyTest {
-	private static Logger logger = Logger.getLogger(BufferConcurrencyTest.class.getName());
+  private static Logger logger = Logger.getLogger(BufferConcurrencyTest.class.getName());
 
-	private static final int CLIENT_COUNT = 100;
+  private static final int CLIENT_COUNT = 100;
 
-	@BeforeClass
-	public static void init() {
-		ServerInit.init(BufferConcurrencyTest.class);
-		
-		if (logger.isLoggable(Level.INFO))
-			logger.info("BEGIN BUFFER CONCURRENCY TEST");
-	}
-	
-	@AfterClass
-	public static void finish() {
-		if (logger.isLoggable(Level.INFO))
-			logger.info("FINISH BUFFER CONCURRENCY TEST");
-	}
+  @BeforeClass
+  public static void init() {
+    ServerInit.init(BufferConcurrencyTest.class);
 
-	@Test
-	public void testConcourrentPinning() {
-		Buffer buffer = new Buffer();
-		CyclicBarrier startBarrier = new CyclicBarrier(CLIENT_COUNT);
-		CyclicBarrier endBarrier = new CyclicBarrier(CLIENT_COUNT + 1);
+    if (logger.isLoggable(Level.INFO)) logger.info("BEGIN BUFFER CONCURRENCY TEST");
+  }
 
-		// Create multiple threads
-		for (int i = 0; i < CLIENT_COUNT; i++)
-			new Pinner(startBarrier, endBarrier, buffer).start();
+  @AfterClass
+  public static void finish() {
+    if (logger.isLoggable(Level.INFO)) logger.info("FINISH BUFFER CONCURRENCY TEST");
+  }
 
-		// Wait for running
-		try {
-			endBarrier.await();
-		} catch (InterruptedException | BrokenBarrierException e) {
-			e.printStackTrace();
-		}
+  @Test
+  public void testConcourrentPinning() {
+    Buffer buffer = new Buffer();
+    CyclicBarrier startBarrier = new CyclicBarrier(CLIENT_COUNT);
+    CyclicBarrier endBarrier = new CyclicBarrier(CLIENT_COUNT + 1);
 
-		// Check the results
-		Assert.assertEquals("testBufferPinCount failed", buffer.isPinned(), false);
-	}
+    // Create multiple threads
+    for (int i = 0; i < CLIENT_COUNT; i++) new Pinner(startBarrier, endBarrier, buffer).start();
 
-	class Pinner extends BarrierStartRunner {
+    // Wait for running
+    try {
+      endBarrier.await();
+    } catch (InterruptedException | BrokenBarrierException e) {
+      e.printStackTrace();
+    }
 
-		Buffer buf;
+    // Check the results
+    Assert.assertEquals("testBufferPinCount failed", buffer.isPinned(), false);
+  }
 
-		public Pinner(CyclicBarrier startBarrier, CyclicBarrier endBarrier, Buffer buf) {
-			super(startBarrier, endBarrier);
+  class Pinner extends BarrierStartRunner {
 
-			this.buf = buf;
-		}
+    Buffer buf;
 
-		@Override
-		public void runTask() {
-			for (int i = 0; i < 10000; i++) {
-				buf.pin();
-				buf.unpin();
-			}
-		}
+    public Pinner(CyclicBarrier startBarrier, CyclicBarrier endBarrier, Buffer buf) {
+      super(startBarrier, endBarrier);
 
-	}
+      this.buf = buf;
+    }
+
+    @Override
+    public void runTask() {
+      for (int i = 0; i < 10000; i++) {
+        buf.pin();
+        buf.unpin();
+      }
+    }
+  }
 }
