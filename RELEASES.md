@@ -1,5 +1,36 @@
 # Release Notes
 
+## Version 0.4.1 (2021-02-24)
+
+### Enhancements
+
+- Improve `TimerStatistics`. ([#55])
+- Update JUnit to 4.13.2. ([#55])
+
+### Optimizations
+
+- Improve the buffer replacement strategy. ([#55])
+	- Add a reference bit to every buffer so that the clock replacement strategy provides more stable performance.
+- Remove the cached string from `BlockId`. ([#55])
+	- Since `toString` of `BlockId` is rarely called, pre-computing the string not only does not help but also wastes resources.
+
+### Code Refactor
+
+- Refactor duplicated code in `LockTable`. ([#50])
+
+### Bug Fixes
+
+- Correct the author name in the `pom.xml`. ([#48])
+- Resolve #49: bad verification while using aggregation fields after an order by clause. ([#54])
+- Improve `IndexUpdatePlannerTest`. ([#55])
+	- The name of the indices in the test case might be accidently treated as removable temp files.
+- Remove an unstable test case. ([#55])
+
+[#48]: https://github.com/vanilladb/vanillacore/pull/48
+[#50]: https://github.com/vanilladb/vanillacore/pull/50
+[#54]: https://github.com/vanilladb/vanillacore/pull/54
+[#55]: https://github.com/vanilladb/vanillacore/pull/55
+
 ## Version 0.4.0 (2020-02-24)
 
 API changes for stored procedures and bug fixes for B-Tree and recovery. ([#44])

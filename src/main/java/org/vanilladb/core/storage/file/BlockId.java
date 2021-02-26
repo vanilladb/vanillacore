@@ -24,7 +24,6 @@ public class BlockId implements Comparable<BlockId> {
 	private String fileName;
 	private long blkNum;
 	// Optimization: Materialize the toString and hash value
-	private String myString;
 	private int myHashCode;
 
 	/**
@@ -38,9 +37,12 @@ public class BlockId implements Comparable<BlockId> {
 	public BlockId(String fileName, long blkNum) {
 		this.fileName = fileName;
 		this.blkNum = blkNum;
-		// Optimization: Materialize the hash code and the output of toString
-		myString = "[file " + fileName + ", block " + blkNum + "]";
-		myHashCode = myString.hashCode();
+		// Optimization: Materialize the hash code
+		// Note: caching toString result does improve toString performance,
+		// but toString is actually rarely called. It also adds significant
+		// memory overhead to the system. So it would be better to leave
+		// it as what it is now.
+		myHashCode = toString().hashCode();
 	}
 
 	/**
@@ -87,7 +89,7 @@ public class BlockId implements Comparable<BlockId> {
 	
 	@Override
 	public String toString() {
-		return myString;
+		return "[file " + fileName + ", block " + blkNum + "]";
 	}
 	
 	@Override
