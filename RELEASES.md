@@ -163,8 +163,8 @@ All the following changes were merged in [#40].
 - Replaced the basic recovery algorithm with ARIES-like recovery algorithm
 - Added test cases for each component
 - Refactored the whole project
-- Removed most unused code
-- Unified the naming of methods
+  - Removed most unused code
+  - Unified the naming of methods
 
 ## Version 0.1.0
 

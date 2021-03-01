@@ -162,9 +162,9 @@ We have a series of educational slides to make the people who are not familiar w
 
 ```xml
 <dependency>
-<groupId>org.vanilladb</groupId>
-<artifactId>core</artifactId>
-<version>0.4.1</version>
+  <groupId>org.vanilladb</groupId>
+  <artifactId>core</artifactId>	
+  <version>0.4.1</version>
 </dependency>
 ```
 
