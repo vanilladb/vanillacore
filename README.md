@@ -172,12 +172,14 @@ We have a series of educational slides to make the people who are not familiar w
 
 To contribute to VanillaCore, please see [CONTRIBUTING](CONTRIBUTING.md).
 
+We also follow google-java-format. One can run `mvn spotless:apply` to format the code.
+
 ## Contact Information
 
 If you have any question, you can either open an issue here or contact [vanilladb@datalab.cs.nthu.edu.tw](vanilladb@datalab.cs.nthu.edu.tw) directly.
 
 ## License
 
-Copyright 2016-2020 vanilladb.org contributors
+Copyright 2016-2021 vanilladb.org contributors
 
 Licensed under the [Apache License 2.0](LICENSE)
