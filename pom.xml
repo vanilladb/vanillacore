@@ -216,7 +216,7 @@
 			        <style>GOOGLE</style>
 			      </googleJavaFormat>
 			      <licenseHeader>
-			        <content>/* Copyright $YEAR vanilladb.org contributors*/</content>
+			        <file>${basedir}/LICENSE-HEADER</file>
 			      </licenseHeader>
 			    </java>
 			  </configuration>
