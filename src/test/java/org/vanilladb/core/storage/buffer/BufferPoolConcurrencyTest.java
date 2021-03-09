@@ -27,7 +27,7 @@ import org.vanilladb.core.server.ServerInit;
 import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.util.BarrierStartRunner;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 public class BufferPoolConcurrencyTest {
 	private static Logger logger = Logger.getLogger(BufferPoolConcurrencyTest.class.getName());
