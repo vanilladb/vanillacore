@@ -18,7 +18,7 @@ package org.vanilladb.core.query.parse;
 import org.junit.Test;
 import org.vanilladb.core.storage.index.IndexType;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 public class ParserTest {
 	

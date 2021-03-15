@@ -26,7 +26,7 @@ import org.junit.Test;
 import org.vanilladb.core.server.ServerInit;
 import org.vanilladb.core.util.BarrierStartRunner;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 public class BufferConcurrencyTest {
 	private static Logger logger = Logger.getLogger(BufferConcurrencyTest.class.getName());

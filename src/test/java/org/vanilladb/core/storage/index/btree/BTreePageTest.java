@@ -33,7 +33,7 @@ import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.tx.Transaction;
 import org.vanilladb.core.storage.tx.recovery.RecoveryMgr;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 public class BTreePageTest {
 	private static Logger logger = Logger.getLogger(BTreePageTest.class.getName());

@@ -28,7 +28,7 @@ import org.vanilladb.core.sql.Constant;
 import org.vanilladb.core.sql.Type;
 import org.vanilladb.core.util.BarrierStartRunner;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 public class PageConcurrencyTest {
 	private static Logger logger = Logger.getLogger(PageConcurrencyTest.class.getName());

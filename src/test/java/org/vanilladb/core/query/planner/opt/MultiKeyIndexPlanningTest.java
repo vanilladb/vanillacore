@@ -46,7 +46,7 @@ import org.vanilladb.core.storage.metadata.index.IndexInfo;
 import org.vanilladb.core.storage.record.RecordFile;
 import org.vanilladb.core.storage.tx.Transaction;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 public class MultiKeyIndexPlanningTest {
 private static Logger logger = Logger.getLogger(MultiKeyIndexPlanningTest.class.getName());
