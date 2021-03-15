@@ -51,7 +51,7 @@ import org.vanilladb.core.storage.record.RecordId;
 import org.vanilladb.core.storage.tx.Transaction;
 import org.vanilladb.core.storage.tx.recovery.RecoveryMgr;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 public class BTreeIndexTest {
 	private static Logger logger = Logger.getLogger(BTreeIndexTest.class
