@@ -55,14 +55,14 @@ public class BufferPoolConcurrencyTest {
 
 	@Test
 	public void testSwapping() {
-		int clinetCount = BUFFER_COUNT * 2;
+		int clientCount = BUFFER_COUNT * 2;
 		BufferPoolMgr bufferPool = new BufferPoolMgr(BUFFER_COUNT);
-		CyclicBarrier startBarrier = new CyclicBarrier(clinetCount);
-		CyclicBarrier endBarrier = new CyclicBarrier(clinetCount + 1);
-		Pinner[] pinners = new Pinner[clinetCount];
+		CyclicBarrier startBarrier = new CyclicBarrier(clientCount);
+		CyclicBarrier endBarrier = new CyclicBarrier(clientCount + 1);
+		Pinner[] pinners = new Pinner[clientCount];
 
 		// Create threads
-		for (int pid = 0; pid < clinetCount; pid++) {
+		for (int pid = 0; pid < clientCount; pid++) {
 			pinners[pid] = new Pinner(startBarrier, endBarrier, bufferPool,
 					new BlockId(TEST_FILE_NAME, pid));
 			pinners[pid].start();
@@ -76,7 +76,7 @@ public class BufferPoolConcurrencyTest {
 		}
 
 		// Check if there is any exception
-		for (int pid = 0; pid < clinetCount; pid++) {
+		for (int pid = 0; pid < clientCount; pid++) {
 			if (pinners[pid].hasException()) {
 				pinners[pid].printExceptionStackTrace();
 				Assert.fail(pinners[pid].getExceptionDescription());
@@ -86,11 +86,11 @@ public class BufferPoolConcurrencyTest {
 
 	@Test
 	public void testConcourrentPinning() {
-		int clinetCount = BUFFER_COUNT * CLIENT_COUNT_PER_BUFFER;
+		int clientCount = BUFFER_COUNT * CLIENT_COUNT_PER_BUFFER;
 		BufferPoolMgr bufferPool = new BufferPoolMgr(BUFFER_COUNT);
-		CyclicBarrier startBarrier = new CyclicBarrier(clinetCount);
-		CyclicBarrier endBarrier = new CyclicBarrier(clinetCount + 1);
-		RetainBufferPinner[] pinners = new RetainBufferPinner[clinetCount];
+		CyclicBarrier startBarrier = new CyclicBarrier(clientCount);
+		CyclicBarrier endBarrier = new CyclicBarrier(clientCount + 1);
+		RetainBufferPinner[] pinners = new RetainBufferPinner[clientCount];
 
 		// Create multiple threads
 		for (int blkNum = 0; blkNum < BUFFER_COUNT; blkNum++)
