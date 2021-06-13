@@ -1,5 +1,17 @@
 # Release Notes
 
+## Version 0.4.2 (2021-06-13)
+
+### Enhancements
+
+- Upgrade maven plugins. ([#59])
+- Remove deprecated usage of Junit. ([#59])
+- Add a test case for concurrent buffer swapping. ([#60])
+- Update some comments. ([#60])
+
+[#59]: https://github.com/vanilladb/vanillacore/pull/59
+[#60]: https://github.com/vanilladb/vanillacore/pull/60
+
 ## Version 0.4.1 (2021-02-24)
 
 ### Enhancements

@@ -43,6 +43,20 @@ public abstract class BarrierStartRunner extends Thread {
 	public Exception getException() {
 		return exception;
 	}
+	
+	public boolean hasException() {
+		return exception != null;
+	}
+	
+	public String getExceptionDescription() {
+		StringBuilder sb = new StringBuilder();
+		sb.append(String.format("%s: %s", exception.getClass().getName(), exception.getMessage()));
+		return sb.toString();
+	}
+	
+	public void printExceptionStackTrace() {
+		exception.printStackTrace();
+	}
 
 	@Override
 	public void run() {

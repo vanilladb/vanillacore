@@ -21,26 +21,27 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.vanilladb.core.server.ServerInit;
+import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.util.BarrierStartRunner;
-
-import junit.framework.Assert;
 
 public class BufferPoolConcurrencyTest {
 	private static Logger logger = Logger.getLogger(BufferPoolConcurrencyTest.class.getName());
 
 	private static final int CLIENT_COUNT_PER_BUFFER = 100;
 	private static final int BUFFER_COUNT = 10;
-	private static final int TOTAL_CLIENT_COUNT = BUFFER_COUNT * CLIENT_COUNT_PER_BUFFER;
+	private static final int PIN_PER_CLIENT = 1000;
 
 	private static final String TEST_FILE_NAME = "_tempbufferpooltest";
 
 	@BeforeClass
 	public static void init() {
-		ServerInit.init(BufferPoolConcurrencyTest.class);
+		String dbName = ServerInit.resetDb(BufferPoolConcurrencyTest.class);
+		VanillaDb.initFileMgr(dbName);
 		
 		if (logger.isLoggable(Level.INFO))
 			logger.info("BEGIN BUFFER POOL CONCURRENCY TEST");
@@ -53,16 +54,48 @@ public class BufferPoolConcurrencyTest {
 	}
 
 	@Test
-	public void testConcourrentPinning() {
+	public void testSwapping() {
+		int clientCount = BUFFER_COUNT * 2;
 		BufferPoolMgr bufferPool = new BufferPoolMgr(BUFFER_COUNT);
-		CyclicBarrier startBarrier = new CyclicBarrier(TOTAL_CLIENT_COUNT);
-		CyclicBarrier endBarrier = new CyclicBarrier(TOTAL_CLIENT_COUNT + 1);
-		Pinner[] pinners = new Pinner[TOTAL_CLIENT_COUNT];
+		CyclicBarrier startBarrier = new CyclicBarrier(clientCount);
+		CyclicBarrier endBarrier = new CyclicBarrier(clientCount + 1);
+		Pinner[] pinners = new Pinner[clientCount];
+
+		// Create threads
+		for (int pid = 0; pid < clientCount; pid++) {
+			pinners[pid] = new Pinner(startBarrier, endBarrier, bufferPool,
+					new BlockId(TEST_FILE_NAME, pid));
+			pinners[pid].start();
+		}
+
+		// Wait for all the clients
+		try {
+			endBarrier.await();
+		} catch (InterruptedException | BrokenBarrierException e) {
+			e.printStackTrace();
+		}
+
+		// Check if there is any exception
+		for (int pid = 0; pid < clientCount; pid++) {
+			if (pinners[pid].hasException()) {
+				pinners[pid].printExceptionStackTrace();
+				Assert.fail(pinners[pid].getExceptionDescription());
+			}
+		}
+	}
+
+	@Test
+	public void testConcourrentPinning() {
+		int clientCount = BUFFER_COUNT * CLIENT_COUNT_PER_BUFFER;
+		BufferPoolMgr bufferPool = new BufferPoolMgr(BUFFER_COUNT);
+		CyclicBarrier startBarrier = new CyclicBarrier(clientCount);
+		CyclicBarrier endBarrier = new CyclicBarrier(clientCount + 1);
+		RetainBufferPinner[] pinners = new RetainBufferPinner[clientCount];
 
 		// Create multiple threads
 		for (int blkNum = 0; blkNum < BUFFER_COUNT; blkNum++)
 			for (int i = 0; i < CLIENT_COUNT_PER_BUFFER; i++) {
-				pinners[blkNum * CLIENT_COUNT_PER_BUFFER + i] = new Pinner(startBarrier, endBarrier, bufferPool,
+				pinners[blkNum * CLIENT_COUNT_PER_BUFFER + i] = new RetainBufferPinner(startBarrier, endBarrier, bufferPool,
 						new BlockId(TEST_FILE_NAME, blkNum));
 				pinners[blkNum * CLIENT_COUNT_PER_BUFFER + i].start();
 			}
@@ -81,16 +114,15 @@ public class BufferPoolConcurrencyTest {
 			for (int i = 0; i < CLIENT_COUNT_PER_BUFFER; i++) {
 				
 				// Check if there is any exception
-				if (pinners[blkNum * CLIENT_COUNT_PER_BUFFER + i].getException() != null)
-					Assert.fail("Exception happens: " + pinners[blkNum * CLIENT_COUNT_PER_BUFFER + i]
-							.getException().getMessage());
+				if (pinners[blkNum * CLIENT_COUNT_PER_BUFFER + i].hasException()) {
+					pinners[blkNum * CLIENT_COUNT_PER_BUFFER + i].printExceptionStackTrace();
+					Assert.fail(pinners[blkNum * CLIENT_COUNT_PER_BUFFER + i].getExceptionDescription());
+				}
 				
 				// The threads using the same block id should get the
 				// same buffer
 				if (buffer != pinners[blkNum * CLIENT_COUNT_PER_BUFFER + i].buf)
-					Assert.fail("Thread no." + i + " for block no." + blkNum + " get a wrong buffer");
-				
-				
+					Assert.fail("Thread no." + i + " for block no." + blkNum + " get a wrong buffer");	
 			}
 		}
 	}
@@ -110,12 +142,64 @@ public class BufferPoolConcurrencyTest {
 
 		@Override
 		public void runTask() {
-			for (int i = 0; i < 100; i++) {
-				buf = bufferPool.pin(blk);
-				bufferPool.unpin(buf);
+			try {
+				for (int i = 0; i < PIN_PER_CLIENT; i++) {
+					pin();
+					
+					// Check if the buffer contains the block the thread wants
+					// This may fail when the buffers are not protected while swapping
+					if (!buf.block().equals(blk)) {
+						throw new RuntimeException("swapping fails for blk: " + blk);
+					}
+					
+					unpin();
+				}
+			} finally {
+				synchronized (bufferPool) {
+					bufferPool.notifyAll();
+				}
 			}
+		}
+		
+		private void pin() {
 			buf = bufferPool.pin(blk);
+			
+			// Handles the case of not enough buffer
+			while (buf == null) {
+				synchronized (bufferPool) {
+					try {
+						bufferPool.wait();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+				buf = bufferPool.pin(blk);
+			}
+		}
+		
+		private void unpin() {
+			bufferPool.unpin(buf);
+			buf = null;
+			synchronized (bufferPool) {
+				bufferPool.notifyAll();
+			}
+		}
+	}
+	
+	class RetainBufferPinner extends Pinner {
+		
+		public RetainBufferPinner(CyclicBarrier startBarrier, CyclicBarrier endBarrier,
+				BufferPoolMgr bufferPool, BlockId blk) {
+			super(startBarrier, endBarrier, bufferPool, blk);
 		}
 
+		@Override
+		public void runTask() {
+			super.runTask();
+			
+			// Pin one more time to retain the buffer
+			buf = bufferPool.pin(blk);
+		}
+		
 	}
 }
