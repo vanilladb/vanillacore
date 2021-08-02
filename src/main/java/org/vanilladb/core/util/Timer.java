@@ -43,6 +43,21 @@ public class Timer {
 	private static class SubTimer {
 		private long start = 0, startTimes = 0, totalTime = 0, count = 0;
 
+		public void setStartTime(long start) {
+			if (startTimes == 0)
+				this.start = start;
+
+			startTimes++;
+			count++;
+		}
+		
+		public void setStopTime(long stop) {
+			startTimes--;
+
+			if (startTimes == 0)
+				totalTime += (stop - start) / 1000;
+		}
+		
 		public void startTimer() {
 			if (startTimes == 0)
 				start = System.nanoTime();
@@ -76,7 +91,23 @@ public class Timer {
 		subTimers.clear();
 		componenents.clear();
 	}
+	
+	public void setStartComponentTimer(Object component,long start) {
+		SubTimer timer = subTimers.get(component);
+		if (timer == null) {
+			timer = new SubTimer();
+			subTimers.put(component, timer);
+			componenents.add(component);
+		}
+		timer.setStartTime(start);
+	}
 
+	public void setStopComponentTimer(Object component, long stop) {
+		SubTimer timer = subTimers.get(component);
+		if (timer != null)
+			timer.setStopTime(stop);
+	}
+	
 	public void startComponentTimer(Object component) {
 		SubTimer timer = subTimers.get(component);
 		if (timer == null) {
@@ -106,6 +137,11 @@ public class Timer {
 
 	public List<Object> getComponents() {
 		return new LinkedList<Object>(componenents);
+	}
+	
+	// Where tx started doesn't have timer, so we need to pass the start time into SPTask
+	public void setStartExecution(long start) {
+		setStartComponentTimer(EXE_TIME_KEY, start);
 	}
 
 	public void startExecution() {
