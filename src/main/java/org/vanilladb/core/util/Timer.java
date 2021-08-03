@@ -91,23 +91,7 @@ public class Timer {
 		subTimers.clear();
 		componenents.clear();
 	}
-	
-	public void setStartComponentTimer(Object component,long start) {
-		SubTimer timer = subTimers.get(component);
-		if (timer == null) {
-			timer = new SubTimer();
-			subTimers.put(component, timer);
-			componenents.add(component);
-		}
-		timer.setStartTime(start);
-	}
 
-	public void setStopComponentTimer(Object component, long stop) {
-		SubTimer timer = subTimers.get(component);
-		if (timer != null)
-			timer.setStopTime(stop);
-	}
-	
 	public void startComponentTimer(Object component) {
 		SubTimer timer = subTimers.get(component);
 		if (timer == null) {
@@ -117,11 +101,27 @@ public class Timer {
 		}
 		timer.startTimer();
 	}
+	
+	public void startComponentTimer(Object component,long startTime) {
+		SubTimer timer = subTimers.get(component);
+		if (timer == null) {
+			timer = new SubTimer();
+			subTimers.put(component, timer);
+			componenents.add(component);
+		}
+		timer.setStartTime(startTime);
+	}
 
 	public void stopComponentTimer(Object component) {
 		SubTimer timer = subTimers.get(component);
 		if (timer != null)
 			timer.stopTimer();
+	}
+	
+	public void stopComponentTimer(Object component, long stopTime) {
+		SubTimer timer = subTimers.get(component);
+		if (timer != null)
+			timer.setStopTime(stopTime);
 	}
 
 	public long getComponentTime(Object component) {
@@ -140,8 +140,8 @@ public class Timer {
 	}
 	
 	// Where tx started doesn't have timer, so we need to pass the start time into SPTask
-	public void setStartExecution(long start) {
-		setStartComponentTimer(EXE_TIME_KEY, start);
+	public void setStartExecutionTime(long start) {
+		startComponentTimer(EXE_TIME_KEY, start);
 	}
 
 	public void startExecution() {
