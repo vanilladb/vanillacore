@@ -73,6 +73,12 @@ public class Timer {
 				totalTime += (System.nanoTime() - start) / 1000;
 		}
 
+		// MODIFIED: Add method to set timer's time directly
+		public void setTimer(long time_interval){
+			totalTime = time_interval;
+			count++;
+		}
+
 		public long getTotalTime() {
 			return totalTime;
 		}
@@ -129,6 +135,17 @@ public class Timer {
 		if (timer == null)
 			return -1;
 		return timer.getTotalTime();
+	}
+
+	// MODIFIED: Add method to record given time
+	public void recordTime(Object component, long time) {
+		SubTimer timer = subTimers.get(component);
+		if (timer == null) {
+			timer = new SubTimer();
+			timer.setTimer(time);
+			subTimers.put(component, timer);
+			componenents.add(component);
+		}
 	}
 
 	public long getComponentCount(Object component) {
