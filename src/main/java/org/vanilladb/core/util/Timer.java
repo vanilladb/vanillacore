@@ -74,8 +74,8 @@ public class Timer {
 		}
 
 		// MODIFIED: Add method to set timer's time directly
-		public void setTimer(long time_interval){
-			totalTime = time_interval;
+		public void setTimer(long timeInterval){
+			totalTime += timeInterval;
 			count++;
 		}
 
