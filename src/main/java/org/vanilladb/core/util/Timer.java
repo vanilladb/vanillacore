@@ -30,6 +30,13 @@ public class Timer {
 			return new Timer();
 		}
 	};
+	
+	private static final ThreadLocal<Timer> LOCAL_CPU_TIMER = new ThreadLocal<Timer>() {
+		@Override
+		protected Timer initialValue() {
+			return new Timer();
+		}
+	};
 
 	/**
 	 * Get the timer local to this thread.
@@ -38,6 +45,15 @@ public class Timer {
 	 */
 	public static Timer getLocalTimer() {
 		return LOCAL_TIMER.get();
+	}
+	
+	/**
+	 * Get the timer local to this thread.
+	 * 
+	 * @return the local timer
+	 */
+	public static Timer getLocalCpuTimer() {
+		return LOCAL_CPU_TIMER.get();
 	}
 
 	private static class SubTimer {
@@ -142,6 +158,10 @@ public class Timer {
 	// Where tx started doesn't have timer, so we need to pass the start time into SPTask
 	public void setStartExecutionTime(long start) {
 		startComponentTimer(EXE_TIME_KEY, start);
+	}
+	
+	public void setStopExecutionTime(long stop) {
+		stopComponentTimer(EXE_TIME_KEY, stop);
 	}
 
 	public void startExecution() {
