@@ -30,6 +30,7 @@ import org.vanilladb.core.storage.file.io.IoAllocator;
 import org.vanilladb.core.storage.file.io.IoBuffer;
 import org.vanilladb.core.storage.file.io.IoChannel;
 import org.vanilladb.core.util.CoreProperties;
+import org.vanilladb.core.util.DiskIOCounter;
 
 /**
  * The VanillaDb file manager. The database system stores its data as files
@@ -143,6 +144,9 @@ public class FileMgr {
 
 			// read a block from file
 			fileChannel.read(buffer, blk.number() * BLOCK_SIZE);
+			
+			// for controller
+			DiskIOCounter.getLocalIOCounter().add();
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new RuntimeException("cannot read block " + blk);
@@ -166,6 +170,9 @@ public class FileMgr {
 
 			// write the block to the file
 			fileChannel.write(buffer, blk.number() * BLOCK_SIZE);
+			
+			// for controller
+			DiskIOCounter.getLocalIOCounter().add();
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new RuntimeException("cannot write block" + blk);
