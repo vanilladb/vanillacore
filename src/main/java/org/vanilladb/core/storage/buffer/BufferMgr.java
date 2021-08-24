@@ -29,6 +29,7 @@ import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.tx.Transaction;
 import org.vanilladb.core.storage.tx.TransactionLifecycleListener;
 import org.vanilladb.core.util.CoreProperties;
+import org.vanilladb.core.util.Timer;
 
 /**
  * The publicly-accessible buffer manager. A buffer manager wraps a
@@ -86,7 +87,10 @@ public class BufferMgr implements TransactionLifecycleListener {
 
 	@Override
 	public void onTxCommit(Transaction tx) {
+		// MODIFIED:
+		Timer.getLocalTimer().startComponentTimer("Unpin");
 		unpinAll(tx);
+		Timer.getLocalTimer().stopComponentTimer("Unpin");
 	}
 
 	@Override

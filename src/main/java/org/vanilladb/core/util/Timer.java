@@ -55,7 +55,8 @@ public class Timer {
 			startTimes--;
 
 			if (startTimes == 0)
-				totalTime += (stop - start) / 1000;
+				// totalTime += (stop - start) / 1000;
+				totalTime += (stop - start);
 		}
 		
 		public void startTimer() {
@@ -70,12 +71,19 @@ public class Timer {
 			startTimes--;
 
 			if (startTimes == 0)
-				totalTime += (System.nanoTime() - start) / 1000;
+				//totalTime += (System.nanoTime() - start) / 1000;
+				totalTime += (System.nanoTime() - start);
 		}
 
 		// MODIFIED: Add method to set timer's time directly
 		public void setTimer(long timeInterval){
 			totalTime += timeInterval;
+			count++;
+		}
+
+		// MODIFIED: Add method to set time stamp directly
+		public void setTimestamp(long timestamp){
+			totalTime = timestamp;
 			count++;
 		}
 
@@ -91,11 +99,11 @@ public class Timer {
 	private Map<Object, SubTimer> subTimers = new HashMap<Object, SubTimer>();
 	// We want to preserve the order of creating timers so that
 	// we use a list to record the order.
-	private List<Object> componenents = new LinkedList<Object>();
+	private List<Object> components = new LinkedList<Object>();
 
 	public void reset() {
 		subTimers.clear();
-		componenents.clear();
+		components.clear();
 	}
 
 	public void startComponentTimer(Object component) {
@@ -103,7 +111,7 @@ public class Timer {
 		if (timer == null) {
 			timer = new SubTimer();
 			subTimers.put(component, timer);
-			componenents.add(component);
+			components.add(component);
 		}
 		timer.startTimer();
 	}
@@ -113,7 +121,7 @@ public class Timer {
 		if (timer == null) {
 			timer = new SubTimer();
 			subTimers.put(component, timer);
-			componenents.add(component);
+			components.add(component);
 		}
 		timer.setStartTime(startTime);
 	}
@@ -142,10 +150,21 @@ public class Timer {
 		SubTimer timer = subTimers.get(component);
 		if (timer == null) {
 			timer = new SubTimer();
-			timer.setTimer(time);
 			subTimers.put(component, timer);
-			componenents.add(component);
+			components.add(component);
 		}
+		timer.setTimer(time);
+	}
+
+	// MODIFIED: Add method to record current timestamp
+	public void recordCurrentTime(Object component){
+		SubTimer timer = subTimers.get(component);
+		if(timer == null){
+			timer = new SubTimer();
+			subTimers.put(component, timer);
+			components.add(component);
+		}
+		timer.setTimestamp(System.nanoTime());
 	}
 
 	public long getComponentCount(Object component) {
@@ -153,7 +172,11 @@ public class Timer {
 	}
 
 	public List<Object> getComponents() {
-		return new LinkedList<Object>(componenents);
+		return new LinkedList<Object>(components);
+	}
+
+	public static long getSystemTime(){
+		return System.nanoTime();
 	}
 	
 	// Where tx started doesn't have timer, so we need to pass the start time into SPTask
@@ -181,7 +204,7 @@ public class Timer {
 		StringBuilder sb = new StringBuilder();
 
 		sb.append("==============================\n");
-		for (Object com : componenents) {
+		for (Object com : components) {
 			if (!com.equals("Execution Time")) {
 				sb.append(String.format("%-40s: %d us, with %d counts\n", com, subTimers.get(com).getTotalTime(),
 						subTimers.get(com).getCount()));
