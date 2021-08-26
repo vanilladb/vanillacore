@@ -130,7 +130,7 @@ public class TimerStatistics {
 		stat.addTime(time);
 	}
 
-	static void add(Timer timer) {
+	static void add(TransactionProfiler timer) {
 		if (IS_REPORTING.get()) {
 			for (Object com : timer.getComponents()) {
 				addTime(com, timer.getComponentTime(com));

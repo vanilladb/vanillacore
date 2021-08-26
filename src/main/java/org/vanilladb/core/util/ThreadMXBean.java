@@ -9,4 +9,8 @@ public class ThreadMXBean {
 	public static long getCpuTime() {
 		return threadBean.getCurrentThreadCpuTime();
 	}
+	
+	public static long getThreadCount() {
+		return threadBean.getThreadCount();
+	}
 }
