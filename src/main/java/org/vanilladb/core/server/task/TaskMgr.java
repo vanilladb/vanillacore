@@ -23,7 +23,6 @@ import org.vanilladb.core.util.CoreProperties;
 /**
  * The task manager of VanillaCore. This manager is responsible for maintaining
  * the thread pool of worker thread.
- * 
  */
 public class TaskMgr {
 	
