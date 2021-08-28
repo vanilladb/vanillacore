@@ -130,9 +130,10 @@ public class TransactionProfiler {
 	public void reset() {
 		subProfilers.clear();
 		componenents.clear();
+		ioCount = 0;
 	}
 
-	public void increment() {
+	public void incrementIoCount() {
 		ioCount += 1;
 	}
 	
