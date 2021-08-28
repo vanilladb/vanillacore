@@ -124,12 +124,12 @@ public class TransactionProfiler {
 	private Map<Object, SubProfiler> subProfilers = new HashMap<Object, SubProfiler>();
 	// We want to preserve the order of creating profilers so that
 	// we use a list to record the order.
-	private List<Object> componenents = new LinkedList<Object>();	
+	private List<Object> components = new LinkedList<Object>();	
 	private int ioCount = 0;
 
 	public void reset() {
 		subProfilers.clear();
-		componenents.clear();
+		components.clear();
 		ioCount = 0;
 	}
 
@@ -142,7 +142,7 @@ public class TransactionProfiler {
 		if (profiler == null) {
 			profiler = new SubProfiler();
 			subProfilers.put(component, profiler);
-			componenents.add(component);
+			components.add(component);
 		}
 		profiler.startProfiler(ioCount);
 	}
@@ -152,7 +152,7 @@ public class TransactionProfiler {
 		if (profiler == null) {
 			profiler = new SubProfiler();
 			subProfilers.put(component, profiler);
-			componenents.add(component);
+			components.add(component);
 		}
 		profiler.setStartProfile(startTime);
 	}
@@ -162,7 +162,7 @@ public class TransactionProfiler {
 		if (profiler == null) {
 			profiler = new SubProfiler();
 			subProfilers.put(component, profiler);
-			componenents.add(component);
+			components.add(component);
 		}
 
 		profiler.setStartProfile(startTime, cpuStartTime, ioCount);
@@ -212,7 +212,7 @@ public class TransactionProfiler {
 	}
 
 	public List<Object> getComponents() {
-		return new LinkedList<Object>(componenents);
+		return new LinkedList<Object>(components);
 	}
 	
 	public void setStartExecution(long start) {
@@ -259,7 +259,7 @@ public class TransactionProfiler {
 		StringBuilder sb = new StringBuilder();
 
 		sb.append("==============================\n");
-		for (Object com : componenents) {
+		for (Object com : components) {
 			if (!com.equals("Total")) {
 				if(!ENABLE_CPU_TIMER && !ENABLE_DISKIO_COUNTER)
 					sb.append(String.format("%-40s: %d us, with %d counts\n", com, subProfilers.get(com).getTotalTime(),
