@@ -58,13 +58,29 @@ public class TransactionProfiler {
 		private long cpuStart = 0, totalCpuTime = 0;
 		private long ioStart = 0, totalIOCount = 0;
 		
+		public SubProfiler() {
+			// Do nothing
+		}
+		
+		public SubProfiler(SubProfiler subProfiler) {
+			this.count = subProfiler.count;
+			this.startTimes = subProfiler.startTimes;
+			this.timeStart = subProfiler.timeStart;
+			this.totalTime = subProfiler.totalTime;
+			this.cpuStart = subProfiler.cpuStart;
+			this.totalCpuTime = subProfiler.totalCpuTime;
+			this.ioStart = subProfiler.ioStart;
+			this.totalIOCount = subProfiler.totalIOCount;
+		}
+		
 		public void startProfiler(int ioStart) {
-			if (startTimes == 0)
+			if (startTimes == 0) {
 				timeStart = System.nanoTime();
-			if (ENABLE_CPU_TIMER)
-				cpuStart = ThreadMXBean.getCpuTime();
-			if (ENABLE_DISKIO_COUNTER)
-				this.ioStart = ioStart;	
+				if (ENABLE_CPU_TIMER)
+					cpuStart = ThreadMXBean.getCpuTime();
+				if (ENABLE_DISKIO_COUNTER)
+					this.ioStart = ioStart;
+			}
 			startTimes++;
 			count++;
 		}
@@ -79,7 +95,7 @@ public class TransactionProfiler {
 					this.totalIOCount = ioStop - ioStart;
 			}
 		}
-
+		
 		public long getTotalTime() {
 			return totalTime;
 		}
@@ -104,11 +120,15 @@ public class TransactionProfiler {
 	private int ioCount = 0;
 
 	public TransactionProfiler(TransactionProfiler profiler) {
-		// TODO : clone
-		LOCAL_PROFILER.set(profiler);
+		for (Map.Entry<Object, SubProfiler> subProfiler : profiler.subProfilers.entrySet()) {
+			this.subProfilers.put(subProfiler.getKey(), new SubProfiler(subProfiler.getValue()));
+		}
+		this.components = new LinkedList<>(profiler.components);
+		this.ioCount = profiler.ioCount;
 	}
 	
 	private TransactionProfiler() {
+		// Do nothing
 	}
 
 	public void reset() {
