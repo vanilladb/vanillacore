@@ -23,8 +23,8 @@ import java.util.Map;
 public class TransactionProfiler {
 
 	private static final String TOTAL_KEY = "Total";
-	private static final boolean ENABLE_CPU_TIMER = true;
-	private static final boolean ENABLE_DISKIO_COUNTER = true;
+	public static final boolean ENABLE_CPU_TIMER = true;
+	public static final boolean ENABLE_DISKIO_COUNTER = true;
 
 	private static final ThreadLocal<TransactionProfiler> LOCAL_PROFILER = new ThreadLocal<TransactionProfiler>() {
 		@Override
@@ -41,6 +41,16 @@ public class TransactionProfiler {
 	public static TransactionProfiler getLocalProfiler() {
 		return LOCAL_PROFILER.get();
 	}
+	
+	public static TransactionProfiler takeOut() {
+		TransactionProfiler profiler = LOCAL_PROFILER.get();
+		LOCAL_PROFILER.set(new TransactionProfiler());
+		return profiler;
+	}
+	
+	public static void setProfiler(TransactionProfiler profiler) {
+		LOCAL_PROFILER.set(profiler);
+	}
 
 	private static class SubProfiler {
 		private int count = 0, startTimes = 0;
@@ -48,47 +58,29 @@ public class TransactionProfiler {
 		private long cpuStart = 0, totalCpuTime = 0;
 		private long ioStart = 0, totalIOCount = 0;
 		
-		public void setStartProfile(long start) {
-			if (startTimes == 0) 
-				this.timeStart = start;
-			startTimes++;
-			count++;
+		public SubProfiler() {
+			// Do nothing
 		}
 		
-		public void setStartProfile(long start, long cpuStart, int ioStart) {
-			if (startTimes == 0) {
-				this.timeStart = start;
-				this.cpuStart = cpuStart;
-				if (ENABLE_DISKIO_COUNTER)
-					this.ioStart = ioStart;
-			}
-			startTimes++;
-			count++;
-		}
-		
-		public void setStopProfile(long stop) {
-			startTimes--;
-			if (startTimes == 0)
-				totalTime += (stop - cpuStart) / 1000;
-		}
-		
-		public void setStopProfile(long stop, long cpuStop, int ioStop) {
-			startTimes--;
-			if (startTimes == 0) {
-				totalTime += (stop - timeStart) / 1000;
-				totalCpuTime += (cpuStop - cpuStart) / 1000;
-				if (ENABLE_DISKIO_COUNTER)
-					totalIOCount += ioStop - ioStart;
-			}	
+		public SubProfiler(SubProfiler subProfiler) {
+			this.count = subProfiler.count;
+			this.startTimes = subProfiler.startTimes;
+			this.timeStart = subProfiler.timeStart;
+			this.totalTime = subProfiler.totalTime;
+			this.cpuStart = subProfiler.cpuStart;
+			this.totalCpuTime = subProfiler.totalCpuTime;
+			this.ioStart = subProfiler.ioStart;
+			this.totalIOCount = subProfiler.totalIOCount;
 		}
 		
 		public void startProfiler(int ioStart) {
-			if (startTimes == 0)
+			if (startTimes == 0) {
 				timeStart = System.nanoTime();
-			if (ENABLE_CPU_TIMER)
-				cpuStart = ThreadMXBean.getCpuTime();
-			if (ENABLE_DISKIO_COUNTER)
-				this.ioStart = ioStart;	
+				if (ENABLE_CPU_TIMER)
+					cpuStart = ThreadMXBean.getCpuTime();
+				if (ENABLE_DISKIO_COUNTER)
+					this.ioStart = ioStart;
+			}
 			startTimes++;
 			count++;
 		}
@@ -103,7 +95,7 @@ public class TransactionProfiler {
 					this.totalIOCount = ioStop - ioStart;
 			}
 		}
-
+		
 		public long getTotalTime() {
 			return totalTime;
 		}
@@ -124,12 +116,24 @@ public class TransactionProfiler {
 	private Map<Object, SubProfiler> subProfilers = new HashMap<Object, SubProfiler>();
 	// We want to preserve the order of creating profilers so that
 	// we use a list to record the order.
-	private List<Object> componenents = new LinkedList<Object>();	
+	private List<Object> components = new LinkedList<Object>();	
 	private int ioCount = 0;
+
+	public TransactionProfiler(TransactionProfiler profiler) {
+		for (Map.Entry<Object, SubProfiler> subProfiler : profiler.subProfilers.entrySet()) {
+			this.subProfilers.put(subProfiler.getKey(), new SubProfiler(subProfiler.getValue()));
+		}
+		this.components = new LinkedList<>(profiler.components);
+		this.ioCount = profiler.ioCount;
+	}
+	
+	private TransactionProfiler() {
+		// Do nothing
+	}
 
 	public void reset() {
 		subProfilers.clear();
-		componenents.clear();
+		components.clear();
 		ioCount = 0;
 	}
 
@@ -142,48 +146,15 @@ public class TransactionProfiler {
 		if (profiler == null) {
 			profiler = new SubProfiler();
 			subProfilers.put(component, profiler);
-			componenents.add(component);
+			components.add(component);
 		}
 		profiler.startProfiler(ioCount);
-	}
-	
-	public void startComponentProfiler(Object component, long startTime) {
-		SubProfiler profiler = subProfilers.get(component);
-		if (profiler == null) {
-			profiler = new SubProfiler();
-			subProfilers.put(component, profiler);
-			componenents.add(component);
-		}
-		profiler.setStartProfile(startTime);
-	}
-	
-	public void startComponentProfiler(Object component, long startTime, long cpuStartTime) {
-		SubProfiler profiler = subProfilers.get(component);
-		if (profiler == null) {
-			profiler = new SubProfiler();
-			subProfilers.put(component, profiler);
-			componenents.add(component);
-		}
-
-		profiler.setStartProfile(startTime, cpuStartTime, ioCount);
 	}
 
 	public void stopComponentProfiler(Object component) {
 		SubProfiler profiler = subProfilers.get(component);
 		if (profiler != null)
 			profiler.stopProfiler(ioCount);
-	}
-	
-	public void stopComponentProfiler(Object component, long stopTime) {
-		SubProfiler profiler = subProfilers.get(component);
-		if (profiler != null)
-			profiler.setStopProfile(stopTime);
-	}
-
-	public void stopComponentProfiler(Object component, long stopTime, long cpuStopTime) {
-		SubProfiler profiler = subProfilers.get(component);
-		if (profiler != null)
-			profiler.setStopProfile(stopTime, cpuStopTime, ioCount);
 	}
 
 	public long getComponentTime(Object component) {
@@ -212,23 +183,7 @@ public class TransactionProfiler {
 	}
 
 	public List<Object> getComponents() {
-		return new LinkedList<Object>(componenents);
-	}
-	
-	public void setStartExecution(long start) {
-		startComponentProfiler(TOTAL_KEY, start);
-	}
-	
-	public void setStopExecution(long stop) {
-		stopComponentProfiler(TOTAL_KEY, stop);
-	}
-	
-	public void setStartExecution(long start, long cpuStart) {
-		startComponentProfiler(TOTAL_KEY, start, cpuStart);
-	}
-	
-	public void setStopExecution(long stop, long cpuStop) {
-		stopComponentProfiler(TOTAL_KEY, stop, cpuStop);
+		return new LinkedList<Object>(components);
 	}
 
 	public void startExecution() {
@@ -259,7 +214,7 @@ public class TransactionProfiler {
 		StringBuilder sb = new StringBuilder();
 
 		sb.append("==============================\n");
-		for (Object com : componenents) {
+		for (Object com : components) {
 			if (!com.equals("Total")) {
 				if(!ENABLE_CPU_TIMER && !ENABLE_DISKIO_COUNTER)
 					sb.append(String.format("%-40s: %d us, with %d counts\n", com, subProfilers.get(com).getTotalTime(),

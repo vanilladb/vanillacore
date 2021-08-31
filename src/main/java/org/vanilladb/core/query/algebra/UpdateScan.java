@@ -19,7 +19,7 @@ import org.vanilladb.core.sql.Constant;
 import org.vanilladb.core.storage.record.RecordId;
 
 /**
- * The interface implemented by all updateable scans.
+ * The interface implemented by all updatable scans.
  */
 public interface UpdateScan extends Scan {
 	/**
