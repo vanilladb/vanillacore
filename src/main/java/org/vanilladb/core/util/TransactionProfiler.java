@@ -116,8 +116,8 @@ public class TransactionProfiler {
 			return count;
 		}
 		
-		public void checkCrossThreads() {
-			if (startTimes > 0)
+		public void checkCrossThreads(Thread thread) {	
+			if (startTimes > 0 && Thread.currentThread() != thread)
 				isCrossThreads = true;
 		}
 	}
@@ -127,10 +127,12 @@ public class TransactionProfiler {
 	// we use a list to record the order.
 	private List<Object> components = new LinkedList<Object>();	
 	private int ioCount = 0;
+	// For checking profiler is pass to different thread
+	private Thread thread;
 
 	public TransactionProfiler(TransactionProfiler profiler) {
 		for (Map.Entry<Object, SubProfiler> subProfiler : profiler.subProfilers.entrySet()) {
-			subProfiler.getValue().checkCrossThreads();
+			subProfiler.getValue().checkCrossThreads(thread);
 			this.subProfilers.put(subProfiler.getKey(), new SubProfiler(subProfiler.getValue()));
 		}
 		this.components = new LinkedList<>(profiler.components);
@@ -163,8 +165,11 @@ public class TransactionProfiler {
 
 	public void stopComponentProfiler(Object component) {
 		SubProfiler profiler = subProfilers.get(component);
-		if (profiler != null)
+		if (profiler != null) {
 			profiler.stopProfiler(ioCount);
+			profiler.checkCrossThreads(thread);
+		}
+			
 	}
 
 	public long getComponentTime(Object component) {
