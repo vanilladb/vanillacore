@@ -57,6 +57,7 @@ public class TransactionProfiler {
 		private long timeStart = 0, totalTime = 0;
 		private long cpuStart = 0, totalCpuTime = 0;
 		private long ioStart = 0, totalIOCount = 0;
+		private boolean isCrossThreads = false;
 		
 		public SubProfiler() {
 			// Do nothing
@@ -71,6 +72,7 @@ public class TransactionProfiler {
 			this.totalCpuTime = subProfiler.totalCpuTime;
 			this.ioStart = subProfiler.ioStart;
 			this.totalIOCount = subProfiler.totalIOCount;
+			this.isCrossThreads = subProfiler.isCrossThreads;
 		}
 		
 		public void startProfiler(int ioStart) {
@@ -101,6 +103,8 @@ public class TransactionProfiler {
 		}
 		
 		public long getTotalCpuTime() {
+			if(isCrossThreads)
+				return -1;
 			return totalCpuTime;
 		}
 		
@@ -110,6 +114,11 @@ public class TransactionProfiler {
 
 		public long getCount() {
 			return count;
+		}
+		
+		public void checkCrossThreads() {
+			if (startTimes > 0)
+				isCrossThreads = true;
 		}
 	}
 
@@ -121,6 +130,7 @@ public class TransactionProfiler {
 
 	public TransactionProfiler(TransactionProfiler profiler) {
 		for (Map.Entry<Object, SubProfiler> subProfiler : profiler.subProfilers.entrySet()) {
+			subProfiler.getValue().checkCrossThreads();
 			this.subProfilers.put(subProfiler.getKey(), new SubProfiler(subProfiler.getValue()));
 		}
 		this.components = new LinkedList<>(profiler.components);
