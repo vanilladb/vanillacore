@@ -57,13 +57,14 @@ public class TransactionProfiler {
 		private long timeStart = 0, totalTime = 0;
 		private long cpuStart = 0, totalCpuTime = 0;
 		private long ioStart = 0, totalIOCount = 0;
+		private Thread thread;
 		private boolean isCrossThreads = false;
 		
-		public SubProfiler() {
+		private SubProfiler() {
 			// Do nothing
 		}
 		
-		public SubProfiler(SubProfiler subProfiler) {
+		private SubProfiler(SubProfiler subProfiler) {
 			this.count = subProfiler.count;
 			this.startTimes = subProfiler.startTimes;
 			this.timeStart = subProfiler.timeStart;
@@ -72,14 +73,16 @@ public class TransactionProfiler {
 			this.totalCpuTime = subProfiler.totalCpuTime;
 			this.ioStart = subProfiler.ioStart;
 			this.totalIOCount = subProfiler.totalIOCount;
-			this.isCrossThreads = subProfiler.isCrossThreads;
+			this.thread = subProfiler.thread;
 		}
 		
-		public void startProfiler(int ioStart) {
+		private void startProfiler(int ioStart) {
 			if (startTimes == 0) {
 				timeStart = System.nanoTime();
-				if (ENABLE_CPU_TIMER)
+				if (ENABLE_CPU_TIMER) {
+					thread = Thread.currentThread();
 					cpuStart = ThreadMXBean.getCpuTime();
+				}
 				if (ENABLE_DISKIO_COUNTER)
 					this.ioStart = ioStart;
 			}
@@ -87,38 +90,40 @@ public class TransactionProfiler {
 			count++;
 		}
 
-		public void stopProfiler(int ioStop) {
+		private void stopProfiler(int ioStop) {
 			startTimes--;
 			if (startTimes == 0) {
 				totalTime += (System.nanoTime() - timeStart) / 1000;
-				if (ENABLE_CPU_TIMER)
-					totalCpuTime = (ThreadMXBean.getCpuTime()-cpuStart) / 1000;
+				if (ENABLE_CPU_TIMER) {
+					checkCrossThreads();
+					totalCpuTime = (ThreadMXBean.getCpuTime() - cpuStart) / 1000;
+				}			
 				if (ENABLE_DISKIO_COUNTER)
 					this.totalIOCount = ioStop - ioStart;
 			}
 		}
 		
-		public long getTotalTime() {
+		private long getTotalTime() {
 			return totalTime;
 		}
 		
-		public long getTotalCpuTime() {
+		private long getTotalCpuTime() {
 			if(isCrossThreads)
 				return -1;
 			return totalCpuTime;
 		}
 		
-		public long getTotalIOCount() {
+		private long getTotalIOCount() {
 			return totalIOCount;
 		}
 
-		public long getCount() {
+		private long getCount() {
 			return count;
 		}
 		
-		public void checkCrossThreads(Thread thread) {	
-			if (startTimes > 0 && Thread.currentThread() != thread)
-				isCrossThreads = true;
+		// Checking if a profiler is passed across threads
+		private void checkCrossThreads() {	
+			isCrossThreads = (thread != Thread.currentThread())? true : false;
 		}
 	}
 
@@ -127,14 +132,10 @@ public class TransactionProfiler {
 	// we use a list to record the order.
 	private List<Object> components = new LinkedList<Object>();	
 	private int ioCount = 0;
-	// For checking profiler is pass to different thread
-	private Thread thread;
 
 	public TransactionProfiler(TransactionProfiler profiler) {
-		for (Map.Entry<Object, SubProfiler> subProfiler : profiler.subProfilers.entrySet()) {
-			subProfiler.getValue().checkCrossThreads(thread);
-			this.subProfilers.put(subProfiler.getKey(), new SubProfiler(subProfiler.getValue()));
-		}
+		for (Map.Entry<Object, SubProfiler> subProfiler : profiler.subProfilers.entrySet())
+			this.subProfilers.put(subProfiler.getKey(), new SubProfiler(subProfiler.getValue()));	
 		this.components = new LinkedList<>(profiler.components);
 		this.ioCount = profiler.ioCount;
 	}
@@ -167,7 +168,6 @@ public class TransactionProfiler {
 		SubProfiler profiler = subProfilers.get(component);
 		if (profiler != null) {
 			profiler.stopProfiler(ioCount);
-			profiler.checkCrossThreads(thread);
 		}
 			
 	}
