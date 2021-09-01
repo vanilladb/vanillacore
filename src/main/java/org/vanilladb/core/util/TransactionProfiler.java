@@ -57,7 +57,7 @@ public class TransactionProfiler {
 		private long timeStart = 0, totalTime = 0;
 		private long cpuStart = 0, totalCpuTime = 0;
 		private long ioStart = 0, totalIOCount = 0;
-		private Thread thread;
+		private Thread currentThread;
 		private boolean isCrossThreads = false;
 		
 		private SubProfiler() {
@@ -73,14 +73,14 @@ public class TransactionProfiler {
 			this.totalCpuTime = subProfiler.totalCpuTime;
 			this.ioStart = subProfiler.ioStart;
 			this.totalIOCount = subProfiler.totalIOCount;
-			this.thread = subProfiler.thread;
+			this.currentThread = subProfiler.currentThread;
 		}
 		
 		private void startProfiler(int ioStart) {
 			if (startTimes == 0) {
 				timeStart = System.nanoTime();
 				if (ENABLE_CPU_TIMER) {
-					thread = Thread.currentThread();
+					currentThread = Thread.currentThread();
 					cpuStart = ThreadMXBean.getCpuTime();
 				}
 				if (ENABLE_DISKIO_COUNTER)
@@ -108,7 +108,7 @@ public class TransactionProfiler {
 		}
 		
 		private long getTotalCpuTime() {
-			if(isCrossThreads)
+			if (isCrossThreads)
 				return -1;
 			return totalCpuTime;
 		}
@@ -123,7 +123,7 @@ public class TransactionProfiler {
 		
 		// Checking if a profiler is passed across threads
 		private void checkCrossThreads() {	
-			isCrossThreads = (thread != Thread.currentThread())? true : false;
+			isCrossThreads = (currentThread != Thread.currentThread());
 		}
 	}
 
