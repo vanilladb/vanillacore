@@ -1,5 +1,14 @@
 # Release Notes
 
+## Version 0.5.0 (2021-09-02)
+
+### Enhancements
+
+- Add transaction profilers. ([#69])
+- Fix few typos. ([#69])
+
+[#69]: https://github.com/vanilladb/vanillacore/pull/69
+
 ## Version 0.4.2 (2021-06-13)
 
 ### Enhancements
