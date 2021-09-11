@@ -15,6 +15,10 @@
  *******************************************************************************/
 package org.vanilladb.core.util;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -25,7 +29,8 @@ public class TransactionProfiler {
 	private static final String TOTAL_KEY = "Total";
 	public static final boolean ENABLE_CPU_TIMER = true;
 	public static final boolean ENABLE_DISKIO_COUNTER = true;
-
+	public static final boolean ENABLE_NETWORKIO_COUNTER = true;
+	
 	private static final ThreadLocal<TransactionProfiler> LOCAL_PROFILER = new ThreadLocal<TransactionProfiler>() {
 		@Override
 		protected TransactionProfiler initialValue() {
@@ -56,12 +61,15 @@ public class TransactionProfiler {
 		private int count = 0, startTimes = 0;
 		private long timeStart = 0, totalTime = 0;
 		private long cpuStart = 0, totalCpuTime = 0;
-		private long ioStart = 0, totalIOCount = 0;
+		private long diskIOStart = 0, totalDiskIOCount = 0;
+		private long networkInStart = 0, totalNetworkInSize = 0;
+		private long networkOutStart = 0, totalNetworkOutSize = 0;
+		
 		private Thread currentThread;
 		private boolean isCrossThreads = false;
 		
 		private SubProfiler() {
-			// Do nothing
+		// Do nothing
 		}
 		
 		private SubProfiler(SubProfiler subProfiler) {
@@ -71,12 +79,14 @@ public class TransactionProfiler {
 			this.totalTime = subProfiler.totalTime;
 			this.cpuStart = subProfiler.cpuStart;
 			this.totalCpuTime = subProfiler.totalCpuTime;
-			this.ioStart = subProfiler.ioStart;
-			this.totalIOCount = subProfiler.totalIOCount;
+			this.diskIOStart = subProfiler.diskIOStart;
+			this.totalDiskIOCount = subProfiler.totalDiskIOCount;
+			this.totalNetworkInSize = subProfiler.totalNetworkInSize;
+			this.totalNetworkOutSize = subProfiler.totalNetworkOutSize;
 			this.currentThread = subProfiler.currentThread;
 		}
 		
-		private void startProfiler(int ioStart) {
+		private void startProfiler(int diskIOStart, int networkInStart, int networkOutStart) {
 			if (startTimes == 0) {
 				timeStart = System.nanoTime();
 				if (ENABLE_CPU_TIMER) {
@@ -84,13 +94,17 @@ public class TransactionProfiler {
 					cpuStart = ThreadMXBean.getCpuTime();
 				}
 				if (ENABLE_DISKIO_COUNTER)
-					this.ioStart = ioStart;
+					this.diskIOStart = diskIOStart;
+				if (ENABLE_NETWORKIO_COUNTER) {
+					this.networkInStart = networkInStart;
+					this.networkOutStart = networkOutStart;
+				}
 			}
 			startTimes++;
 			count++;
 		}
 
-		private void stopProfiler(int ioStop) {
+		private void stopProfiler(int ioStop, int networkInStop, int networkOutStop) {
 			startTimes--;
 			if (startTimes == 0) {
 				totalTime += (System.nanoTime() - timeStart) / 1000;
@@ -99,7 +113,11 @@ public class TransactionProfiler {
 					totalCpuTime = (ThreadMXBean.getCpuTime() - cpuStart) / 1000;
 				}			
 				if (ENABLE_DISKIO_COUNTER)
-					this.totalIOCount = ioStop - ioStart;
+					this.totalDiskIOCount = ioStop - diskIOStart;
+				if (ENABLE_NETWORKIO_COUNTER) {
+					this.totalNetworkInSize = networkInStop - networkInStart;
+					this.totalNetworkOutSize = networkOutStop - networkOutStart;
+				}
 			}
 		}
 		
@@ -113,11 +131,19 @@ public class TransactionProfiler {
 			return totalCpuTime;
 		}
 		
-		private long getTotalIOCount() {
-			return totalIOCount;
+		private long getTotalDiskIOCount() {
+			return totalDiskIOCount;
+		}
+		
+		private long getNetworkInSize() {
+			return totalNetworkInSize;
+		}
+		
+		private long getNetworkOutSize() {
+			return totalNetworkOutSize;
 		}
 
-		private long getCount() {
+		private int getCount() {
 			return count;
 		}
 		
@@ -131,13 +157,17 @@ public class TransactionProfiler {
 	// We want to preserve the order of creating profilers so that
 	// we use a list to record the order.
 	private List<Object> components = new LinkedList<Object>();	
-	private int ioCount = 0;
+	private int diskIOCount = 0;
+	private int networkInSize = 0;
+	private int networkOutSize = 0;
 
 	public TransactionProfiler(TransactionProfiler profiler) {
 		for (Map.Entry<Object, SubProfiler> subProfiler : profiler.subProfilers.entrySet())
 			this.subProfilers.put(subProfiler.getKey(), new SubProfiler(subProfiler.getValue()));	
-		this.components = new LinkedList<>(profiler.components);
-		this.ioCount = profiler.ioCount;
+		this.components = new LinkedList<Object>(profiler.components);
+		this.diskIOCount = profiler.diskIOCount;
+		this.networkInSize = profiler.networkInSize;
+		this.networkOutSize = profiler.networkOutSize;
 	}
 	
 	private TransactionProfiler() {
@@ -147,11 +177,37 @@ public class TransactionProfiler {
 	public void reset() {
 		subProfilers.clear();
 		components.clear();
-		ioCount = 0;
+		diskIOCount = 0;
+		networkInSize = 0;
+		networkOutSize = 0;
 	}
 
-	public void incrementIoCount() {
-		ioCount += 1;
+	public void incrementDiskIOCount() {
+		diskIOCount += 1;
+	}
+	
+	public void incrementNetworkInSize(Serializable object) {
+		try {
+			networkInSize += getSize(object);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void incrementNetworkOutSize(Serializable object) {
+		try {
+			networkOutSize += getSize(object);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private int getSize(Object object) throws IOException {
+	    try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+	         ObjectOutputStream out = new ObjectOutputStream(bos)) {
+	        out.writeObject(object);
+	        return bos.size();
+	    } 
 	}
 	
 	public void startComponentProfiler(Object component) {
@@ -161,15 +217,14 @@ public class TransactionProfiler {
 			subProfilers.put(component, profiler);
 			components.add(component);
 		}
-		profiler.startProfiler(ioCount);
+		profiler.startProfiler(diskIOCount, networkInSize, networkOutSize);
 	}
 
 	public void stopComponentProfiler(Object component) {
 		SubProfiler profiler = subProfilers.get(component);
 		if (profiler != null) {
-			profiler.stopProfiler(ioCount);
+			profiler.stopProfiler(diskIOCount, networkInSize, networkOutSize);		
 		}
-			
 	}
 
 	public long getComponentTime(Object component) {
@@ -186,14 +241,28 @@ public class TransactionProfiler {
 		return profiler.getTotalCpuTime();
 	}
 	
-	public long getComponentIOCount(Object component) {
+	public long getComponentDiskIOCount(Object component) {
 		SubProfiler profiler = subProfilers.get(component);
 		if (profiler == null)
 			return -1;
-		return profiler.getTotalIOCount();
+		return profiler.getTotalDiskIOCount();
+	}
+	
+	public long getComponentNetworkInSize(Object component) {
+		SubProfiler profiler = subProfilers.get(component);
+		if (profiler == null)
+			return -1;
+		return profiler.getNetworkInSize();
+	}
+	
+	public long getComponentNetworkOutSize(Object component) {
+		SubProfiler profiler = subProfilers.get(component);
+		if (profiler == null)
+			return -1;
+		return profiler.getNetworkOutSize();
 	}
 
-	public long getComponentCount(Object component) {
+	public int getComponentCount(Object component) {
 		return subProfilers.get(component).getCount();
 	}
 
@@ -217,8 +286,16 @@ public class TransactionProfiler {
 		return getComponentCpuTime(TOTAL_KEY);
 	}
 	
-	public long getTotalIOCount() {
-		return getComponentIOCount(TOTAL_KEY);
+	public long getTotalDiskIOCount() {
+		return getComponentDiskIOCount(TOTAL_KEY);
+	}
+	
+	public long getNetworkInSize() {
+		return getComponentNetworkInSize(TOTAL_KEY);
+	}
+	
+	public long getNetworkOutSize() {
+		return getComponentNetworkOutSize(TOTAL_KEY);
 	}
 
 	public void addToGlobalStatistics() {
@@ -236,7 +313,7 @@ public class TransactionProfiler {
 						subProfilers.get(com).getCount()));
 				else
 					sb.append(String.format("%-40s: %d us, %d us, %d times, with %d counts\n", com, subProfilers.get(com).getTotalTime(),
-							subProfilers.get(com).getTotalCpuTime(), subProfilers.get(com).getTotalIOCount(), subProfilers.get(com).getCount()));
+							subProfilers.get(com).getTotalCpuTime(), subProfilers.get(com).getTotalDiskIOCount(), subProfilers.get(com).getCount()));
 			}
 		}
 		if (subProfilers.get(TOTAL_KEY) != null) {
@@ -244,7 +321,7 @@ public class TransactionProfiler {
 				sb.append(String.format("%-40s: %d us\n", TOTAL_KEY, subProfilers.get(TOTAL_KEY).getTotalTime()));
 			else
 				sb.append(String.format("%-40s: %d us, %d us, %d times\n", TOTAL_KEY, subProfilers.get(TOTAL_KEY).getTotalTime(),
-						subProfilers.get(TOTAL_KEY).getTotalCpuTime(), subProfilers.get(TOTAL_KEY).getTotalIOCount()));
+						subProfilers.get(TOTAL_KEY).getTotalCpuTime(), subProfilers.get(TOTAL_KEY).getTotalDiskIOCount()));
 		}
 		sb.append("==============================\n");
 

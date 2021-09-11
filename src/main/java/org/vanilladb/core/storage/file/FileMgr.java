@@ -146,7 +146,7 @@ public class FileMgr {
 			fileChannel.read(buffer, blk.number() * BLOCK_SIZE);
 			
 			// for controller
-			TransactionProfiler.getLocalProfiler().incrementIoCount();
+			TransactionProfiler.getLocalProfiler().incrementDiskIOCount();
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new RuntimeException("cannot read block " + blk);
@@ -172,7 +172,7 @@ public class FileMgr {
 			fileChannel.write(buffer, blk.number() * BLOCK_SIZE);
 			
 			// for controller
-			TransactionProfiler.getLocalProfiler().incrementIoCount();
+			TransactionProfiler.getLocalProfiler().incrementDiskIOCount();
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new RuntimeException("cannot write block" + blk);
