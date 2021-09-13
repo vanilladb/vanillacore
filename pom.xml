@@ -67,6 +67,10 @@
 			<name>Pin-Yu Wang</name>
 			<email>pywang@datalab.cs.nthu.edu.tw</email>
 		</developer>
+		<developer>
+			<name>Yu-Xuan Lin</name>
+			<email>yxlin@datalab.cs.nthu.edu.tw</email>
+		</developer>
 	</developers>
 
 	<scm>
