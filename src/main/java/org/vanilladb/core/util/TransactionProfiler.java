@@ -215,7 +215,7 @@ public class TransactionProfiler {
 		}
 	}
 	
-	private int getSize(Object object) throws IOException {
+	public int getSize(Object object) throws IOException {
 	    try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
 	         ObjectOutputStream out = new ObjectOutputStream(bos)) {
 	        out.writeObject(object);
