@@ -56,6 +56,14 @@ public class TransactionProfiler {
 	public static void setProfiler(TransactionProfiler profiler) {
 		LOCAL_PROFILER.set(profiler);
 	}
+	
+	public static int getMessageSize(Object object) throws IOException {
+	    try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+	         ObjectOutputStream out = new ObjectOutputStream(bos)) {
+	        out.writeObject(object);
+	        return bos.size();
+	    } 
+	}
 
 	private static class SubProfiler {
 		private int invocationCount = 0, startCount = 0;
@@ -201,7 +209,7 @@ public class TransactionProfiler {
 	
 	public void incrementNetworkInSize(Serializable object) {
 		try {
-			networkInSize += getSize(object);
+			networkInSize += getMessageSize(object);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -209,18 +217,10 @@ public class TransactionProfiler {
 	
 	public void incrementNetworkOutSize(Serializable object) {
 		try {
-			networkOutSize += getSize(object);
+			networkOutSize += getMessageSize(object);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-	}
-	
-	public int getSize(Object object) throws IOException {
-	    try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-	         ObjectOutputStream out = new ObjectOutputStream(bos)) {
-	        out.writeObject(object);
-	        return bos.size();
-	    } 
 	}
 	
 	private SubProfiler getOrNewSubProfiler(Object component) {
