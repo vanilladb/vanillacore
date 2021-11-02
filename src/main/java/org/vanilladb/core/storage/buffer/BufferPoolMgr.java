@@ -31,6 +31,9 @@ class BufferPoolMgr {
 	private Map<BlockId, Buffer> blockMap;
 	private volatile int lastReplacedBuff;
 	private AtomicInteger numAvailable;
+	
+	private AtomicInteger totalCount;
+	private AtomicInteger missCount;
 
 	// Optimization: Lock striping
 	private Object[] anchors = new Object[1009];
@@ -50,6 +53,8 @@ class BufferPoolMgr {
 		bufferPool = new Buffer[numBuffs];
 		blockMap = new ConcurrentHashMap<BlockId, Buffer>(numBuffs);
 		numAvailable = new AtomicInteger(numBuffs);
+		totalCount = new AtomicInteger();
+		missCount = new AtomicInteger();
 		lastReplacedBuff = 0;
 		for (int i = 0; i < numBuffs; i++)
 			bufferPool[i] = new Buffer();
@@ -97,9 +102,11 @@ class BufferPoolMgr {
 			// Find existing buffer
 			Buffer buff = findExistingBuffer(blk);
 
+			totalCount.incrementAndGet();
 			// If there is no such buffer
 			if (buff == null) {
-
+				
+				missCount.incrementAndGet();
 				// Choose Unpinned Buffer
 				int lastReplacedBuff = this.lastReplacedBuff;
 				int currBlk = (lastReplacedBuff + 1) % bufferPool.length;
@@ -245,5 +252,16 @@ class BufferPoolMgr {
 		if (buff != null && buff.block().equals(blk))
 			return buff;
 		return null;
+	}
+	
+	Buffer[] buffers() {
+		return bufferPool;
+	}
+	
+	double hitRate() {
+		System.out.println("lalalala");
+		System.out.println(missCount.get());
+		System.out.println(totalCount.get());
+		return (1 - missCount.get() / totalCount.get());
 	}
 }

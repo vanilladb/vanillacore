@@ -339,4 +339,8 @@ public class Buffer {
 	Page getUnderlyingPage() {
 		return contents;
 	}
+	
+	int pins() {
+		return pins;
+	}
 }
