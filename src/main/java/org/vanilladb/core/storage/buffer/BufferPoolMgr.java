@@ -259,9 +259,11 @@ class BufferPoolMgr {
 	}
 	
 	double hitRate() {
-		System.out.println("lalalala");
-		System.out.println(missCount.get());
-		System.out.println(totalCount.get());
-		return (1 - missCount.get() / totalCount.get());
+		double hitRate = (1 - missCount.get() / totalCount.get());
+		
+		missCount.set(0);
+		totalCount.set(0);
+		
+		return hitRate;
 	}
 }

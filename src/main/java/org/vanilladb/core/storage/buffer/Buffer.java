@@ -340,7 +340,7 @@ public class Buffer {
 		return contents;
 	}
 	
-	int pins() {
+	int getPinCount() {
 		return pins;
 	}
 }
