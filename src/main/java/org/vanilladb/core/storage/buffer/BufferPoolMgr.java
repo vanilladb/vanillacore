@@ -259,6 +259,11 @@ class BufferPoolMgr {
 	}
 	
 	double hitRate() {
-		return (1 - missCount.getAndSet(0) / totalCount.getAndSet(0));
+		int miss = missCount.getAndSet(0);
+		int total = totalCount.getAndSet(0);
+		if (total == 0)
+			return 1.0;
+		else
+			return (1 - ((double) miss) / ((double) total));
 	}
 }

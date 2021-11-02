@@ -5,7 +5,7 @@ public class BufferPoolMonitor {
 	private final static int BUFFER_POOL_SIZE = BufferMgr.BUFFER_POOL_SIZE;
 	
 	public static double getAvgPinCount() {
-		int totalPinCount = 0;
+		double totalPinCount = 0;
 		for (Buffer buff : BufferMgr.bufferPool.buffers()) {
 			totalPinCount += buff.getPinCount();
 		}
