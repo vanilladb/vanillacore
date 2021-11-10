@@ -15,8 +15,8 @@
  *******************************************************************************/
 package org.vanilladb.core.server.task;
 
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import org.vanilladb.core.util.CoreProperties;
 
@@ -33,13 +33,17 @@ public class TaskMgr {
 				TaskMgr.class.getName() + ".THREAD_POOL_SIZE", 150);
 	}
 	
-	private ExecutorService executor;
+	private ThreadPoolExecutor executor;
 
 	public TaskMgr() {
-		executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+		executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 	}
 
 	public void runTask(Task task) {
 		executor.execute(task);
+	}
+	
+	public int getActiveCount() {
+		return executor.getActiveCount();
 	}
 }
