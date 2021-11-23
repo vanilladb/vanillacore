@@ -109,9 +109,9 @@ class BufferPoolMgr {
 		int stage = TransactionProfiler.getStageIndicator();
 		
 		// Only the txs acquiring the same block will be blocked
-		profiler.startComponentProfiler(stage + "- buffer_pool_mgr anchor");
+		profiler.startComponentProfiler(stage + "-BufferPoolMgr.pin anchor");
 		synchronized (prepareAnchor(blk)) {
-			profiler.stopComponentProfiler(stage + "- buffer_pool_mgr anchor");
+			profiler.stopComponentProfiler(stage + "-BufferPoolMgr.pin anchor");
 			
 			// Find existing buffer
 			Buffer buff = findExistingBuffer(blk);
@@ -145,9 +145,7 @@ class BufferPoolMgr {
 									numAvailable.decrementAndGet();
 								
 								// Pin this buffer
-								profiler.startComponentProfiler(stage + "- buffer_pool_mgr buff pin");
 								buff.pin();
-								profiler.stopComponentProfiler(stage + "- buffer_pool_mgr buff pin");
 								return buff;
 							}
 						} finally {
@@ -240,10 +238,17 @@ class BufferPoolMgr {
 	 *            the buffers to be unpinned
 	 */
 	void unpin(Buffer... buffs) {
+		// profiler
+		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
+		int stage = TransactionProfiler.getStageIndicator();
+		
 		for (Buffer buff : buffs) {
 			try {
 				// Get the lock of buffer
+				profiler.startComponentProfiler(stage+"-BufferPoolMgr.unpin externalLock");
 				buff.getExternalLock().lock();
+				profiler.stopComponentProfiler(stage+"-BufferPoolMgr.unpin externalLock");
+				
 				buff.unpin();
 				if (!buff.isPinned())
 					numAvailable.incrementAndGet();

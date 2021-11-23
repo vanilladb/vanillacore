@@ -27,6 +27,7 @@ import org.vanilladb.core.sql.Type;
 import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.file.Page;
 import org.vanilladb.core.storage.log.LogSeqNum;
+import org.vanilladb.core.util.TransactionProfiler;
 
 /**
  * An individual buffer. A buffer wraps a page and stores information about its
@@ -85,7 +86,13 @@ public class Buffer {
 	 * @return the constant value at that offset
 	 */
 	public Constant getVal(int offset, Type type) {
+		// profiler
+		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
+		int stage = TransactionProfiler.getStageIndicator();
+		
+		profiler.startComponentProfiler(stage+"-Buffer.getVal internalLock");
 		internalLock.readLock().lock();
+		profiler.stopComponentProfiler(stage+"-Buffer.getVal internalLock");
 		try {
 			if (offset < 0 || offset >= BUFFER_SIZE)
 				throw new IndexOutOfBoundsException("" + offset);
@@ -232,7 +239,14 @@ public class Buffer {
 	 * Increases the buffer's pin count.
 	 */
 	void pin() {
+		// profiler
+		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
+		int stage = TransactionProfiler.getStageIndicator();
+		
+		profiler.startComponentProfiler(stage + "-Buffer.pin internalLock");
 		internalLock.writeLock().lock();
+		profiler.stopComponentProfiler(stage + "-Buffer.pin internalLock");
+		
 		try {
 			pins++;
 			isRecentlyPinned.set(true);
@@ -245,7 +259,14 @@ public class Buffer {
 	 * Decreases the buffer's pin count.
 	 */
 	void unpin() {
+		// profiler
+		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
+		int stage = TransactionProfiler.getStageIndicator();
+		
+		profiler.startComponentProfiler(stage+"-Buffer.unpin internalLock");
 		internalLock.writeLock().lock();
+		profiler.stopComponentProfiler(stage+"-Buffer.unpin internalLock");
+		
 		try {
 			pins--;
 		} finally {
