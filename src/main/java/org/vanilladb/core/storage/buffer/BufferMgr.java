@@ -30,6 +30,8 @@ import org.vanilladb.core.storage.tx.Transaction;
 import org.vanilladb.core.storage.tx.TransactionLifecycleListener;
 import org.vanilladb.core.util.CoreProperties;
 
+
+
 /**
  * The publicly-accessible buffer manager. A buffer manager wraps a
  * {@link BufferPoolMgr} instance, and provides the same methods. The
@@ -128,12 +130,14 @@ public class BufferMgr implements TransactionLifecycleListener {
 
 			// Try to pin a buffer or the pinned buffer for the given BlockId
 			buff = bufferPool.pin(blk);
+			
 
 			// If there is no such buffer or no available buffer,
 			// wait for it
 			if (buff == null) {
 				waitedBeforeGotBuffer = true;
 				synchronized (bufferPool) {
+					
 					waitingThreads.add(Thread.currentThread());
 
 					while (buff == null && !waitingTooLong(timestamp)) {
@@ -157,9 +161,13 @@ public class BufferMgr implements TransactionLifecycleListener {
 			}
 
 			// TODO: Add some comment here
+
 			if (waitedBeforeGotBuffer) {
+				if (logger.isLoggable(Level.WARNING))
+					logger.warning("Tx." + txNum + " is pinning all buffers");
 				synchronized (bufferPool) {
 					bufferPool.notifyAll();
+					logger.warning("Tx." + txNum + " finish pinning all buffers");
 				}
 			}
 

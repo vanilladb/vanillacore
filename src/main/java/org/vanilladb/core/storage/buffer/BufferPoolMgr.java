@@ -18,10 +18,13 @@ package org.vanilladb.core.storage.buffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.file.FileMgr;
+import org.vanilladb.core.util.TransactionProfiler;
 
 /**
  * Manages the pinning and unpinning of buffers to blocks.
@@ -37,6 +40,10 @@ class BufferPoolMgr {
 
 	// Optimization: Lock striping
 	private Object[] anchors = new Object[1009];
+	
+	// 
+	private static Logger logger = Logger.getLogger(BufferMgr.class.getName());
+
 
 	/**
 	 * Creates a buffer manager having the specified number of buffer slots.
@@ -97,8 +104,15 @@ class BufferPoolMgr {
 	 * @return the pinned buffer
 	 */
 	Buffer pin(BlockId blk) {
+		// profiler
+		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
+		int stage = TransactionProfiler.getStageIndicator();
+		
 		// Only the txs acquiring the same block will be blocked
+		profiler.startComponentProfiler(stage + "- buffer_pool_mgr anchor");
 		synchronized (prepareAnchor(blk)) {
+			profiler.stopComponentProfiler(stage + "- buffer_pool_mgr anchor");
+			
 			// Find existing buffer
 			Buffer buff = findExistingBuffer(blk);
 
@@ -131,7 +145,9 @@ class BufferPoolMgr {
 									numAvailable.decrementAndGet();
 								
 								// Pin this buffer
+								profiler.startComponentProfiler(stage + "- buffer_pool_mgr buff pin");
 								buff.pin();
+								profiler.stopComponentProfiler(stage + "- buffer_pool_mgr buff pin");
 								return buff;
 							}
 						} finally {
