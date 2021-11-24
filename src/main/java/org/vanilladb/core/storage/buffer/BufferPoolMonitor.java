@@ -20,5 +20,12 @@ public class BufferPoolMonitor {
 	public static double getHitRate() {
 		return BufferMgr.bufferPool.hitRate();
 	}
+	
+	public static int getReadWaitCount() {
+		return BufferMgr.bufferPool.readWaitCount();
+	}
 
+	public static int getWriteWaitCount() {
+		return BufferMgr.bufferPool.readWaitCount();
+	}
 }
