@@ -78,17 +78,31 @@ class BufferPoolMgr {
 			code += xSwapLocks.length;
 		return xSwapLocks[code];
 	}
+	
+	private Boolean isIndexRootBuffer(Buffer buff) {
+		BlockId tempBlock = buff.block();
+		return tempBlock != null &&
+			tempBlock.fileName().contains(".idx") &&
+			tempBlock.number() == 0;
+				
+	}
 
 	/**
 	 * Flushes all dirty buffers.
 	 */
 	void flushAll() {
 		for (Buffer buff : bufferPool) {
-			try {
-				buff.getSwapLock().lock();
+			// Optimization: skip getting external lock of index root buffer
+			// because index root buffer won't be swapped
+			if (isIndexRootBuffer(buff)) {
 				buff.flush();
-			} finally {
-				buff.getSwapLock().unlock();
+			} else {
+				try {
+					buff.getSwapLock().lock();
+					buff.flush();
+				} finally {
+					buff.getSwapLock().unlock();
+				}
 			}
 		}
 	}
@@ -122,29 +136,31 @@ class BufferPoolMgr {
 				while (currBlk != lastReplacedBuff) {
 					buff = bufferPool[currBlk];
 					
-					// Get the lock of buffer if it is free
-					if (buff.getSwapLock().tryLock()) {
-						try {
-							// Check if there is no one use it
-							if (!buff.isPinned() && !buff.checkRecentlyPinnedAndReset()) {
-								this.lastReplacedBuff = currBlk;
-								
-								// Swap
-								BlockId oldBlk = buff.block();
-								if (oldBlk != null)
-									blockMap.remove(oldBlk);
-								buff.assignToBlock(blk);
-								blockMap.put(blk, buff);
-								if (!buff.isPinned())
-									numAvailable.decrementAndGet();
-								
-								// Pin this buffer
-								buff.pin();
-								return buff;
+					if (!isIndexRootBuffer(buff)) {
+						// Get the lock of buffer if it is free
+						if (buff.getSwapLock().tryLock()) {
+							try {
+								// Check if there is no one use it
+								if (!buff.isPinned() && !buff.checkRecentlyPinnedAndReset()) {
+									this.lastReplacedBuff = currBlk;
+									
+									// Swap
+									BlockId oldBlk = buff.block();
+									if (oldBlk != null)
+										blockMap.remove(oldBlk);
+									buff.assignToBlock(blk);
+									blockMap.put(blk, buff);
+									if (!buff.isPinned())
+										numAvailable.decrementAndGet();
+									
+									// Pin this buffer
+									buff.pin();
+									return buff;
+								}
+							} finally {
+								// Release the lock of buffer
+								buff.getSwapLock().unlock();
 							}
-						} finally {
-							// Release the lock of buffer
-							buff.getSwapLock().unlock();
 						}
 					}
 					currBlk = (currBlk + 1) % bufferPool.length;
@@ -153,6 +169,13 @@ class BufferPoolMgr {
 				
 			// If it exists
 			} else {
+				// Optimization:
+				// index root buffers won't be swapped
+				// therefore, pin and unpin is unnecessary
+				if (isIndexRootBuffer(buff)) {
+					return buff;
+				}
+				
 				// Get the lock of buffer
 				buff.getSwapLock().lock();
 				
@@ -206,28 +229,30 @@ class BufferPoolMgr {
 			while (currBlk != lastReplacedBuff) {
 				Buffer buff = bufferPool[currBlk];
 				
-				// Get the lock of buffer if it is free
-				if (buff.getSwapLock().tryLock()) {
-					try {
-						if (!buff.isPinned() && !buff.checkRecentlyPinnedAndReset()) {
-							this.lastReplacedBuff = currBlk;
-							
-							// Swap
-							BlockId oldBlk = buff.block();
-							if (oldBlk != null)
-								blockMap.remove(oldBlk);
-							buff.assignToNew(fileName, fmtr);
-							blockMap.put(buff.block(), buff);
-							if (!buff.isPinned())
-								numAvailable.decrementAndGet();
-							
-							// Pin this buffer
-							buff.pin();
-							return buff;
+				if (!isIndexRootBuffer(buff)) {
+					// Get the lock of buffer if it is free
+					if (buff.getSwapLock().tryLock()) {
+						try {
+							if (!buff.isPinned() && !buff.checkRecentlyPinnedAndReset()) {
+								this.lastReplacedBuff = currBlk;
+								
+								// Swap
+								BlockId oldBlk = buff.block();
+								if (oldBlk != null)
+									blockMap.remove(oldBlk);
+								buff.assignToNew(fileName, fmtr);
+								blockMap.put(buff.block(), buff);
+								if (!buff.isPinned())
+									numAvailable.decrementAndGet();
+								
+								// Pin this buffer
+								buff.pin();
+								return buff;
+							}
+						} finally {
+							// Release the lock of buffer
+							buff.getSwapLock().unlock();
 						}
-					} finally {
-						// Release the lock of buffer
-						buff.getSwapLock().unlock();
 					}
 				}
 				currBlk = (currBlk + 1) % bufferPool.length;
