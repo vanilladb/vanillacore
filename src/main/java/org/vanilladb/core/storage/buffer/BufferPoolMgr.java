@@ -241,9 +241,6 @@ class BufferPoolMgr {
 	}
 
 	private Buffer findExistingBuffer(BlockId blk) {
-		Buffer buff = blockMap.get(blk);
-		if (buff != null && buff.block().equals(blk))
-			return buff;
-		return null;
+		return blockMap.get(blk);
 	}
 }
