@@ -16,6 +16,7 @@
 package org.vanilladb.core.storage.index.btree;
 
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.Schema;
@@ -36,7 +37,8 @@ import org.vanilladb.core.storage.tx.concurrency.ConcurrencyMgr;
 public class BTreeIndex extends Index {
 	
 	protected static enum SearchPurpose { READ, INSERT, DELETE };
-
+	private static ConcurrentHashMap<String, Boolean> fileEmptyCache = new ConcurrentHashMap<String, Boolean>();
+	
 	private ConcurrencyMgr ccMgr;
 	private String leafFileName, dirFileName;
 	private BTreeLeaf leaf = null;
@@ -71,13 +73,13 @@ public class BTreeIndex extends Index {
 		
 		// Initialize the first leaf block (if it needed)
 		leafFileName = BTreeLeaf.getFileName(ii.indexName());
-		if (fileSize(leafFileName) == 0)
+		if (isFileEmpty(leafFileName))
 			appendBlock(leafFileName, BTreeLeaf.schema(keyType), new long[] { -1, -1 });
 
 		// Initialize the first directory block (if it needed)
 		dirFileName = BTreeDir.getFileName(ii.indexName());
 		rootBlk = new BlockId(dirFileName, 0);
-		if (fileSize(dirFileName) == 0)
+		if (isFileEmpty(dirFileName))
 			appendBlock(dirFileName, BTreeDir.schema(keyType), new long[] { 0 });
 		
 		// Insert an initial directory entry (if it needed)
@@ -254,6 +256,20 @@ public class BTreeIndex extends Index {
 		leaf = new BTreeLeaf(dataFileName, leafblk, keyType, searchRange, tx);
 	}
 
+	private boolean isFileEmpty(String fileName) {
+		// Optimization
+		// Assume we won't delete the BtreeIndex.
+		// Once the index file is not empty, the file won't be empty again
+		
+		boolean cacheMiss = fileEmptyCache.get(fileName) == null;
+		// Call fileSize(fileName) again, if cache miss or the cache says the file is empty.
+		if (cacheMiss || fileEmptyCache.get(fileName)) {
+			fileEmptyCache.put(fileName, fileSize(fileName) == 0);
+		}
+		
+		return fileEmptyCache.get(fileName);
+	}
+	
 	private long fileSize(String fileName) {
 		ccMgr.readFile(fileName);
 		return VanillaDb.fileMgr().size(fileName);
