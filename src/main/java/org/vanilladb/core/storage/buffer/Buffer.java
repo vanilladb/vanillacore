@@ -16,7 +16,6 @@
 package org.vanilladb.core.storage.buffer;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -47,9 +46,6 @@ public class Buffer {
 	
 	private static final int LAST_LSN_OFFSET = 0;
 	private static final int DATA_START_OFFSET = LogSeqNum.SIZE;
-	
-	private AtomicInteger readLockWaitCount = new AtomicInteger(0);
-	private AtomicInteger writeLockWaitCount = new AtomicInteger(0);
 	
 	private Page contents = new Page();
 	private BlockId blk = null;
@@ -89,8 +85,8 @@ public class Buffer {
 	 * @return the constant value at that offset
 	 */
 	public Constant getVal(int offset, Type type) {
-		if (internalLock.readLock().tryLock() == false) {
-			readLockWaitCount.incrementAndGet();
+		if (!internalLock.readLock().tryLock()) {
+			BufferPoolMonitor.incrementReadWaitCounter();
 			internalLock.readLock().lock();
 		}
 		try {
@@ -104,8 +100,8 @@ public class Buffer {
 	}
 	
 	void setVal(int offset, Constant val) {
-		if (internalLock.writeLock().tryLock() == false) {
-			writeLockWaitCount.incrementAndGet();
+		if (!internalLock.writeLock().tryLock()) {
+			BufferPoolMonitor.incrementWriteWaitCounter();
 			internalLock.writeLock().lock();
 		}
 		try {
@@ -135,8 +131,8 @@ public class Buffer {
 	 *            the LSN of the corresponding log record
 	 */
 	public void setVal(int offset, Constant val, long txNum, LogSeqNum lsn) {
-		if (internalLock.writeLock().tryLock() == false) {
-			writeLockWaitCount.incrementAndGet();
+		if (!internalLock.writeLock().tryLock()) {
+			BufferPoolMonitor.incrementWriteWaitCounter();
 			internalLock.writeLock().lock();
 		}
 		try {
@@ -163,8 +159,8 @@ public class Buffer {
 	 * @return the LSN of the latest affected log record
 	 */
 	public LogSeqNum lastLsn(){
-		if (internalLock.readLock().tryLock() == false) {
-			readLockWaitCount.incrementAndGet();
+		if (!internalLock.readLock().tryLock()) {
+			BufferPoolMonitor.incrementReadWaitCounter();
 			internalLock.readLock().lock();
 		}
 		try {
@@ -180,8 +176,8 @@ public class Buffer {
 	 * @return a block ID
 	 */
 	public BlockId block() {
-		if (internalLock.readLock().tryLock() == false) {
-			readLockWaitCount.incrementAndGet();
+		if (!internalLock.readLock().tryLock()) {
+			BufferPoolMonitor.incrementReadWaitCounter();
 			internalLock.readLock().lock();
 		}
 		try {
@@ -218,8 +214,8 @@ public class Buffer {
 	}
 
 	protected void close() {
-		if (internalLock.writeLock().tryLock() == false) {
-			writeLockWaitCount.incrementAndGet();
+		if (!internalLock.writeLock().tryLock()) {
+			BufferPoolMonitor.incrementWriteWaitCounter();
 			internalLock.writeLock().lock();
 		}
 		try {
@@ -235,8 +231,8 @@ public class Buffer {
 	 * to writing the page to disk.
 	 */
 	void flush() {
-		if (internalLock.writeLock().tryLock() == false) {
-			writeLockWaitCount.incrementAndGet();
+		if (!internalLock.writeLock().tryLock()) {
+			BufferPoolMonitor.incrementWriteWaitCounter();
 			internalLock.writeLock().lock();
 		}
 		flushLock.lock();
@@ -257,8 +253,8 @@ public class Buffer {
 	 * Increases the buffer's pin count.
 	 */
 	void pin() {
-		if (internalLock.writeLock().tryLock() == false) {
-			writeLockWaitCount.incrementAndGet();
+		if (!internalLock.writeLock().tryLock()) {
+			BufferPoolMonitor.incrementWriteWaitCounter();
 			internalLock.writeLock().lock();
 		}
 		try {
@@ -273,8 +269,8 @@ public class Buffer {
 	 * Decreases the buffer's pin count.
 	 */
 	void unpin() {
-		if (internalLock.writeLock().tryLock() == false) {
-			writeLockWaitCount.incrementAndGet();
+		if (!internalLock.writeLock().tryLock()) {
+			BufferPoolMonitor.incrementWriteWaitCounter();
 			internalLock.writeLock().lock();
 		}
 		try {
@@ -291,8 +287,8 @@ public class Buffer {
 	 * @return true if the buffer is pinned
 	 */
 	boolean isPinned() {
-		if (internalLock.readLock().tryLock() == false) {
-			readLockWaitCount.incrementAndGet();
+		if (!internalLock.readLock().tryLock()) {
+			BufferPoolMonitor.incrementReadWaitCounter();
 			internalLock.readLock().lock();
 		}
 		try {
@@ -312,8 +308,8 @@ public class Buffer {
 	 * @return true if the buffer is dirty
 	 */
 	boolean isModified() {
-		if (internalLock.writeLock().tryLock() == false) {
-			writeLockWaitCount.incrementAndGet();
+		if (!internalLock.writeLock().tryLock()) {
+			BufferPoolMonitor.incrementWriteWaitCounter();
 			internalLock.writeLock().lock();
 		}
 		try {
@@ -332,8 +328,8 @@ public class Buffer {
 	 *            a block ID
 	 */
 	void assignToBlock(BlockId blk) {
-		if (internalLock.writeLock().tryLock() == false) {
-			writeLockWaitCount.incrementAndGet();
+		if (!internalLock.writeLock().tryLock()) {
+			BufferPoolMonitor.incrementWriteWaitCounter();
 			internalLock.writeLock().lock();
 		}
 		try {
@@ -358,8 +354,8 @@ public class Buffer {
 	 *            a page formatter, used to initialize the page
 	 */
 	void assignToNew(String fileName, PageFormatter fmtr) {
-		if (internalLock.writeLock().tryLock() == false) {
-			writeLockWaitCount.incrementAndGet();
+		if (!internalLock.writeLock().tryLock()) {
+			BufferPoolMonitor.incrementWriteWaitCounter();
 			internalLock.writeLock().lock();
 		}
 		try {
@@ -385,13 +381,5 @@ public class Buffer {
 	
 	int getPinCount() {
 		return pins;
-	}
-	
-	int getReadWaitCount() {
-		return readLockWaitCount.getAndSet(0);
-	}
-	
-	int getWriteWaitCount() {
-		return writeLockWaitCount.getAndSet(0);
 	}
 }

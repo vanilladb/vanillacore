@@ -266,18 +266,4 @@ class BufferPoolMgr {
 		else
 			return (1 - ((double) miss) / ((double) total));
 	}
-	
-	int readWaitCount() {
-		int count = 0;
-		for (int i = 0; i < bufferPool.length; i++)
-			count += bufferPool[i].getReadWaitCount();
-		return count;
-	}
-	
-	int writeWaitCount() {
-		int count = 0;
-		for (int i = 0; i < bufferPool.length; i++)
-			count += bufferPool[i].getWriteWaitCount();
-		return count;
-	}
 }
