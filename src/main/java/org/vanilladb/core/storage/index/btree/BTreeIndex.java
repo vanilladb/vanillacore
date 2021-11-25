@@ -204,7 +204,7 @@ public class BTreeIndex extends Index {
 	/**
 	 * Deletes the specified index record. The method first traverses the
 	 * directory to find the leaf page containing that record; then it deletes
-	 * the record from the page. F
+	 * the record from the page.
 	 * 
 	 * @see Index#delete(SearchKey, RecordId, boolean)
 	 */
