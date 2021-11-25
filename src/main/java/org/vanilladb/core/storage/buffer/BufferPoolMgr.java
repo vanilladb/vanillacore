@@ -18,6 +18,7 @@ package org.vanilladb.core.storage.buffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.storage.file.BlockId;
@@ -33,7 +34,9 @@ class BufferPoolMgr {
 	private AtomicInteger numAvailable;
 
 	// Optimization: Lock striping
-	private Object[] anchors = new Object[1009];
+	private int stripSize = 1009;
+	private Object[] anchors = new Object[stripSize];
+	private ReentrantLock[] xSwapLocks = new ReentrantLock[stripSize];
 
 	/**
 	 * Creates a buffer manager having the specified number of buffer slots.
@@ -54,8 +57,9 @@ class BufferPoolMgr {
 		for (int i = 0; i < numBuffs; i++)
 			bufferPool[i] = new Buffer();
 
-		for (int i = 0; i < anchors.length; ++i) {
+		for (int i = 0; i < stripSize; ++i) {
 			anchors[i] = new Object();
+			xSwapLocks[i] = new ReentrantLock();
 		}
 	}
 
@@ -65,6 +69,14 @@ class BufferPoolMgr {
 		if (code < 0)
 			code += anchors.length;
 		return anchors[code];
+	}
+	
+	// Optimization: Lock striping
+	private ReentrantLock prepareXSwapLock(Object o) {
+		int code = o.hashCode() % xSwapLocks.length;
+		if (code < 0)
+			code += xSwapLocks.length;
+		return xSwapLocks[code];
 	}
 
 	/**
@@ -92,8 +104,11 @@ class BufferPoolMgr {
 	 * @return the pinned buffer
 	 */
 	Buffer pin(BlockId blk) {
-		// Only the txs acquiring the same block will be blocked
-		synchronized (prepareAnchor(blk)) {
+		// The xSwapLock prevents race condition.
+		// Only one tx can trigger the swapping action for the same block.
+		ReentrantLock xSwapLock = prepareXSwapLock(blk);
+		xSwapLock.lock();
+		try {
 			// Find existing buffer
 			Buffer buff = findExistingBuffer(blk);
 
@@ -141,6 +156,11 @@ class BufferPoolMgr {
 				// Get the lock of buffer
 				buff.getExternalLock().lock();
 				
+				// Optimization
+				// Early release the xSwapLock
+				// because the following txs, which need the same block, will get the same non-null buffer
+				xSwapLock.unlock();
+				
 				try {
 					// Check its block id before pinning since it might be swapped
 					if (buff.block().equals(blk)) {
@@ -155,6 +175,12 @@ class BufferPoolMgr {
 					// Release the lock of buffer
 					buff.getExternalLock().unlock();
 				}
+			}
+		} finally {
+			// xSwapLock might be early released
+			// unlocking a lock twice will get an exception 
+			if (xSwapLock.isHeldByCurrentThread()) {
+				xSwapLock.unlock();
 			}
 		}
 	}
