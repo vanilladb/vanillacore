@@ -85,10 +85,10 @@ class BufferPoolMgr {
 	void flushAll() {
 		for (Buffer buff : bufferPool) {
 			try {
-				buff.getExternalLock().lock();
+				buff.getSwapLock().lock();
 				buff.flush();
 			} finally {
-				buff.getExternalLock().unlock();
+				buff.getSwapLock().unlock();
 			}
 		}
 	}
@@ -123,7 +123,7 @@ class BufferPoolMgr {
 					buff = bufferPool[currBlk];
 					
 					// Get the lock of buffer if it is free
-					if (buff.getExternalLock().tryLock()) {
+					if (buff.getSwapLock().tryLock()) {
 						try {
 							// Check if there is no one use it
 							if (!buff.isPinned() && !buff.checkRecentlyPinnedAndReset()) {
@@ -144,7 +144,7 @@ class BufferPoolMgr {
 							}
 						} finally {
 							// Release the lock of buffer
-							buff.getExternalLock().unlock();
+							buff.getSwapLock().unlock();
 						}
 					}
 					currBlk = (currBlk + 1) % bufferPool.length;
@@ -154,7 +154,7 @@ class BufferPoolMgr {
 			// If it exists
 			} else {
 				// Get the lock of buffer
-				buff.getExternalLock().lock();
+				buff.getSwapLock().lock();
 				
 				// Optimization
 				// Early release the xSwapLock
@@ -173,7 +173,7 @@ class BufferPoolMgr {
 					
 				} finally {
 					// Release the lock of buffer
-					buff.getExternalLock().unlock();
+					buff.getSwapLock().unlock();
 				}
 			}
 		} finally {
@@ -207,7 +207,7 @@ class BufferPoolMgr {
 				Buffer buff = bufferPool[currBlk];
 				
 				// Get the lock of buffer if it is free
-				if (buff.getExternalLock().tryLock()) {
+				if (buff.getSwapLock().tryLock()) {
 					try {
 						if (!buff.isPinned() && !buff.checkRecentlyPinnedAndReset()) {
 							this.lastReplacedBuff = currBlk;
@@ -227,7 +227,7 @@ class BufferPoolMgr {
 						}
 					} finally {
 						// Release the lock of buffer
-						buff.getExternalLock().unlock();
+						buff.getSwapLock().unlock();
 					}
 				}
 				currBlk = (currBlk + 1) % bufferPool.length;
@@ -246,13 +246,13 @@ class BufferPoolMgr {
 		for (Buffer buff : buffs) {
 			try {
 				// Get the lock of buffer
-				buff.getExternalLock().lock();
+				buff.getSwapLock().lock();
 				buff.unpin();
 				if (!buff.isPinned())
 					numAvailable.incrementAndGet();
 			} finally {
 				// Release the lock of buffer
-				buff.getExternalLock().unlock();
+				buff.getSwapLock().unlock();
 			}
 		}
 	}
