@@ -92,7 +92,7 @@ class BufferPoolMgr {
 	 */
 	void flushAll() {
 		for (Buffer buff : bufferPool) {
-			// Optimization: skip getting external lock of index root buffer
+			// Optimization: skip getting swapLock of index root buffer
 			// because index root buffer won't be swapped
 			if (isIndexRootBuffer(buff)) {
 				buff.flush();
@@ -170,7 +170,7 @@ class BufferPoolMgr {
 			// If it exists
 			} else {
 				// Optimization:
-				// index root buffers won't be swapped
+				// Index root buffers won't be swapped
 				// therefore, pin and unpin is unnecessary
 				if (isIndexRootBuffer(buff)) {
 					return buff;
