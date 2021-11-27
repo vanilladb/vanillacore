@@ -80,11 +80,10 @@ class BufferPoolMgr {
 	}
 	
 	private Boolean isIndexRootBuffer(Buffer buff) {
-		BlockId tempBlock = buff.block();
-		return tempBlock != null &&
-			tempBlock.fileName().contains(".idx") &&
-			tempBlock.number() == 0;
-				
+		BlockId blk = buff.block();
+		return blk != null &&
+			blk.fileName().contains(".idx") &&
+			blk.number() == 0;	
 	}
 
 	/**
