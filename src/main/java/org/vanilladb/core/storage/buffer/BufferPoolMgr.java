@@ -34,7 +34,7 @@ class BufferPoolMgr {
 	private AtomicInteger numAvailable;
 
 	// Optimization: Lock striping
-	private int stripSize = 1009;
+	private static final int stripSize = 1009;
 	private Object[] anchors = new Object[stripSize];
 	private ReentrantLock[] xSwapLocks = new ReentrantLock[stripSize];
 
