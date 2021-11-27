@@ -35,8 +35,8 @@ class BufferPoolMgr {
 
 	// Optimization: Lock striping
 	private static final int stripSize = 1009;
-	private Object[] anchors = new Object[stripSize];
-	private ReentrantLock[] xSwapLocks = new ReentrantLock[stripSize];
+	private Object[] fileLocks = new Object[stripSize];
+	private ReentrantLock[] blockLocks = new ReentrantLock[stripSize];
 
 	/**
 	 * Creates a buffer manager having the specified number of buffer slots.
@@ -58,25 +58,25 @@ class BufferPoolMgr {
 			bufferPool[i] = new Buffer();
 
 		for (int i = 0; i < stripSize; ++i) {
-			anchors[i] = new Object();
-			xSwapLocks[i] = new ReentrantLock();
+			fileLocks[i] = new Object();
+			blockLocks[i] = new ReentrantLock();
 		}
 	}
 
 	// Optimization: Lock striping
 	private Object prepareAnchor(Object o) {
-		int code = o.hashCode() % anchors.length;
+		int code = o.hashCode() % fileLocks.length;
 		if (code < 0)
-			code += anchors.length;
-		return anchors[code];
+			code += fileLocks.length;
+		return fileLocks[code];
 	}
 	
 	// Optimization: Lock striping
-	private ReentrantLock prepareXSwapLock(Object o) {
-		int code = o.hashCode() % xSwapLocks.length;
+	private ReentrantLock prepareBlockLock(Object o) {
+		int code = o.hashCode() % blockLocks.length;
 		if (code < 0)
-			code += xSwapLocks.length;
-		return xSwapLocks[code];
+			code += blockLocks.length;
+		return blockLocks[code];
 	}
 	
 	private Boolean isIndexRootBuffer(Buffer buff) {
@@ -117,10 +117,10 @@ class BufferPoolMgr {
 	 * @return the pinned buffer
 	 */
 	Buffer pin(BlockId blk) {
-		// The xSwapLock prevents race condition.
+		// The blockLock prevents race condition.
 		// Only one tx can trigger the swapping action for the same block.
-		ReentrantLock xSwapLock = prepareXSwapLock(blk);
-		xSwapLock.lock();
+		ReentrantLock blockLock = prepareBlockLock(blk);
+		blockLock.lock();
 		try {
 			// Find existing buffer
 			Buffer buff = findExistingBuffer(blk);
@@ -179,9 +179,9 @@ class BufferPoolMgr {
 				buff.getSwapLock().lock();
 				
 				// Optimization
-				// Early release the xSwapLock
+				// Early release the blockLock
 				// because the following txs, which need the same block, will get the same non-null buffer
-				xSwapLock.unlock();
+				blockLock.unlock();
 				
 				try {
 					// Check its block id before pinning since it might be swapped
@@ -199,10 +199,10 @@ class BufferPoolMgr {
 				}
 			}
 		} finally {
-			// xSwapLock might be early released
+			// blockLock might be early released
 			// unlocking a lock twice will get an exception 
-			if (xSwapLock.isHeldByCurrentThread()) {
-				xSwapLock.unlock();
+			if (blockLock.isHeldByCurrentThread()) {
+				blockLock.unlock();
 			}
 		}
 	}
