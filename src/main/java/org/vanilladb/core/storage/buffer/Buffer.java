@@ -292,6 +292,11 @@ public class Buffer {
 		// Optimization: This might be a danger optimization
 		// This method is called because no tx pin this buffer,
 		// which means no tx will modify or read the content.
+	
+		if (pins.get() > 0) {
+			throw new RuntimeException("The buffer is pinned by other transactions");
+		}
+		
 		flush();
 		this.blk = blk;
 		contents.read(blk);
