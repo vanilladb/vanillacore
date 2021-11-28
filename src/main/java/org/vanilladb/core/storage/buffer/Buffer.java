@@ -89,10 +89,15 @@ public class Buffer {
 		// profiler
 		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
 		int stage = TransactionProfiler.getStageIndicator();
-		
-		profiler.startComponentProfiler(stage+"-Buffer.getVal internalLock");
-		internalLock.readLock().lock();
-		profiler.stopComponentProfiler(stage+"-Buffer.getVal internalLock");
+
+		if (!internalLock.readLock().tryLock()) {
+			BufferPoolMonitor.incrementReadWaitCounter();
+			
+			profiler.startComponentProfiler(stage+"-Buffer.getVal internalLock");
+			internalLock.readLock().lock();
+			profiler.stopComponentProfiler(stage+"-Buffer.getVal internalLock");
+		}
+
 		try {
 			if (offset < 0 || offset >= BUFFER_SIZE)
 				throw new IndexOutOfBoundsException("" + offset);
@@ -104,7 +109,10 @@ public class Buffer {
 	}
 	
 	void setVal(int offset, Constant val) {
-		internalLock.writeLock().lock();
+		if (!internalLock.writeLock().tryLock()) {
+			BufferPoolMonitor.incrementWriteWaitCounter();
+			internalLock.writeLock().lock();
+		}
 		try {
 			if (offset < 0 || offset >= BUFFER_SIZE)
 				throw new IndexOutOfBoundsException("" + offset);
@@ -132,7 +140,10 @@ public class Buffer {
 	 *            the LSN of the corresponding log record
 	 */
 	public void setVal(int offset, Constant val, long txNum, LogSeqNum lsn) {
-		internalLock.writeLock().lock();
+		if (!internalLock.writeLock().tryLock()) {
+			BufferPoolMonitor.incrementWriteWaitCounter();
+			internalLock.writeLock().lock();
+		}
 		try {
 			if (offset < 0 || offset >= BUFFER_SIZE)
 				throw new IndexOutOfBoundsException("" + offset);
@@ -157,7 +168,10 @@ public class Buffer {
 	 * @return the LSN of the latest affected log record
 	 */
 	public LogSeqNum lastLsn(){
-		internalLock.readLock().lock();
+		if (!internalLock.readLock().tryLock()) {
+			BufferPoolMonitor.incrementReadWaitCounter();
+			internalLock.readLock().lock();
+		}
 		try {
 			return lastLsn;
 		} finally {
@@ -171,7 +185,10 @@ public class Buffer {
 	 * @return a block ID
 	 */
 	public BlockId block() {
-		internalLock.readLock().lock();
+		if (!internalLock.readLock().tryLock()) {
+			BufferPoolMonitor.incrementReadWaitCounter();
+			internalLock.readLock().lock();
+		}
 		try {
 			return blk;
 		} finally {
@@ -206,7 +223,10 @@ public class Buffer {
 	}
 
 	protected void close() {
-		internalLock.writeLock().lock();
+		if (!internalLock.writeLock().tryLock()) {
+			BufferPoolMonitor.incrementWriteWaitCounter();
+			internalLock.writeLock().lock();
+		}
 		try {
 			contents.close();
 		} finally {
@@ -220,7 +240,10 @@ public class Buffer {
 	 * to writing the page to disk.
 	 */
 	void flush() {
-		internalLock.writeLock().lock();
+		if (!internalLock.writeLock().tryLock()) {
+			BufferPoolMonitor.incrementWriteWaitCounter();
+			internalLock.writeLock().lock();
+		}
 		flushLock.lock();
 		try {
 			if (isNew || isModified) {
@@ -243,10 +266,13 @@ public class Buffer {
 		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
 		int stage = TransactionProfiler.getStageIndicator();
 		
-		profiler.startComponentProfiler(stage + "-Buffer.pin internalLock");
-		internalLock.writeLock().lock();
-		profiler.stopComponentProfiler(stage + "-Buffer.pin internalLock");
-		
+		if (!internalLock.writeLock().tryLock()) {
+			BufferPoolMonitor.incrementWriteWaitCounter();
+			
+			profiler.startComponentProfiler(stage + "-Buffer.pin internalLock");
+			internalLock.writeLock().lock();
+			profiler.stopComponentProfiler(stage + "-Buffer.pin internalLock");
+		}
 		try {
 			pins++;
 			isRecentlyPinned.set(true);
@@ -263,10 +289,13 @@ public class Buffer {
 		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
 		int stage = TransactionProfiler.getStageIndicator();
 		
-		profiler.startComponentProfiler(stage+"-Buffer.unpin internalLock");
-		internalLock.writeLock().lock();
-		profiler.stopComponentProfiler(stage+"-Buffer.unpin internalLock");
-		
+		if (!internalLock.writeLock().tryLock()) {
+			BufferPoolMonitor.incrementWriteWaitCounter();
+			
+			profiler.startComponentProfiler(stage+"-Buffer.unpin internalLock");
+			internalLock.writeLock().lock();
+			profiler.stopComponentProfiler(stage+"-Buffer.unpin internalLock");
+		}
 		try {
 			pins--;
 		} finally {
@@ -281,7 +310,10 @@ public class Buffer {
 	 * @return true if the buffer is pinned
 	 */
 	boolean isPinned() {
-		internalLock.readLock().lock();
+		if (!internalLock.readLock().tryLock()) {
+			BufferPoolMonitor.incrementReadWaitCounter();
+			internalLock.readLock().lock();
+		}
 		try {
 			return pins > 0;
 		} finally {
@@ -299,7 +331,10 @@ public class Buffer {
 	 * @return true if the buffer is dirty
 	 */
 	boolean isModified() {
-		internalLock.writeLock().lock();
+		if (!internalLock.writeLock().tryLock()) {
+			BufferPoolMonitor.incrementWriteWaitCounter();
+			internalLock.writeLock().lock();
+		}
 		try {
 			return isModified;
 		} finally {
@@ -316,7 +351,10 @@ public class Buffer {
 	 *            a block ID
 	 */
 	void assignToBlock(BlockId blk) {
-		internalLock.writeLock().lock();
+		if (!internalLock.writeLock().tryLock()) {
+			BufferPoolMonitor.incrementWriteWaitCounter();
+			internalLock.writeLock().lock();
+		}
 		try {
 			flush();
 			this.blk = blk;
@@ -339,7 +377,10 @@ public class Buffer {
 	 *            a page formatter, used to initialize the page
 	 */
 	void assignToNew(String fileName, PageFormatter fmtr) {
-		internalLock.writeLock().lock();
+		if (!internalLock.writeLock().tryLock()) {
+			BufferPoolMonitor.incrementWriteWaitCounter();
+			internalLock.writeLock().lock();
+		}
 		try {
 			flush();
 			fmtr.format(this);
