@@ -236,7 +236,7 @@ public class FileTest {
 		p1.setVal(INT_SIZE, TEST_INT_456);
 		p1.write(blk);
 		
-		// fm.isFileEmpty should cache that file is no longer empty
+		// fm.isFileEmpty should cache because file is no longer empty
 		assertFalse(
 				"*****FileTest: the file is no longer empty, cache implementation might be wrong",
 				fm.isFileEmpty(filename));
