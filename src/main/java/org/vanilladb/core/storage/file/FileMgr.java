@@ -55,6 +55,8 @@ public class FileMgr {
 	private File dbDirectory, logDirectory;
 	private boolean isNew;
 	private Map<String, IoChannel> openFiles = new ConcurrentHashMap<String, IoChannel>();
+	// Optimization: if files art not empty, cache them
+	private ConcurrentHashMap<String, Boolean> fileNotEmptyCache;
 
 	static {
 		String dbDir = CoreProperties.getLoader().getPropertyAsString(FileMgr.class.getName() + ".DB_FILES_DIR",
@@ -125,6 +127,8 @@ public class FileMgr {
 
 		for (int i = 0; i < anchors.length; ++i)
 			anchors[i] = new Object();
+		
+		fileNotEmptyCache = new ConcurrentHashMap<String, Boolean>();
 	}
 
 	/**
@@ -223,6 +227,31 @@ public class FileMgr {
 			throw new RuntimeException("cannot access " + fileName);
 		}
 	}
+	
+	/**
+	 * Returns true if a file is empty, else false.</br></br>
+	 * 
+	 * <b>Side Effect:</b> These method has cache mechanism.
+	 * If the file is no longer empty,
+	 * isFileEmpty will always return false unless restarting the database. 
+	 * 
+	 * @param fileName
+	 *            the name of the file
+	 * 
+	 * @return whether a file is empty or not
+	 */
+	public boolean isFileEmpty(String fileName) {
+		boolean cacheMiss = !fileNotEmptyCache.containsKey(fileName);
+
+		// get the file size again, if cache miss occurs or the file is empty.
+		if (cacheMiss || !fileNotEmptyCache.get(fileName)) {
+			fileNotEmptyCache.put(fileName, size(fileName) > 0);
+		}
+		
+		return !fileNotEmptyCache.get(fileName);
+	}
+	
+	
 
 	/**
 	 * Returns a boolean indicating whether the file manager had to create a new

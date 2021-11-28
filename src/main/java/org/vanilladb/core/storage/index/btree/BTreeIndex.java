@@ -35,10 +35,7 @@ import org.vanilladb.core.storage.tx.concurrency.ConcurrencyMgr;
  * A B-tree implementation of {@link Index}.
  */
 public class BTreeIndex extends Index {
-	
 	protected static enum SearchPurpose { READ, INSERT, DELETE };
-	private static ConcurrentHashMap<String, Boolean> fileEmptyCache = new ConcurrentHashMap<String, Boolean>();
-	
 	private ConcurrencyMgr ccMgr;
 	private String leafFileName, dirFileName;
 	private BTreeLeaf leaf = null;
@@ -260,14 +257,9 @@ public class BTreeIndex extends Index {
 		// Optimization
 		// Assume we won't delete the BtreeIndex.
 		// Once the index file is not empty, the file won't be empty again
+		ccMgr.readFile(fileName);
+		return VanillaDb.fileMgr().isFileEmpty(fileName);
 		
-		boolean cacheMiss = fileEmptyCache.get(fileName) == null;
-		// Call fileSize(fileName) again, if cache miss or the cache says the file is empty.
-		if (cacheMiss || fileEmptyCache.get(fileName)) {
-			fileEmptyCache.put(fileName, fileSize(fileName) == 0);
-		}
-		
-		return fileEmptyCache.get(fileName);
 	}
 	
 	private long fileSize(String fileName) {
@@ -275,6 +267,7 @@ public class BTreeIndex extends Index {
 		return VanillaDb.fileMgr().size(fileName);
 	}
 
+	
 	private BlockId appendBlock(String fileName, Schema sch, long[] flags) {
 		ccMgr.modifyFile(fileName);
 		BTPageFormatter btpf = new BTPageFormatter(sch, flags);
