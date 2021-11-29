@@ -164,7 +164,7 @@ public class Buffer {
 	 * Returns a block ID refers to the disk block that the buffer is pinned to. <br><br>
 	 * 
 	 * <b>Warning:</b><br>
-	 * Always make sure to pin the buffer first, then get buff.block().<br>
+	 * Always make sure to get buff.block() before unpin.<br>
 	 * Or you may get an unexpected block.
 	 * 
 	 * @return a block ID
