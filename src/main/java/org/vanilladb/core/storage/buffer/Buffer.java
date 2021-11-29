@@ -274,7 +274,6 @@ public class Buffer {
 	 * 
 	 * @return true if the buffer is dirty
 	 */
-	@Deprecated
 	boolean isModified() {
 		contentLock.writeLock().lock();
 		try {
