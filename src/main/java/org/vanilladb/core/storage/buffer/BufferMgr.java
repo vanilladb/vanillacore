@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -54,12 +55,14 @@ public class BufferMgr implements TransactionLifecycleListener {
 	protected static final int BUFFER_POOL_SIZE;
 	private static final long MAX_TIME;
 	private static final long EPSILON;
+	private static final AtomicBoolean hasWaitingTx = new AtomicBoolean();
 
 	static {
 		MAX_TIME = CoreProperties.getLoader().getPropertyAsLong(BufferMgr.class.getName() + ".MAX_TIME", 10000);
 		EPSILON = CoreProperties.getLoader().getPropertyAsLong(BufferMgr.class.getName() + ".EPSILON", 50);
 		BUFFER_POOL_SIZE = CoreProperties.getLoader()
 				.getPropertyAsInteger(BufferMgr.class.getName() + ".BUFFER_POOL_SIZE", 1024);
+		System.out.println("BufferMgr unpin opt========================================================");
 	}
 
 	class PinningBuffer {
@@ -134,6 +137,7 @@ public class BufferMgr implements TransactionLifecycleListener {
 			if (buff == null) {
 				waitedBeforeGotBuffer = true;
 				synchronized (bufferPool) {
+					hasWaitingTx.set(true);
 					waitingThreads.add(Thread.currentThread());
 
 					while (buff == null && !waitingTooLong(timestamp)) {
@@ -143,6 +147,7 @@ public class BufferMgr implements TransactionLifecycleListener {
 					}
 
 					waitingThreads.remove(Thread.currentThread());
+					hasWaitingTx.set(!waitingThreads.isEmpty());
 				}
 			}
 
@@ -250,8 +255,10 @@ public class BufferMgr implements TransactionLifecycleListener {
 				bufferPool.unpin(buff);
 				pinningBuffers.remove(blk);
 				
-				synchronized (bufferPool) {
-					bufferPool.notifyAll();
+				if (hasWaitingTx.get()) {
+					synchronized (bufferPool) {
+						bufferPool.notifyAll();
+					}
 				}
 			}
 		}
