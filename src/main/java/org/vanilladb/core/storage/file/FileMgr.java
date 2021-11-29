@@ -251,8 +251,6 @@ public class FileMgr {
 		return !fileNotEmptyCache.get(fileName);
 	}
 	
-	
-
 	/**
 	 * Returns a boolean indicating whether the file manager had to create a new
 	 * database directory.

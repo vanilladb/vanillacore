@@ -16,7 +16,6 @@
 package org.vanilladb.core.storage.index.btree;
 
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.Schema;
@@ -266,7 +265,6 @@ public class BTreeIndex extends Index {
 		ccMgr.readFile(fileName);
 		return VanillaDb.fileMgr().size(fileName);
 	}
-
 	
 	private BlockId appendBlock(String fileName, Schema sch, long[] flags) {
 		ccMgr.modifyFile(fileName);
