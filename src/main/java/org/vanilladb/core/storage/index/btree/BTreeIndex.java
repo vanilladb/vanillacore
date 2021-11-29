@@ -273,8 +273,10 @@ public class BTreeIndex extends Index {
 		BTPageFormatter btpf = new BTPageFormatter(sch, flags);
 
 		Buffer buff = tx.bufferMgr().pinNew(fileName, btpf);
+		// Danger!
+		// Must get block before unpin
+		BlockId blk = buff.block();
 		tx.bufferMgr().unpin(buff);
-
-		return buff.block();
+		return blk;
 	}
 }

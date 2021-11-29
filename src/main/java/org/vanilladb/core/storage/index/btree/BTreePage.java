@@ -453,8 +453,12 @@ public class BTreePage {
 		tx.concurrencyMgr().modifyFile(blk.fileName());
 		BTPageFormatter btpf = new BTPageFormatter(schema, flags);
 		Buffer buff = tx.bufferMgr().pinNew(blk.fileName(), btpf);
+		
+		// Danger!
+		// Must get block before unpin
+		BlockId blk = buff.block();
 		tx.bufferMgr().unpin(buff);
-		return buff.block();
+		return blk;
 	}
 	
 	private void setValUnchecked(int slot, String fldName, Constant val) {
