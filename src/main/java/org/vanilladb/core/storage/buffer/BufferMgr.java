@@ -62,7 +62,6 @@ public class BufferMgr implements TransactionLifecycleListener {
 		EPSILON = CoreProperties.getLoader().getPropertyAsLong(BufferMgr.class.getName() + ".EPSILON", 50);
 		BUFFER_POOL_SIZE = CoreProperties.getLoader()
 				.getPropertyAsInteger(BufferMgr.class.getName() + ".BUFFER_POOL_SIZE", 1024);
-		System.out.println("BufferMgr unpin opt========================================================");
 	}
 
 	class PinningBuffer {
