@@ -18,6 +18,7 @@ package org.vanilladb.core.storage.buffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.storage.file.BlockId;
@@ -33,7 +34,9 @@ class BufferPoolMgr {
 	private AtomicInteger numAvailable;
 
 	// Optimization: Lock striping
-	private Object[] anchors = new Object[1009];
+	private static final int stripSize = 1009;
+	private ReentrantLock[] fileLocks = new ReentrantLock[stripSize];
+	private ReentrantLock[] blockLocks = new ReentrantLock[stripSize];
 
 	/**
 	 * Creates a buffer manager having the specified number of buffer slots.
@@ -54,17 +57,26 @@ class BufferPoolMgr {
 		for (int i = 0; i < numBuffs; i++)
 			bufferPool[i] = new Buffer();
 
-		for (int i = 0; i < anchors.length; ++i) {
-			anchors[i] = new Object();
+		for (int i = 0; i < stripSize; ++i) {
+			fileLocks[i] = new ReentrantLock();
+			blockLocks[i] = new ReentrantLock();
 		}
 	}
 
 	// Optimization: Lock striping
-	private Object prepareAnchor(Object o) {
-		int code = o.hashCode() % anchors.length;
+	private ReentrantLock prepareFileLock(Object o) {
+		int code = o.hashCode() % fileLocks.length;
 		if (code < 0)
-			code += anchors.length;
-		return anchors[code];
+			code += fileLocks.length;
+		return fileLocks[code];
+	}
+	
+	// Optimization: Lock striping
+	private ReentrantLock prepareBlockLock(Object o) {
+		int code = o.hashCode() % blockLocks.length;
+		if (code < 0)
+			code += blockLocks.length;
+		return blockLocks[code];
 	}
 
 	/**
@@ -73,10 +85,10 @@ class BufferPoolMgr {
 	void flushAll() {
 		for (Buffer buff : bufferPool) {
 			try {
-				buff.getExternalLock().lock();
+				buff.getSwapLock().lock();
 				buff.flush();
 			} finally {
-				buff.getExternalLock().unlock();
+				buff.getSwapLock().unlock();
 			}
 		}
 	}
@@ -92,8 +104,11 @@ class BufferPoolMgr {
 	 * @return the pinned buffer
 	 */
 	Buffer pin(BlockId blk) {
-		// Only the txs acquiring the same block will be blocked
-		synchronized (prepareAnchor(blk)) {
+		// The blockLock prevents race condition.
+		// Only one tx can trigger the swapping action for the same block.
+		ReentrantLock blockLock = prepareBlockLock(blk);
+		blockLock.lock();
+		try {
 			// Find existing buffer
 			Buffer buff = findExistingBuffer(blk);
 
@@ -108,7 +123,7 @@ class BufferPoolMgr {
 					buff = bufferPool[currBlk];
 					
 					// Get the lock of buffer if it is free
-					if (buff.getExternalLock().tryLock()) {
+					if (buff.getSwapLock().tryLock()) {
 						try {
 							// Check if there is no one use it
 							if (!buff.isPinned() && !buff.checkRecentlyPinnedAndReset()) {
@@ -129,7 +144,7 @@ class BufferPoolMgr {
 							}
 						} finally {
 							// Release the lock of buffer
-							buff.getExternalLock().unlock();
+							buff.getSwapLock().unlock();
 						}
 					}
 					currBlk = (currBlk + 1) % bufferPool.length;
@@ -139,7 +154,12 @@ class BufferPoolMgr {
 			// If it exists
 			} else {
 				// Get the lock of buffer
-				buff.getExternalLock().lock();
+				buff.getSwapLock().lock();
+				
+				// Optimization
+				// Early release the blockLock
+				// because the following txs, which need the same block, will get the same non-null buffer
+				blockLock.unlock();
 				
 				try {
 					// Check its block id before pinning since it might be swapped
@@ -153,8 +173,14 @@ class BufferPoolMgr {
 					
 				} finally {
 					// Release the lock of buffer
-					buff.getExternalLock().unlock();
+					buff.getSwapLock().unlock();
 				}
+			}
+		} finally {
+			// blockLock might be early released
+			// unlocking a lock twice will get an exception 
+			if (blockLock.isHeldByCurrentThread()) {
+				blockLock.unlock();
 			}
 		}
 	}
@@ -172,8 +198,9 @@ class BufferPoolMgr {
 	 */
 	Buffer pinNew(String fileName, PageFormatter fmtr) {
 		// Only the txs acquiring to append the block on the same file will be blocked
-		synchronized (prepareAnchor(fileName)) {
-			
+		ReentrantLock fileLock = prepareFileLock(fileName);
+		fileLock.lock();
+		try {
 			// Choose Unpinned Buffer
 			int lastReplacedBuff = this.lastReplacedBuff;
 			int currBlk = (lastReplacedBuff + 1) % bufferPool.length;
@@ -181,7 +208,7 @@ class BufferPoolMgr {
 				Buffer buff = bufferPool[currBlk];
 				
 				// Get the lock of buffer if it is free
-				if (buff.getExternalLock().tryLock()) {
+				if (buff.getSwapLock().tryLock()) {
 					try {
 						if (!buff.isPinned() && !buff.checkRecentlyPinnedAndReset()) {
 							this.lastReplacedBuff = currBlk;
@@ -201,12 +228,14 @@ class BufferPoolMgr {
 						}
 					} finally {
 						// Release the lock of buffer
-						buff.getExternalLock().unlock();
+						buff.getSwapLock().unlock();
 					}
 				}
 				currBlk = (currBlk + 1) % bufferPool.length;
 			}
 			return null;
+		} finally {
+			fileLock.unlock();
 		}
 	}
 
@@ -220,13 +249,13 @@ class BufferPoolMgr {
 		for (Buffer buff : buffs) {
 			try {
 				// Get the lock of buffer
-				buff.getExternalLock().lock();
+				buff.getSwapLock().lock();
 				buff.unpin();
 				if (!buff.isPinned())
 					numAvailable.incrementAndGet();
 			} finally {
 				// Release the lock of buffer
-				buff.getExternalLock().unlock();
+				buff.getSwapLock().unlock();
 			}
 		}
 	}
@@ -241,9 +270,6 @@ class BufferPoolMgr {
 	}
 
 	private Buffer findExistingBuffer(BlockId blk) {
-		Buffer buff = blockMap.get(blk);
-		if (buff != null && buff.block().equals(blk))
-			return buff;
-		return null;
+		return blockMap.get(blk);
 	}
 }

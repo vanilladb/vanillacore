@@ -17,6 +17,7 @@ package org.vanilladb.core.storage.file;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 import static org.vanilladb.core.sql.Type.INTEGER;
 import static org.vanilladb.core.sql.Type.VARCHAR;
@@ -214,4 +215,35 @@ public class FileTest {
 		BlockId b = new BlockId(b1.fileName(), b1.number());
 		assertTrue("*****FileTest: bad block extraction", b.equals(b1));
 	}
-}
+	
+	@Test
+	public void testIsFileEmpty() {
+		String filename = FileMgr.TMP_FILE_NAME_PREFIX + "_test_file_empty_cache";
+
+		// fm.isFileEmpty won't use cache at the first time 
+		assertTrue(
+				"*****FileTest: the file should be empty",
+				fm.isFileEmpty(filename));
+		
+		// fm.isFileEmpty won't use cache because the file is still empty
+		assertTrue(
+				"*****FileTest: the file should be empty, cache implementation might be wrong",
+				fm.isFileEmpty(filename));
+		
+		// write 123 and 456 at block 0
+		BlockId blk = new BlockId(filename, 0);
+		p1.setVal(0, TEST_INT_123);
+		p1.setVal(INT_SIZE, TEST_INT_456);
+		p1.write(blk);
+		
+		// fm.isFileEmpty should cache because file is no longer empty
+		assertFalse(
+				"*****FileTest: the file is no longer empty, cache implementation might be wrong",
+				fm.isFileEmpty(filename));
+	
+		// fm.isFileEmpty use cache completely
+		assertFalse(
+				"*****FileTest: the file is no longer empty, cache implementation might be wrong",
+				fm.isFileEmpty(filename));
+	}
+ }
