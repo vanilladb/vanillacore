@@ -378,10 +378,11 @@ public class RecordFile implements Record {
 			tx.concurrencyMgr().modifyFile(fileName);
 		RecordFormatter fmtr = new RecordFormatter(ti);
 		Buffer buff = tx.bufferMgr().pinNew(fileName, fmtr);
-		tx.bufferMgr().unpin(buff);
+		// Danger!
+		// Must get block before unpin
 		if (!isTempTable())
 			tx.concurrencyMgr().insertBlock(buff.block());
-
+		tx.bufferMgr().unpin(buff);	
 	}
 
 	private FileHeaderPage openHeaderForModification() {
