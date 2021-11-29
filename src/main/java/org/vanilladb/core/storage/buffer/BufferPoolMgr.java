@@ -35,7 +35,7 @@ class BufferPoolMgr {
 
 	// Optimization: Lock striping
 	private static final int stripSize = 1009;
-	private Object[] fileLocks = new Object[stripSize];
+	private ReentrantLock[] fileLocks = new ReentrantLock[stripSize];
 	private ReentrantLock[] blockLocks = new ReentrantLock[stripSize];
 
 	/**
@@ -58,13 +58,13 @@ class BufferPoolMgr {
 			bufferPool[i] = new Buffer();
 
 		for (int i = 0; i < stripSize; ++i) {
-			fileLocks[i] = new Object();
+			fileLocks[i] = new ReentrantLock();
 			blockLocks[i] = new ReentrantLock();
 		}
 	}
 
 	// Optimization: Lock striping
-	private Object prepareAnchor(Object o) {
+	private ReentrantLock prepareFileLock(Object o) {
 		int code = o.hashCode() % fileLocks.length;
 		if (code < 0)
 			code += fileLocks.length;
@@ -220,8 +220,9 @@ class BufferPoolMgr {
 	 */
 	Buffer pinNew(String fileName, PageFormatter fmtr) {
 		// Only the txs acquiring to append the block on the same file will be blocked
-		synchronized (prepareAnchor(fileName)) {
-			
+		ReentrantLock fileLock = prepareFileLock(fileName);
+		fileLock.lock();
+		try {
 			// Choose Unpinned Buffer
 			int lastReplacedBuff = this.lastReplacedBuff;
 			int currBlk = (lastReplacedBuff + 1) % bufferPool.length;
@@ -257,6 +258,8 @@ class BufferPoolMgr {
 				currBlk = (currBlk + 1) % bufferPool.length;
 			}
 			return null;
+		} finally {
+			fileLock.unlock();
 		}
 	}
 
