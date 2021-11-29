@@ -302,7 +302,7 @@ public class Buffer {
 		flush();
 		this.blk = blk;
 		contents.read(blk);
-		pins = new AtomicInteger(0);
+		pins.set(0);
 		lastLsn = LogSeqNum.readFromPage(contents, LAST_LSN_OFFSET);
 	}
 
@@ -327,7 +327,7 @@ public class Buffer {
 		flush();
 		fmtr.format(this);
 		blk = contents.append(fileName);
-		pins = new AtomicInteger(0);
+		pins.set(0);
 		isNew = true;
 		lastLsn = LogSeqNum.DEFAULT_VALUE;
 	}
