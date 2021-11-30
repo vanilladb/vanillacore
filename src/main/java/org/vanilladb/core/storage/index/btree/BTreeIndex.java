@@ -34,9 +34,7 @@ import org.vanilladb.core.storage.tx.concurrency.ConcurrencyMgr;
  * A B-tree implementation of {@link Index}.
  */
 public class BTreeIndex extends Index {
-	
 	protected static enum SearchPurpose { READ, INSERT, DELETE };
-
 	private ConcurrencyMgr ccMgr;
 	private String leafFileName, dirFileName;
 	private BTreeLeaf leaf = null;
@@ -71,13 +69,13 @@ public class BTreeIndex extends Index {
 		
 		// Initialize the first leaf block (if it needed)
 		leafFileName = BTreeLeaf.getFileName(ii.indexName());
-		if (fileSize(leafFileName) == 0)
+		if (isFileEmpty(leafFileName))
 			appendBlock(leafFileName, BTreeLeaf.schema(keyType), new long[] { -1, -1 });
 
 		// Initialize the first directory block (if it needed)
 		dirFileName = BTreeDir.getFileName(ii.indexName());
 		rootBlk = new BlockId(dirFileName, 0);
-		if (fileSize(dirFileName) == 0)
+		if (isFileEmpty(dirFileName))
 			appendBlock(dirFileName, BTreeDir.schema(keyType), new long[] { 0 });
 		
 		// Insert an initial directory entry (if it needed)
@@ -202,7 +200,7 @@ public class BTreeIndex extends Index {
 	/**
 	 * Deletes the specified index record. The method first traverses the
 	 * directory to find the leaf page containing that record; then it deletes
-	 * the record from the page. F
+	 * the record from the page.
 	 * 
 	 * @see Index#delete(SearchKey, RecordId, boolean)
 	 */
@@ -254,18 +252,29 @@ public class BTreeIndex extends Index {
 		leaf = new BTreeLeaf(dataFileName, leafblk, keyType, searchRange, tx);
 	}
 
+	private boolean isFileEmpty(String fileName) {
+		// Optimization
+		// Assume we won't delete the BtreeIndex.
+		// Once the index file is not empty, the file won't be empty again
+		ccMgr.readFile(fileName);
+		return VanillaDb.fileMgr().isFileEmpty(fileName);
+		
+	}
+	
 	private long fileSize(String fileName) {
 		ccMgr.readFile(fileName);
 		return VanillaDb.fileMgr().size(fileName);
 	}
-
+	
 	private BlockId appendBlock(String fileName, Schema sch, long[] flags) {
 		ccMgr.modifyFile(fileName);
 		BTPageFormatter btpf = new BTPageFormatter(sch, flags);
 
 		Buffer buff = tx.bufferMgr().pinNew(fileName, btpf);
+		// Danger!
+		// Must get block before unpin
+		BlockId blk = buff.block();
 		tx.bufferMgr().unpin(buff);
-
-		return buff.block();
+		return blk;
 	}
 }
