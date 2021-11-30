@@ -126,7 +126,7 @@ public class BufferMgr implements TransactionLifecycleListener {
 		try {
 			Buffer buff;
 			long timestamp = System.currentTimeMillis();
-			boolean waitedBeforeGotBuffer = false;
+			boolean waitOnce = false;
 
 			// Try to pin a buffer or the pinned buffer for the given BlockId
 			buff = bufferPool.pin(blk);
@@ -134,7 +134,7 @@ public class BufferMgr implements TransactionLifecycleListener {
 			// If there is no such buffer or no available buffer,
 			// wait for it
 			if (buff == null) {
-				waitedBeforeGotBuffer = true;
+				waitOnce = true;
 				synchronized (bufferPool) {
 					hasWaitingTx.set(true);
 					waitingThreads.add(Thread.currentThread());
@@ -160,8 +160,9 @@ public class BufferMgr implements TransactionLifecycleListener {
 				buffersToFlush.add(buff);
 			}
 
-			// TODO: Add some comment here
-			if (waitedBeforeGotBuffer) {
+			// Optimization: A tx, which have waited once to pin a buffer,
+			// is responsible for notifying other waiting txs.g
+			if (waitOnce) {
 				synchronized (bufferPool) {
 					bufferPool.notifyAll();
 				}
@@ -190,7 +191,7 @@ public class BufferMgr implements TransactionLifecycleListener {
 		try {
 			Buffer buff;
 			long timestamp = System.currentTimeMillis();
-			boolean waitedBeforeGotBuffer = false;
+			boolean waitOnce = false;
 
 			// Try to pin a buffer or the pinned buffer for the given BlockId
 			buff = bufferPool.pinNew(fileName, fmtr);
@@ -198,7 +199,7 @@ public class BufferMgr implements TransactionLifecycleListener {
 			// If there is no such buffer or no available buffer,
 			// wait for it
 			if (buff == null) {
-				waitedBeforeGotBuffer = true;
+				waitOnce = true;
 				synchronized (bufferPool) {
 					waitingThreads.add(Thread.currentThread());
 
@@ -222,8 +223,9 @@ public class BufferMgr implements TransactionLifecycleListener {
 				buffersToFlush.add(buff);
 			}
 
-			// TODO: Add some comment here
-			if (waitedBeforeGotBuffer) {
+			// Optimization: A tx, which have waited once to pin a buffer,
+			// is responsible for notifying other waiting txs.
+			if (waitOnce) {
 				synchronized (bufferPool) {
 					bufferPool.notifyAll();
 				}
@@ -254,6 +256,8 @@ public class BufferMgr implements TransactionLifecycleListener {
 				bufferPool.unpin(buff);
 				pinningBuffers.remove(blk);
 				
+				// Optimization: If there are no txs waiting for pinning buffers,
+				// skip notifying.
 				if (hasWaitingTx.get()) {
 					synchronized (bufferPool) {
 						bufferPool.notifyAll();
