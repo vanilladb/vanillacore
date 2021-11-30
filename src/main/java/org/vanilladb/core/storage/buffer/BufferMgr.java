@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -54,6 +55,7 @@ public class BufferMgr implements TransactionLifecycleListener {
 	protected static final int BUFFER_POOL_SIZE;
 	private static final long MAX_TIME;
 	private static final long EPSILON;
+	private static final AtomicBoolean hasWaitingTx = new AtomicBoolean();
 
 	static {
 		MAX_TIME = CoreProperties.getLoader().getPropertyAsLong(BufferMgr.class.getName() + ".MAX_TIME", 10000);
@@ -124,7 +126,7 @@ public class BufferMgr implements TransactionLifecycleListener {
 		try {
 			Buffer buff;
 			long timestamp = System.currentTimeMillis();
-			boolean waitedBeforeGotBuffer = false;
+			boolean waitOnce = false;
 
 			// Try to pin a buffer or the pinned buffer for the given BlockId
 			buff = bufferPool.pin(blk);
@@ -132,8 +134,9 @@ public class BufferMgr implements TransactionLifecycleListener {
 			// If there is no such buffer or no available buffer,
 			// wait for it
 			if (buff == null) {
-				waitedBeforeGotBuffer = true;
+				waitOnce = true;
 				synchronized (bufferPool) {
+					hasWaitingTx.set(true);
 					waitingThreads.add(Thread.currentThread());
 
 					while (buff == null && !waitingTooLong(timestamp)) {
@@ -143,6 +146,7 @@ public class BufferMgr implements TransactionLifecycleListener {
 					}
 
 					waitingThreads.remove(Thread.currentThread());
+					hasWaitingTx.set(!waitingThreads.isEmpty());
 				}
 			}
 
@@ -156,8 +160,9 @@ public class BufferMgr implements TransactionLifecycleListener {
 				buffersToFlush.add(buff);
 			}
 
-			// TODO: Add some comment here
-			if (waitedBeforeGotBuffer) {
+			// Optimization: A tx, which have waited once to pin a buffer,
+			// is responsible for notifying other waiting txs.
+			if (waitOnce) {
 				synchronized (bufferPool) {
 					bufferPool.notifyAll();
 				}
@@ -186,7 +191,7 @@ public class BufferMgr implements TransactionLifecycleListener {
 		try {
 			Buffer buff;
 			long timestamp = System.currentTimeMillis();
-			boolean waitedBeforeGotBuffer = false;
+			boolean waitOnce = false;
 
 			// Try to pin a buffer or the pinned buffer for the given BlockId
 			buff = bufferPool.pinNew(fileName, fmtr);
@@ -194,7 +199,7 @@ public class BufferMgr implements TransactionLifecycleListener {
 			// If there is no such buffer or no available buffer,
 			// wait for it
 			if (buff == null) {
-				waitedBeforeGotBuffer = true;
+				waitOnce = true;
 				synchronized (bufferPool) {
 					waitingThreads.add(Thread.currentThread());
 
@@ -218,8 +223,9 @@ public class BufferMgr implements TransactionLifecycleListener {
 				buffersToFlush.add(buff);
 			}
 
-			// TODO: Add some comment here
-			if (waitedBeforeGotBuffer) {
+			// Optimization: A tx, which have waited once to pin a buffer,
+			// is responsible for notifying other waiting txs.
+			if (waitOnce) {
 				synchronized (bufferPool) {
 					bufferPool.notifyAll();
 				}
@@ -250,8 +256,12 @@ public class BufferMgr implements TransactionLifecycleListener {
 				bufferPool.unpin(buff);
 				pinningBuffers.remove(blk);
 				
-				synchronized (bufferPool) {
-					bufferPool.notifyAll();
+				// Optimization: If there are no txs waiting for pinning buffers,
+				// skip notifying.
+				if (hasWaitingTx.get()) {
+					synchronized (bufferPool) {
+						bufferPool.notifyAll();
+					}
 				}
 			}
 		}
