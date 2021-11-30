@@ -161,7 +161,7 @@ public class BufferMgr implements TransactionLifecycleListener {
 			}
 
 			// Optimization: A tx, which have waited once to pin a buffer,
-			// is responsible for notifying other waiting txs.g
+			// is responsible for notifying other waiting txs.
 			if (waitOnce) {
 				synchronized (bufferPool) {
 					bufferPool.notifyAll();
