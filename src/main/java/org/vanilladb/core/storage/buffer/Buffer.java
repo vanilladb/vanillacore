@@ -16,6 +16,7 @@
 package org.vanilladb.core.storage.buffer;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -50,7 +51,7 @@ public class Buffer {
 	
 	private Page contents = new Page();
 	private BlockId blk = null;
-	private int pins = 0;
+	private AtomicInteger pins = new AtomicInteger(0);
 	private AtomicBoolean isRecentlyPinned = new AtomicBoolean(false);
 	private boolean isNew = false;
 	private boolean isModified = false;
@@ -58,8 +59,8 @@ public class Buffer {
 	private LogSeqNum lastLsn = LogSeqNum.DEFAULT_VALUE;
 	
 	// Locks
-	private final ReadWriteLock internalLock = new ReentrantReadWriteLock();
-	private final Lock externalLock = new ReentrantLock();
+	private final ReadWriteLock contentLock = new ReentrantReadWriteLock();
+	private final Lock swapLock = new ReentrantLock();
 	private final Lock flushLock = new ReentrantLock();
 	
 	/**
@@ -90,11 +91,11 @@ public class Buffer {
 		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
 		int stage = TransactionProfiler.getStageIndicator();
 
-		if (!internalLock.readLock().tryLock()) {
+
+		if (!contentLock.readLock().tryLock()) {
 			BufferPoolMonitor.incrementReadWaitCounter();
-			
 			profiler.startComponentProfiler(stage+"-Buffer.getVal internalLock");
-			internalLock.readLock().lock();
+			contentLock.readLock().lock();
 			profiler.stopComponentProfiler(stage+"-Buffer.getVal internalLock");
 		}
 
@@ -104,14 +105,14 @@ public class Buffer {
 				
 			return contents.getVal(DATA_START_OFFSET + offset, type);
 		} finally {
-			internalLock.readLock().unlock();
+			contentLock.readLock().unlock();
 		}
 	}
 	
 	void setVal(int offset, Constant val) {
-		if (!internalLock.writeLock().tryLock()) {
+		if (!contentLock.writeLock().tryLock()) {
 			BufferPoolMonitor.incrementWriteWaitCounter();
-			internalLock.writeLock().lock();
+			contentLock.writeLock().lock();
 		}
 		try {
 			if (offset < 0 || offset >= BUFFER_SIZE)
@@ -119,7 +120,7 @@ public class Buffer {
 			
 			contents.setVal(DATA_START_OFFSET + offset, val);
 		} finally {
-			internalLock.writeLock().unlock();
+			contentLock.writeLock().unlock();
 		}
 	}
 
@@ -140,9 +141,9 @@ public class Buffer {
 	 *            the LSN of the corresponding log record
 	 */
 	public void setVal(int offset, Constant val, long txNum, LogSeqNum lsn) {
-		if (!internalLock.writeLock().tryLock()) {
+		if (!contentLock.writeLock().tryLock()) {
 			BufferPoolMonitor.incrementWriteWaitCounter();
-			internalLock.writeLock().lock();
+			contentLock.writeLock().lock();
 		}
 		try {
 			if (offset < 0 || offset >= BUFFER_SIZE)
@@ -156,7 +157,7 @@ public class Buffer {
 			lastLsn.writeToPage(contents, LAST_LSN_OFFSET);
 			contents.setVal(DATA_START_OFFSET + offset, val);
 		} finally {
-			internalLock.writeLock().unlock();
+			contentLock.writeLock().unlock();
 		}
 	}
 	
@@ -168,32 +169,31 @@ public class Buffer {
 	 * @return the LSN of the latest affected log record
 	 */
 	public LogSeqNum lastLsn(){
-		if (!internalLock.readLock().tryLock()) {
+		if (!contentLock.readLock().tryLock()) {
 			BufferPoolMonitor.incrementReadWaitCounter();
-			internalLock.readLock().lock();
+			// Use contentLock because lastLsn will be modified from setVal.
+			contentLock.readLock().lock();
 		}
 		try {
 			return lastLsn;
 		} finally {
-			internalLock.readLock().unlock();
+			contentLock.readLock().unlock();
 		}
 	}
 
 	/**
-	 * Returns a block ID refers to the disk block that the buffer is pinned to.
+	 * Returns a block ID refers to the disk block that the buffer is pinned to. <br><br>
+	 * 
+	 * <b>Warning:</b><br>
+	 * Always make sure to get buff.block() before unpin.<br>
+	 * Or you may get an unexpected block.
 	 * 
 	 * @return a block ID
 	 */
 	public BlockId block() {
-		if (!internalLock.readLock().tryLock()) {
-			BufferPoolMonitor.incrementReadWaitCounter();
-			internalLock.readLock().lock();
-		}
-		try {
-			return blk;
-		} finally {
-			internalLock.readLock().unlock();
-		}
+		// Optimization
+		// blk will be modified only if no txs pin this buffer 
+		return blk;
 	}
 	
 	/**
@@ -218,19 +218,19 @@ public class Buffer {
 		flushLock.unlock();
 	}
 	
-	protected Lock getExternalLock() {
-		return externalLock;
+	protected Lock getSwapLock() {
+		return swapLock;
 	}
 
 	protected void close() {
-		if (!internalLock.writeLock().tryLock()) {
+		if (!contentLock.writeLock().tryLock()) {
 			BufferPoolMonitor.incrementWriteWaitCounter();
-			internalLock.writeLock().lock();
+			contentLock.writeLock().lock();
 		}
 		try {
 			contents.close();
 		} finally {
-			internalLock.writeLock().unlock();
+			contentLock.writeLock().unlock();
 		}
 	}
 
@@ -240,9 +240,9 @@ public class Buffer {
 	 * to writing the page to disk.
 	 */
 	void flush() {
-		if (!internalLock.writeLock().tryLock()) {
+		if (!contentLock.writeLock().tryLock()) {
 			BufferPoolMonitor.incrementWriteWaitCounter();
-			internalLock.writeLock().lock();
+			contentLock.writeLock().lock();
 		}
 		flushLock.lock();
 		try {
@@ -254,7 +254,7 @@ public class Buffer {
 			}
 		} finally {
 			flushLock.unlock();
-			internalLock.writeLock().unlock();
+			contentLock.writeLock().unlock();
 		}
 	}
 
@@ -262,45 +262,21 @@ public class Buffer {
 	 * Increases the buffer's pin count.
 	 */
 	void pin() {
-		// profiler
-		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
-		int stage = TransactionProfiler.getStageIndicator();
-		
-		if (!internalLock.writeLock().tryLock()) {
-			BufferPoolMonitor.incrementWriteWaitCounter();
-			
-			profiler.startComponentProfiler(stage + "-Buffer.pin internalLock");
-			internalLock.writeLock().lock();
-			profiler.stopComponentProfiler(stage + "-Buffer.pin internalLock");
-		}
-		try {
-			pins++;
-			isRecentlyPinned.set(true);
-		} finally {
-			internalLock.writeLock().unlock();
-		}
+		// Optimization: This might be a danger optimization
+		// We have to make sure that txs have acquired swapLock before pin(),
+		// so that no two txs can call pin at the same time.
+		pins.incrementAndGet();
+		isRecentlyPinned.set(true);
 	}
 
 	/**
 	 * Decreases the buffer's pin count.
 	 */
 	void unpin() {
-		// profiler
-		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
-		int stage = TransactionProfiler.getStageIndicator();
-		
-		if (!internalLock.writeLock().tryLock()) {
-			BufferPoolMonitor.incrementWriteWaitCounter();
-			
-			profiler.startComponentProfiler(stage+"-Buffer.unpin internalLock");
-			internalLock.writeLock().lock();
-			profiler.stopComponentProfiler(stage+"-Buffer.unpin internalLock");
-		}
-		try {
-			pins--;
-		} finally {
-			internalLock.writeLock().unlock();
-		}
+		// Optimization: This might be a danger optimization
+		// We have to make sure that txs have acquired swapLock before unpin(),
+		// so that no two txs can call unpin at the same time.
+		pins.decrementAndGet();
 	}
 
 	/**
@@ -310,15 +286,10 @@ public class Buffer {
 	 * @return true if the buffer is pinned
 	 */
 	boolean isPinned() {
-		if (!internalLock.readLock().tryLock()) {
-			BufferPoolMonitor.incrementReadWaitCounter();
-			internalLock.readLock().lock();
-		}
-		try {
-			return pins > 0;
-		} finally {
-			internalLock.readLock().unlock();
-		}
+		// Optimization: This might be a danger optimization
+		// We have to make sure that txs have acquired swapLock before isPinned(),
+		// so that no two txs can call isPinned at the same time.
+		return pins.get() > 0;
 	}
 	
 	boolean checkRecentlyPinnedAndReset() {
@@ -331,14 +302,14 @@ public class Buffer {
 	 * @return true if the buffer is dirty
 	 */
 	boolean isModified() {
-		if (!internalLock.writeLock().tryLock()) {
+		if (!contentLock.writeLock().tryLock()) {
 			BufferPoolMonitor.incrementWriteWaitCounter();
-			internalLock.writeLock().lock();
+			contentLock.writeLock().lock();
 		}
 		try {
 			return isModified;
 		} finally {
-			internalLock.writeLock().unlock();
+			contentLock.writeLock().unlock();
 		}
 	}
 
@@ -351,19 +322,18 @@ public class Buffer {
 	 *            a block ID
 	 */
 	void assignToBlock(BlockId blk) {
-		if (!internalLock.writeLock().tryLock()) {
-			BufferPoolMonitor.incrementWriteWaitCounter();
-			internalLock.writeLock().lock();
+		// Optimization: This might be a danger optimization
+		// This method is called because no tx pin this buffer,
+		// which means no tx will modify or read the content.
+		if (pins.get() > 0) {
+			throw new RuntimeException("The buffer is pinned by other transactions");
 		}
-		try {
-			flush();
-			this.blk = blk;
-			contents.read(blk);
-			pins = 0;
-			lastLsn = LogSeqNum.readFromPage(contents, LAST_LSN_OFFSET);
-		} finally {
-			internalLock.writeLock().unlock();
-		}
+		
+		flush();
+		this.blk = blk;
+		contents.read(blk);
+		pins.set(0);
+		lastLsn = LogSeqNum.readFromPage(contents, LAST_LSN_OFFSET);
 	}
 
 	/**
@@ -377,20 +347,19 @@ public class Buffer {
 	 *            a page formatter, used to initialize the page
 	 */
 	void assignToNew(String fileName, PageFormatter fmtr) {
-		if (!internalLock.writeLock().tryLock()) {
-			BufferPoolMonitor.incrementWriteWaitCounter();
-			internalLock.writeLock().lock();
+		// Optimization: This might be a danger optimization
+		// This method is called because no tx pin this buffer,
+		// which means no tx will modify or read the content.
+		if (pins.get() > 0) {
+			throw new RuntimeException("The buffer is pinned by other transactions");
 		}
-		try {
-			flush();
-			fmtr.format(this);
-			blk = contents.append(fileName);
-			pins = 0;
-			isNew = true;
-			lastLsn = LogSeqNum.DEFAULT_VALUE;
-		} finally {
-			internalLock.writeLock().unlock();
-		}
+		
+		flush();
+		fmtr.format(this);
+		blk = contents.append(fileName);
+		pins.set(0);
+		isNew = true;
+		lastLsn = LogSeqNum.DEFAULT_VALUE;
 	}
 	
 	/**
@@ -403,6 +372,6 @@ public class Buffer {
 	}
 	
 	int getPinCount() {
-		return pins;
+		return pins.get();
 	}
 }
