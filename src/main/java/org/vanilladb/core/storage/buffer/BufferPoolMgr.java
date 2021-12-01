@@ -36,6 +36,8 @@ class BufferPoolMgr {
 	private AtomicInteger totalCount;
 	private AtomicInteger missCount;
 
+	private AtomicInteger blockLockWaitCount;
+
 	// Optimization: Lock striping
 	private static final int stripSize = 1009;
 	private ReentrantLock[] fileLocks = new ReentrantLock[stripSize];
@@ -58,6 +60,7 @@ class BufferPoolMgr {
 		numAvailable = new AtomicInteger(numBuffs);
 		totalCount = new AtomicInteger();
 		missCount = new AtomicInteger();
+		blockLockWaitCount = new AtomicInteger();
 		lastReplacedBuff = 0;
 		for (int i = 0; i < numBuffs; i++)
 			bufferPool[i] = new Buffer();
@@ -112,7 +115,10 @@ class BufferPoolMgr {
 		// The blockLock prevents race condition.
 		// Only one tx can trigger the swapping action for the same block.
 		ReentrantLock blockLock = prepareBlockLock(blk);
-		blockLock.lock();
+		if (!blockLock.tryLock()) {
+			blockLockWaitCount.incrementAndGet();
+			blockLock.lock();
+		}
 		try {
 			// Find existing buffer
 			Buffer buff = findExistingBuffer(blk);
@@ -291,5 +297,9 @@ class BufferPoolMgr {
 			return 1.0;
 		else
 			return (1 - ((double) miss) / ((double) total));
+	}
+	
+	int blockLockWaitCount() {
+		return blockLockWaitCount.getAndSet(0);
 	}
 }
