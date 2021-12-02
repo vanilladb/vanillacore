@@ -52,8 +52,8 @@ public class RecordFile implements Record {
 	private long currentBlkNum;
 	private boolean doLog;
 	private boolean isBeforeFirsted;
-	private static AtomicInteger fhpWaitCount;
-	private static AtomicInteger fhpReleaseCount;
+	private static AtomicInteger fhpWaitCount = new AtomicInteger();
+	private static AtomicInteger fhpReleaseCount= new AtomicInteger();
 
 	/**
 	 * Constructs an object to manage a file of records. If the file does not
