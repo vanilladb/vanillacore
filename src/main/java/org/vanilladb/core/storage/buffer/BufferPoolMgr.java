@@ -18,6 +18,7 @@ package org.vanilladb.core.storage.buffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.vanilladb.core.server.VanillaDb;
@@ -35,9 +36,8 @@ class BufferPoolMgr {
 	
 	private AtomicInteger totalCount;
 	private AtomicInteger missCount;
-
-	private AtomicInteger blockLockWaitDiff;
 	private AtomicInteger blockLockWaitCount;
+	private AtomicInteger blockLockReleaseCount;
 
 	// Optimization: Lock striping
 	private static final int stripSize = 1009;
@@ -61,8 +61,9 @@ class BufferPoolMgr {
 		numAvailable = new AtomicInteger(numBuffs);
 		totalCount = new AtomicInteger();
 		missCount = new AtomicInteger();
-		blockLockWaitDiff = new AtomicInteger();
 		blockLockWaitCount = new AtomicInteger();
+		blockLockReleaseCount = new AtomicInteger();
+		
 		lastReplacedBuff = 0;
 		for (int i = 0; i < numBuffs; i++)
 			bufferPool[i] = new Buffer();
@@ -117,11 +118,9 @@ class BufferPoolMgr {
 		// The blockLock prevents race condition.
 		// Only one tx can trigger the swapping action for the same block.
 		ReentrantLock blockLock = prepareBlockLock(blk);
-		if (!blockLock.tryLock()) {
-			blockLockWaitDiff.incrementAndGet();
-			blockLockWaitCount.set(blockLock.getQueueLength());
-			blockLock.lock();
-		}
+		blockLockWaitCount.incrementAndGet();
+		blockLock.lock();
+		blockLockWaitCount.decrementAndGet();
 		try {
 			// Find existing buffer
 			Buffer buff = findExistingBuffer(blk);
@@ -176,6 +175,7 @@ class BufferPoolMgr {
 				// Early release the blockLock
 				// because the following txs, which need the same block, will get the same non-null buffer
 				blockLock.unlock();
+				blockLockReleaseCount.incrementAndGet();
 				
 				try {
 					// Check its block id before pinning since it might be swapped
@@ -197,6 +197,7 @@ class BufferPoolMgr {
 			// unlocking a lock twice will get an exception 
 			if (blockLock.isHeldByCurrentThread()) {
 				blockLock.unlock();
+				blockLockReleaseCount.incrementAndGet();
 			}
 		}
 	}
@@ -302,8 +303,8 @@ class BufferPoolMgr {
 			return (1 - ((double) miss) / ((double) total));
 	}
 		
-	int blockLockWaitDiff() {
-		return blockLockWaitDiff.getAndSet(0);
+	int blockLockReleaseCount() {
+		return blockLockReleaseCount.getAndSet(0);
 	}
 	
 	int blockLockWaitCount() {
