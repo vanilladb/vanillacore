@@ -45,6 +45,10 @@ public class BufferPoolMonitor {
 		return (int) diff;
 	}
 	
+	public static int getBlockWaitDiff() {
+		return BufferMgr.bufferPool.blockLockWaitDiff();
+	}
+	
 	public static int getBlockWaitCount() {
 		return BufferMgr.bufferPool.blockLockWaitCount();
 	}
