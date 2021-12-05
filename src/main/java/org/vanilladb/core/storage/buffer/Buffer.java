@@ -141,11 +141,15 @@ public class Buffer {
 				throw new IndexOutOfBoundsException("" + offset);
 			
 			isModified = true;
+
 			if (lsn != null && lsn.compareTo(lastLsn) > 0)
 				lastLsn = lsn;
 			
-			// Put the last LSN in front of the data
-			lastLsn.writeToPage(contents, LAST_LSN_OFFSET);
+			if (lsn != null) {
+				// Put the last LSN in front of the data
+				lastLsn.writeToPage(contents, LAST_LSN_OFFSET);
+			}
+			
 			contents.setVal(DATA_START_OFFSET + offset, val);
 		} finally {
 			contentLock.writeLock().unlock();
