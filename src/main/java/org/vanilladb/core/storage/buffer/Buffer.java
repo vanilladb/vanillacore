@@ -57,6 +57,8 @@ public class Buffer {
 	// TODO: We use (-1, -1) for the default value. Will this be a problem ?
 	private LogSeqNum lastLsn = LogSeqNum.DEFAULT_VALUE;
 	
+	private static final AtomicInteger pageGetValWaitCount = new AtomicInteger(); 
+	private static final AtomicInteger pageSetValWaitCount = new AtomicInteger();
 	private static final AtomicInteger pageGetValReleaseCount = new AtomicInteger(); 
 	private static final AtomicInteger pageSetValReleaseCount = new AtomicInteger();
 	
@@ -65,13 +67,21 @@ public class Buffer {
 	private final Lock swapLock = new ReentrantLock();
 	private final Lock flushLock = new ReentrantLock();
 	
+	public static int getPageGetValWaitCount() { 
+		return pageGetValWaitCount.getAndSet(0); 
+	}
+	
+	public static int getPageSetValWaitCount() { 
+		return pageSetValWaitCount.getAndSet(0); 
+	}
+	
 	public static int getPageGetValReleaseCount() { 
 		return pageGetValReleaseCount.getAndSet(0); 
 	} 
 	 
 	public static int getPageSetValReleaseCount() { 
 		return pageSetValReleaseCount.getAndSet(0); 
-	} 
+	}
 	
 	/**
 	 * Creates a new buffer, wrapping a new {@link Page page}. This constructor
@@ -105,7 +115,9 @@ public class Buffer {
 			if (offset < 0 || offset >= BUFFER_SIZE)
 				throw new IndexOutOfBoundsException("" + offset);
 				
-			Constant c = contents.getVal(DATA_START_OFFSET + offset, type); 
+			pageGetValWaitCount.incrementAndGet();
+			Constant c = contents.getVal(DATA_START_OFFSET + offset, type);
+			pageGetValWaitCount.decrementAndGet();
 			pageGetValReleaseCount.incrementAndGet();
 			return c;
 		} finally {
@@ -122,7 +134,9 @@ public class Buffer {
 			if (offset < 0 || offset >= BUFFER_SIZE)
 				throw new IndexOutOfBoundsException("" + offset);
 			
+			pageSetValWaitCount.incrementAndGet();
 			contents.setVal(DATA_START_OFFSET + offset, val);
+			pageSetValWaitCount.decrementAndGet();
 			pageSetValReleaseCount.incrementAndGet();
 		} finally {
 			contentLock.writeLock().unlock();
@@ -164,7 +178,9 @@ public class Buffer {
 				lastLsn.writeToPage(contents, LAST_LSN_OFFSET);
 			}
 			
+			pageSetValWaitCount.incrementAndGet();
 			contents.setVal(DATA_START_OFFSET + offset, val);
+			pageSetValWaitCount.decrementAndGet();
 			pageSetValReleaseCount.incrementAndGet();
 		} finally {
 			contentLock.writeLock().unlock();
