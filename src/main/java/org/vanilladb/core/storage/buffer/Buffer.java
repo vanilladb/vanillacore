@@ -57,10 +57,21 @@ public class Buffer {
 	// TODO: We use (-1, -1) for the default value. Will this be a problem ?
 	private LogSeqNum lastLsn = LogSeqNum.DEFAULT_VALUE;
 	
+	private static final AtomicInteger pageGetValReleaseCount = new AtomicInteger(); 
+	private static final AtomicInteger pageSetValReleaseCount = new AtomicInteger();
+	
 	// Locks
 	private final ReadWriteLock contentLock = new ReentrantReadWriteLock();
 	private final Lock swapLock = new ReentrantLock();
 	private final Lock flushLock = new ReentrantLock();
+	
+	public static int getPageGetValReleaseCount() { 
+		return pageGetValReleaseCount.getAndSet(0); 
+	} 
+	 
+	public static int getPageSetValReleaseCount() { 
+		return pageSetValReleaseCount.getAndSet(0); 
+	} 
 	
 	/**
 	 * Creates a new buffer, wrapping a new {@link Page page}. This constructor
@@ -94,7 +105,9 @@ public class Buffer {
 			if (offset < 0 || offset >= BUFFER_SIZE)
 				throw new IndexOutOfBoundsException("" + offset);
 				
-			return contents.getVal(DATA_START_OFFSET + offset, type);
+			Constant c = contents.getVal(DATA_START_OFFSET + offset, type); 
+			pageGetValReleaseCount.incrementAndGet();
+			return c;
 		} finally {
 			contentLock.readLock().unlock();
 		}
@@ -110,6 +123,7 @@ public class Buffer {
 				throw new IndexOutOfBoundsException("" + offset);
 			
 			contents.setVal(DATA_START_OFFSET + offset, val);
+			pageSetValReleaseCount.incrementAndGet();
 		} finally {
 			contentLock.writeLock().unlock();
 		}
@@ -151,6 +165,7 @@ public class Buffer {
 			}
 			
 			contents.setVal(DATA_START_OFFSET + offset, val);
+			pageSetValReleaseCount.incrementAndGet();
 		} finally {
 			contentLock.writeLock().unlock();
 		}
