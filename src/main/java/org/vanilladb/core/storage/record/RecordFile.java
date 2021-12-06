@@ -15,6 +15,8 @@
  *******************************************************************************/
 package org.vanilladb.core.storage.record;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.Constant;
 import org.vanilladb.core.sql.Record;
@@ -50,6 +52,8 @@ public class RecordFile implements Record {
 	private long currentBlkNum;
 	private boolean doLog;
 	private boolean isBeforeFirsted;
+	private static AtomicInteger fhpWaitCount = new AtomicInteger();
+	private static AtomicInteger fhpReleaseCount= new AtomicInteger();
 
 	/**
 	 * Constructs an object to manage a file of records. If the file does not
@@ -89,6 +93,14 @@ public class RecordFile implements Record {
 			Buffer buff = tx.bufferMgr().pinNew(fileName, fhf);
 			tx.bufferMgr().unpin(buff);
 		}
+	}
+	
+	public static int fhpWaitCount() {
+		return fhpWaitCount.get();
+	}
+	
+	public static int fhpReleaseCount() {
+		return fhpReleaseCount.getAndSet(0);
 	}
 
 	/**
@@ -387,8 +399,13 @@ public class RecordFile implements Record {
 
 	private FileHeaderPage openHeaderForModification() {
 		// acquires exclusive access to the header
-		if (!isTempTable())
+		if (!isTempTable()) {
+			fhpWaitCount.incrementAndGet();
 			tx.concurrencyMgr().lockRecordFileHeader(headerBlk);
+			fhpReleaseCount.incrementAndGet();
+			fhpWaitCount.decrementAndGet();
+
+		}
 		return new FileHeaderPage(fileName, tx);
 	}
 

@@ -45,6 +45,14 @@ public class BufferPoolMonitor {
 		return (int) diff;
 	}
 	
+	public static int getBlockReleaseCount() {
+		return BufferMgr.bufferPool.blockLockReleaseCount();
+	}
+	
+	public static int getBlockWaitCount() {
+		return BufferMgr.bufferPool.blockLockWaitCount();
+	}
+	
 	static void incrementReadWaitCounter() {
 		int threadId = (int) Thread.currentThread().getId();
 		readWaitCounters[threadId]++;

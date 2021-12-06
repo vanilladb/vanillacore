@@ -37,6 +37,8 @@ class BufferPoolMgr {
 	
 	private AtomicInteger totalCount;
 	private AtomicInteger missCount;
+	private AtomicInteger blockLockWaitCount;
+	private AtomicInteger blockLockReleaseCount;
 
 	// Optimization: Lock striping
 	private static final int stripSize = 1009;
@@ -62,6 +64,9 @@ class BufferPoolMgr {
 		numAvailable = new AtomicInteger(numBuffs);
 		totalCount = new AtomicInteger();
 		missCount = new AtomicInteger();
+		blockLockWaitCount = new AtomicInteger();
+		blockLockReleaseCount = new AtomicInteger();
+		
 		lastReplacedBuff = 0;
 		for (int i = 0; i < numBuffs; i++)
 			bufferPool[i] = new Buffer();
@@ -121,9 +126,11 @@ class BufferPoolMgr {
 		// Only one tx can trigger the swapping action for the same block.
 		ReentrantLock blockLock = prepareBlockLock(blk);
 		
-		profiler.startComponentProfiler(stage + "-BufferPoolMgr.pin anchor");
+		profiler.startComponentProfiler(stage + "-BufferPoolMgr.pin block Lock");
+		blockLockWaitCount.incrementAndGet();
 		blockLock.lock();
-		profiler.stopComponentProfiler(stage + "-BufferPoolMgr.pin anchor");
+		blockLockWaitCount.decrementAndGet();
+		profiler.stopComponentProfiler(stage + "-BufferPoolMgr.pin block Lock");
 
 		try {
 			// Find existing buffer
@@ -179,6 +186,7 @@ class BufferPoolMgr {
 				// Early release the blockLock
 				// because the following txs, which need the same block, will get the same non-null buffer
 				blockLock.unlock();
+				blockLockReleaseCount.incrementAndGet();
 				
 				try {
 					// Check its block id before pinning since it might be swapped
@@ -200,6 +208,7 @@ class BufferPoolMgr {
 			// unlocking a lock twice will get an exception 
 			if (blockLock.isHeldByCurrentThread()) {
 				blockLock.unlock();
+				blockLockReleaseCount.incrementAndGet();
 			}
 		}
 	}
@@ -310,5 +319,13 @@ class BufferPoolMgr {
 			return 1.0;
 		else
 			return (1 - ((double) miss) / ((double) total));
+	}
+		
+	int blockLockReleaseCount() {
+		return blockLockReleaseCount.getAndSet(0);
+	}
+	
+	int blockLockWaitCount() {
+		return blockLockWaitCount.get();
 	}
 }
