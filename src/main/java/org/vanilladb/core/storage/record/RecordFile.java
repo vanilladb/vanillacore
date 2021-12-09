@@ -27,6 +27,7 @@ import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.file.Page;
 import org.vanilladb.core.storage.metadata.TableInfo;
 import org.vanilladb.core.storage.tx.Transaction;
+import org.vanilladb.core.util.TransactionProfiler;
 
 /**
  * Manages a file of records. There are methods for iterating through the
@@ -398,10 +399,15 @@ public class RecordFile implements Record {
 	}
 
 	private FileHeaderPage openHeaderForModification() {
+		TransactionProfiler txProfiler = TransactionProfiler.getLocalProfiler();
+		int stage = TransactionProfiler.getStageIndicator();
+		
 		// acquires exclusive access to the header
 		if (!isTempTable()) {
 			fhpWaitCount.incrementAndGet();
+			txProfiler.startComponentProfiler(stage + "-Record File Header Lock");
 			tx.concurrencyMgr().lockRecordFileHeader(headerBlk);
+			txProfiler.stopComponentProfiler(stage + "-Record File Header Lock");
 			fhpReleaseCount.incrementAndGet();
 			fhpWaitCount.decrementAndGet();
 

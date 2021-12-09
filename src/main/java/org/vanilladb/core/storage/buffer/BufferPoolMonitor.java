@@ -44,11 +44,11 @@ public class BufferPoolMonitor {
 		lastTotalWriteWaitCount = count;
 		return (int) diff;
 	}
-	
+	// modify
 	public static int getBlockReleaseCount() {
 		return BufferMgr.bufferPool.blockLockReleaseCount();
 	}
-	
+	// modify
 	public static int getBlockWaitCount() {
 		return BufferMgr.bufferPool.blockLockWaitCount();
 	}
