@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.server.task.Task;
 import org.vanilladb.core.util.CoreProperties;
+import org.vanilladb.core.util.TransactionProfiler;
 
 /**
  * Checks the compatibility of locking requests on a single item (e.g., file,
@@ -210,16 +211,27 @@ class LockTable {
 	 * 
 	 */
 	void xLock(Object obj, long txNum) {
+		TransactionProfiler txProfiler = TransactionProfiler.getLocalProfiler();
+		int stage = TransactionProfiler.getStageIndicator();
+		
+		txProfiler.startComponentProfiler(stage + "-xLock getAnchor");
 		Object anchor = getAnchor(obj);
+		txProfiler.stopComponentProfiler(stage + "-xLock getAnchor");
 		txWaitMap.put(txNum, anchor);
+		txProfiler.startComponentProfiler(stage + "-xLock Anchor lock");
 		synchronized (anchor) {
+			txProfiler.stopComponentProfiler(stage + "-xLock Anchor lock");
+			
+			txProfiler.startComponentProfiler(stage + "-xLock prepareLockers");
 			Lockers lks = prepareLockers(obj);
+			txProfiler.stopComponentProfiler(stage + "-xLock prepareLockers");
 
 			if (hasXLock(lks, txNum))
 				return;
 
 			try {
 				long timestamp = System.currentTimeMillis();
+				txProfiler.startComponentProfiler(stage + "-xLock avoidDeadlock");
 				while (!xLockable(lks, txNum) && !waitingTooLong(timestamp)) {
 					avoidDeadlock(lks, txNum, X_LOCK);
 					lks.requestSet.add(txNum);
@@ -228,7 +240,11 @@ class LockTable {
 					lks.requestSet.remove(txNum);
 				}
 				if (!xLockable(lks, txNum))
+				{
+					txProfiler.stopComponentProfiler(stage + "-xLock avoidDeadlock");
 					throw new LockAbortException();
+				}					
+				txProfiler.stopComponentProfiler(stage + "-xLock avoidDeadlock");
 				lks.xLocker = txNum;
 				getObjectSet(txNum).add(obj);
 			} catch (InterruptedException e) {
