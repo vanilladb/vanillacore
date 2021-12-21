@@ -45,7 +45,7 @@ public class TransactionProfiler {
 	
 	public void setStageIndicator(int stage) {
 		if (stage < 0) {
-			throw new IllegalArgumentException("negative stage value is unacceptable");
+			throw new IllegalArgumentException("Negative stage value is unacceptable. Use resetStageIndicator instead.");
 		}
 		stageIndicator = stage;
 	}
