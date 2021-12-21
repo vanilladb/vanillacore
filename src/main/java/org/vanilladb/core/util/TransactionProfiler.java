@@ -54,6 +54,10 @@ public class TransactionProfiler {
 		}
 		stageIndicator.set(stage);
 	}
+	
+	public static void resetStageIndicator() {
+		stageIndicator.set(-1);
+	}
 
 	/**
 	 * Get the profiler local to this thread.
