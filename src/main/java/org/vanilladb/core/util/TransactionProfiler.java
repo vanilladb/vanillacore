@@ -25,12 +25,10 @@ import java.util.List;
 import java.util.Map;
 
 public class TransactionProfiler {
-
 	private static final String TOTAL_KEY = "Total";
 	public static final boolean ENABLE_CPU_TIMER = true;
 	public static final boolean ENABLE_DISKIO_COUNTER = true;
 	public static final boolean ENABLE_NETWORKIO_COUNTER = true;
-	private int stageIndicator = -1;
 	
 	private static final ThreadLocal<TransactionProfiler> LOCAL_PROFILER = new ThreadLocal<TransactionProfiler>() {
 		@Override
@@ -38,21 +36,6 @@ public class TransactionProfiler {
 			return new TransactionProfiler();
 		}
 	};
-	
-	private boolean isMatchStage(int stage) {
-		return stageIndicator == stage;
-	}
-	
-	public void setStageIndicator(int stage) {
-		if (stage < 0) {
-			throw new IllegalArgumentException("Negative stage value is unacceptable. Use resetStageIndicator instead.");
-		}
-		stageIndicator = stage;
-	}
-	
-	public void resetStageIndicator() {
-		stageIndicator = -1;
-	}
 
 	/**
 	 * Get the profiler local to this thread.
@@ -197,6 +180,7 @@ public class TransactionProfiler {
 	private int diskIOCount = 0;
 	private int networkInSize = 0;
 	private int networkOutSize = 0;
+	private int stageIndicator = -1;
 
 	public TransactionProfiler(TransactionProfiler profiler) {
 		for (Map.Entry<Object, SubProfiler> subProfiler : profiler.subProfilers.entrySet())
@@ -217,6 +201,21 @@ public class TransactionProfiler {
 		diskIOCount = 0;
 		networkInSize = 0;
 		networkOutSize = 0;
+	}
+	
+	public void setStageIndicator(int stage) {
+		if (stage < 0) {
+			throw new IllegalArgumentException("Negative stage value is unacceptable. Use resetStageIndicator instead.");
+		}
+		stageIndicator = stage;
+	}
+	
+	public void resetStageIndicator() {
+		stageIndicator = -1;
+	}
+	
+	private boolean isMatchStage(int stage) {
+		return stageIndicator == stage;
 	}
 
 	public void incrementDiskIOCount() {
