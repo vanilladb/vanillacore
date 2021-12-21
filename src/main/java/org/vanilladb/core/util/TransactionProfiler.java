@@ -30,12 +30,7 @@ public class TransactionProfiler {
 	public static final boolean ENABLE_CPU_TIMER = true;
 	public static final boolean ENABLE_DISKIO_COUNTER = true;
 	public static final boolean ENABLE_NETWORKIO_COUNTER = true;
-	private static final ThreadLocal<Integer> stageIndicator = new ThreadLocal<Integer>(){
-		@Override
-		protected Integer initialValue() {
-			return -1;
-		}
-	};
+	private int stageIndicator = -1;
 	
 	private static final ThreadLocal<TransactionProfiler> LOCAL_PROFILER = new ThreadLocal<TransactionProfiler>() {
 		@Override
@@ -44,19 +39,19 @@ public class TransactionProfiler {
 		}
 	};
 	
-	public static boolean isMatchStage(int stage) {
-		return stageIndicator.get() == stage;
+	private boolean isMatchStage(int stage) {
+		return stageIndicator == stage;
 	}
 	
-	public static void setStageIndicator(int stage) {
+	public void setStageIndicator(int stage) {
 		if (stage < 0) {
 			throw new IllegalArgumentException("negative stage value is unacceptable");
 		}
-		stageIndicator.set(stage);
+		stageIndicator = stage;
 	}
 	
-	public static void resetStageIndicator() {
-		stageIndicator.set(-1);
+	public void resetStageIndicator() {
+		stageIndicator = -1;
 	}
 
 	/**
