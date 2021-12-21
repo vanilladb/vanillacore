@@ -30,6 +30,12 @@ public class TransactionProfiler {
 	public static final boolean ENABLE_CPU_TIMER = true;
 	public static final boolean ENABLE_DISKIO_COUNTER = true;
 	public static final boolean ENABLE_NETWORKIO_COUNTER = true;
+	private static final ThreadLocal<Integer> stageIndicator = new ThreadLocal<Integer>(){
+		@Override
+		protected Integer initialValue() {
+			return -1;
+		}
+	};
 	
 	private static final ThreadLocal<TransactionProfiler> LOCAL_PROFILER = new ThreadLocal<TransactionProfiler>() {
 		@Override
@@ -37,6 +43,17 @@ public class TransactionProfiler {
 			return new TransactionProfiler();
 		}
 	};
+	
+	public static boolean isMatchStage(int stage) {
+		return stageIndicator.get() == stage;
+	}
+	
+	public static void setStageIndicator(int stage) {
+		if (stage < 0) {
+			throw new IllegalArgumentException("negative stage value is unacceptable");
+		}
+		stageIndicator.set(stage);
+	}
 
 	/**
 	 * Get the profiler local to this thread.
@@ -243,11 +260,23 @@ public class TransactionProfiler {
 		SubProfiler profiler = getOrNewSubProfiler(component);
 		profiler.startProfiler(diskIOCount, networkInSize, networkOutSize);
 	}
+	
+	public void startComponentProfilerAtGivenStage(Object component, int stage) {
+		if (isMatchStage(stage)) {
+			startComponentProfiler(component);
+		}
+	}
 
 	public void stopComponentProfiler(Object component) {
 		SubProfiler profiler = subProfilers.get(component);
 		if (profiler != null) {
 			profiler.stopProfiler(diskIOCount, networkInSize, networkOutSize);		
+		}
+	}
+	
+	public void stopComponentProfilerAtGivenStage(Object component, int stage) {
+		if (isMatchStage(stage)) {
+			stopComponentProfiler(component);
 		}
 	}
 
