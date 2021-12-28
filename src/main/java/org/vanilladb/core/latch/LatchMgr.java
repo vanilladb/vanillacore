@@ -13,6 +13,7 @@ public class LatchMgr {
 		latchMap.put(name, normalLatch);
 		return normalLatch;
 	}
+	
 	public ReadWriteLatch registerReadWriteLatch(String name) {
 		ReadWriteLatch latch = new ReadWriteLatch();
 		latchMap.put(name, latch);

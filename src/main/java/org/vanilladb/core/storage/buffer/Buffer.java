@@ -22,6 +22,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import org.vanilladb.core.latch.Latch;
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.Constant;
 import org.vanilladb.core.sql.Type;
@@ -67,6 +68,7 @@ public class Buffer {
 	private final ReadWriteLock contentLock = new ReentrantReadWriteLock();
 	private final Lock swapLock = new ReentrantLock();
 	private final Lock flushLock = new ReentrantLock();
+	
 	
 	public static int getPageGetValWaitCount() { 
 		return pageGetValWaitCount.getAndSet(0); 

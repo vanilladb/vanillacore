@@ -14,7 +14,6 @@ public class NormalLatch extends Latch{
 	public void lockReadLatch() {
 		increaseWaitingCount();
 		latch.lock();
-		
 	}
 
 	public void unlockWriteLatch() {

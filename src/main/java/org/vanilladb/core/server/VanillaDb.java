@@ -23,6 +23,7 @@ import java.sql.Connection;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.vanilladb.core.latch.LatchMgr;
 import org.vanilladb.core.query.planner.Planner;
 import org.vanilladb.core.query.planner.QueryPlanner;
 import org.vanilladb.core.query.planner.UpdatePlanner;
@@ -73,6 +74,9 @@ public class VanillaDb {
 	// Utility classes
 	private static StoredProcedureFactory spFactory;
 	private static Profiler profiler;
+	
+	// Modify
+	private static LatchMgr latchMgr;
 
 	/**
 	 * Initialization Flag
@@ -120,6 +124,10 @@ public class VanillaDb {
 		updatePlannerCls = CoreProperties.getLoader().getPropertyAsClass(
 				VanillaDb.class.getName() + ".UPDATEPLANNER",
 				IndexUpdatePlanner.class, UpdatePlanner.class);
+		
+		// Modify: initialize latchMgr
+		// latchMgr should be initialized first so that other modules can register latches
+		initLatchMgr();
 		
 		// initialize storage engine
 		initFileAndLogMgr(dirName);
@@ -337,5 +345,14 @@ public class VanillaDb {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	
+	// Modify: latchMgr
+	public static void initLatchMgr() {
+		latchMgr = new LatchMgr();
+	}
+	public static LatchMgr getLatchMgr() {
+		return latchMgr;
 	}
 }
