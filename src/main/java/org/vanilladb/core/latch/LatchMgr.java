@@ -19,4 +19,12 @@ public class LatchMgr {
 		latchMap.put(name, latch);
 		return latch;
 	}
+	
+	public void printLatchStats() {
+		for (String name : latchMap.keySet()) {
+			Latch latch = latchMap.get(name);
+			System.out.println(String.format("%s, max: %d, tot: %d",
+					name, latch.getMaxWaitingCount(), latch.getTotAccessCount()));
+		}
+	}
 }

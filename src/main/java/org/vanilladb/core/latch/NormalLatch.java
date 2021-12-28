@@ -11,13 +11,16 @@ public class NormalLatch extends Latch{
 		latch = new ReentrantLock();
 	}
 	
-	public void lockReadLatch() {
+	public void lockLatch() {
 		increaseWaitingCount();
 		latch.lock();
 	}
 
-	public void unlockWriteLatch() {
+	public void unlockLatch() {
 		decreaseWaitingCount();
 		latch.unlock();
+	}
+	public boolean isHeldByCurrentThred() {
+		return latch.isHeldByCurrentThread();
 	}
 }

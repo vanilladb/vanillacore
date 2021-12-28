@@ -21,6 +21,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.vanilladb.core.latch.Latch;
+import org.vanilladb.core.latch.LatchMgr;
+import org.vanilladb.core.latch.NormalLatch;
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.file.FileMgr;
@@ -41,9 +44,15 @@ class BufferPoolMgr {
 	private AtomicInteger blockLockReleaseCount;
 
 	// Optimization: Lock striping
+//	private static final int stripSize = 1009;
+//	private ReentrantLock[] fileLocks = new ReentrantLock[stripSize];
+//	private ReentrantLock[] blockLocks = new ReentrantLock[stripSize];
+	
+	// Modify:
 	private static final int stripSize = 1009;
-	private ReentrantLock[] fileLocks = new ReentrantLock[stripSize];
-	private ReentrantLock[] blockLocks = new ReentrantLock[stripSize];
+	private NormalLatch[] fileLatches = new NormalLatch[stripSize];
+	private NormalLatch[] blockLatches = new NormalLatch[stripSize];
+	LatchMgr latchMgr = VanillaDb.getLatchMgr();
 
 	private static Logger logger = Logger.getLogger(BufferMgr.class.getName());
 	
@@ -71,26 +80,46 @@ class BufferPoolMgr {
 		for (int i = 0; i < numBuffs; i++)
 			bufferPool[i] = new Buffer();
 
+//		for (int i = 0; i < stripSize; ++i) {
+//			fileLocks[i] = new ReentrantLock();
+//			blockLocks[i] = new ReentrantLock();
+//		}
+		// Modify:
 		for (int i = 0; i < stripSize; ++i) {
-			fileLocks[i] = new ReentrantLock();
-			blockLocks[i] = new ReentrantLock();
+			blockLatches[i] = latchMgr.registerNormalLatch("BufferMgr-blockLock-" + i);
+			fileLatches[i] = latchMgr.registerNormalLatch("BufferMgr-fileLock-" + i);
 		}
 	}
 
-	// Optimization: Lock striping
-	private ReentrantLock prepareFileLock(Object o) {
-		int code = o.hashCode() % fileLocks.length;
+//	// Optimization: Lock striping
+//	private ReentrantLock prepareFileLock(Object o) {
+//		int code = o.hashCode() % fileLocks.length;
+//		if (code < 0)
+//			code += fileLocks.length;
+//		return fileLocks[code];
+//	}
+//	
+//	// Optimization: Lock striping
+//	private ReentrantLock prepareBlockLock(Object o) {
+//		int code = o.hashCode() % blockLocks.length;
+//		if (code < 0)
+//			code += blockLocks.length;
+//		return blockLocks[code];
+//	}
+	
+	// Modify
+	private NormalLatch prepareFileLatch(Object o) {
+		int code = o.hashCode() % fileLatches.length;
 		if (code < 0)
-			code += fileLocks.length;
-		return fileLocks[code];
+			code += fileLatches.length;
+		return fileLatches[code];
 	}
 	
-	// Optimization: Lock striping
-	private ReentrantLock prepareBlockLock(Object o) {
-		int code = o.hashCode() % blockLocks.length;
+	private NormalLatch prepareBlockLatch(Object o) {
+		int code = o.hashCode() % blockLatches.length;
 		if (code < 0)
-			code += blockLocks.length;
-		return blockLocks[code];
+			code += blockLatches.length;
+		return blockLatches[code];
 	}
 
 	/**
@@ -124,11 +153,14 @@ class BufferPoolMgr {
 		String op = TransactionProfiler.getOperationIndicator();
 		// The blockLock prevents race condition.
 		// Only one tx can trigger the swapping action for the same block.
-		ReentrantLock blockLock = prepareBlockLock(blk);
+//		ReentrantLock blockLock = prepareBlockLock(blk);
+		NormalLatch blockLatch = prepareBlockLatch(blk);
 		
 		profiler.startComponentProfiler(stage + op + "-BufferPoolMgr.pin blockLock");
 		blockLockWaitCount.incrementAndGet();
-		blockLock.lock();
+		// Modify
+//		blockLock.lock();
+		blockLatch.lockLatch();
 		blockLockWaitCount.decrementAndGet();
 		profiler.stopComponentProfiler(stage + op + "-BufferPoolMgr.pin blockLock");
 
@@ -185,7 +217,10 @@ class BufferPoolMgr {
 				// Optimization
 				// Early release the blockLock
 				// because the following txs, which need the same block, will get the same non-null buffer
-				blockLock.unlock();
+				
+				// Modify
+//				blockLock.unlock();
+				blockLatch.unlockLatch();
 				blockLockReleaseCount.incrementAndGet();
 				
 				try {
@@ -206,9 +241,12 @@ class BufferPoolMgr {
 		} finally {
 			// blockLock might be early released
 			// unlocking a lock twice will get an exception 
-			if (blockLock.isHeldByCurrentThread()) {
-				blockLock.unlock();
-				blockLockReleaseCount.incrementAndGet();
+//			if (blockLock.isHeldByCurrentThread()) {
+//				blockLock.unlock();
+//				blockLockReleaseCount.incrementAndGet();
+//			}
+			if (blockLatch.isHeldByCurrentThred()) {
+				blockLatch.unlockLatch();
 			}
 		}
 	}
@@ -226,8 +264,12 @@ class BufferPoolMgr {
 	 */
 	Buffer pinNew(String fileName, PageFormatter fmtr) {
 		// Only the txs acquiring to append the block on the same file will be blocked
-		ReentrantLock fileLock = prepareFileLock(fileName);
-		fileLock.lock();
+		// Modify
+//		ReentrantLock fileLock = prepareFileLock(fileName);
+//		fileLock.lock();
+		NormalLatch fileLatch = prepareFileLatch(fileName);
+		fileLatch.lockLatch();
+		
 		try {
 			// Choose Unpinned Buffer
 			int lastReplacedBuff = this.lastReplacedBuff;
@@ -263,7 +305,9 @@ class BufferPoolMgr {
 			}
 			return null;
 		} finally {
-			fileLock.unlock();
+//			fileLock.unlock();
+			// Modify
+			fileLatch.unlockLatch();
 		}
 	}
 
