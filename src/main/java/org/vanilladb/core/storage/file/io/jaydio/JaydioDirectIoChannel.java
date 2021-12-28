@@ -42,7 +42,15 @@ public class JaydioDirectIoChannel implements IoChannel {
 
 	@Override
 	public int read(IoBuffer buffer, long position) throws IOException {
+		// profiler
+		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
+		int stage = TransactionProfiler.getStageIndicator();
+		String op = TransactionProfiler.getOperationIndicator();
+		
+		profiler.startComponentProfiler(stage + op + "-JaydioDirectioChannel.read readLock");
 		lock.readLock().lock();
+		profiler.stopComponentProfiler(stage + op + "-JaydioDirectioChannel.read readLock");
+		
 		try {
 			JaydioDirectByteBuffer jaydioBuffer = (JaydioDirectByteBuffer) buffer;
 			return fileChannel.read(jaydioBuffer.getAlignedDirectByteBuffer(), position);
@@ -53,7 +61,15 @@ public class JaydioDirectIoChannel implements IoChannel {
 
 	@Override
 	public int write(IoBuffer buffer, long position) throws IOException {
+		// profiler
+		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
+		int stage = TransactionProfiler.getStageIndicator();
+		String op = TransactionProfiler.getOperationIndicator();
+		
+		profiler.startComponentProfiler(stage + op + "-JaydioDirectioChannel.write writeLock");
 		lock.writeLock().lock();
+		profiler.stopComponentProfiler(stage + op + "-JaydioDirectioChannel.write writeLock");
+		
 		try {
 			JaydioDirectByteBuffer jaydioBuffer = (JaydioDirectByteBuffer) buffer;
 			int writeSize = fileChannel.write(jaydioBuffer.getAlignedDirectByteBuffer(), position);
@@ -70,7 +86,15 @@ public class JaydioDirectIoChannel implements IoChannel {
 
 	@Override
 	public long append(IoBuffer buffer) throws IOException {
+		// profiler
+		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
+		int stage = TransactionProfiler.getStageIndicator();
+		String op = TransactionProfiler.getOperationIndicator();
+		
+		profiler.startComponentProfiler(stage + op + "-JaydioDirectioChannel.append writeLock");
 		lock.writeLock().lock();
+		profiler.stopComponentProfiler(stage + op + "-JaydioDirectioChannel.append writeLock");
+		
 		try {
 			JaydioDirectByteBuffer jaydioBuffer = (JaydioDirectByteBuffer) buffer;
 			int appendSize = fileChannel.write(jaydioBuffer.getAlignedDirectByteBuffer(), fileSize);
@@ -86,10 +110,12 @@ public class JaydioDirectIoChannel implements IoChannel {
 		// profiler
 		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
 		int stage = TransactionProfiler.getStageIndicator();
+		String op = TransactionProfiler.getOperationIndicator();
 		
-		profiler.startComponentProfiler(stage+"-JaydioDirectioChannel.size readLock");
+		profiler.startComponentProfiler(stage + op + "-JaydioDirectioChannel.size readLock");
 		lock.readLock().lock();
-		profiler.stopComponentProfiler(stage+"-JaydioDirectioChannel.size readLock");
+		profiler.stopComponentProfiler(stage + op + "-JaydioDirectioChannel.size readLock");
+		
 		try {
 			return fileSize;
 		} finally {
@@ -99,7 +125,15 @@ public class JaydioDirectIoChannel implements IoChannel {
 
 	@Override
 	public void close() throws IOException {
+		// profiler
+		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
+		int stage = TransactionProfiler.getStageIndicator();
+		String op = TransactionProfiler.getOperationIndicator();
+		
+		profiler.startComponentProfiler(stage + op + "-JaydioDirectioChannel.close writeLock");
 		lock.writeLock().lock();
+		profiler.stopComponentProfiler(stage + op + "-JaydioDirectioChannel.size writeLock");
+		
 		try {
 			fileChannel.close();
 		} finally {

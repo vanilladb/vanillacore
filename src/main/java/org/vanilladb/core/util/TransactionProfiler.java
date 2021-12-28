@@ -37,7 +37,9 @@ public class TransactionProfiler {
 			return new TransactionProfiler();
 		}
 	};
+	// Modify: for profiling
 	private static ThreadLocal<Integer> localStageIndicator = new ThreadLocal<Integer>();
+	private static ThreadLocal<String> localOperationIndicator = new ThreadLocal<String>();
 	
 	public static int getStageIndicator() {
 		if (localStageIndicator.get() == null) {
@@ -48,6 +50,16 @@ public class TransactionProfiler {
 	}
 	public static void setStageIndicator(int stage) {
 		localStageIndicator.set(stage);
+	}
+	public static String getOperationIndicator() {
+		if (localOperationIndicator.get() == null) {
+			return "nullop";
+		}else {
+			return localOperationIndicator.get();
+		}
+	}
+	public static void setOperationIndicator(String op) {
+		localOperationIndicator.set(op);
 	}
 	
 	/**

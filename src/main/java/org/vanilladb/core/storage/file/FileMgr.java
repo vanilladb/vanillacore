@@ -273,7 +273,15 @@ public class FileMgr {
 	 * @throws IOException
 	 */
 	private IoChannel getFileChannel(String fileName) throws IOException {
+		// profiler
+		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
+		int stage = TransactionProfiler.getStageIndicator();
+		String op = TransactionProfiler.getOperationIndicator();
+		
+		profiler.startComponentProfiler(stage + op + "-FileMgr.getFileChannel synchronized");
 		synchronized (prepareAnchor(fileName)) {
+			profiler.stopComponentProfiler(stage + op + "-FileMgr.getFileChannel synchronized");
+			
 			IoChannel fileChannel = openFiles.get(fileName);
 
 			if (fileChannel == null) {

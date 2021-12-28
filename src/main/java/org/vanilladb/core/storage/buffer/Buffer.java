@@ -111,13 +111,13 @@ public class Buffer {
 		// profiler
 		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
 		int stage = TransactionProfiler.getStageIndicator();
-
+		String op = TransactionProfiler.getOperationIndicator();
 
 		if (!contentLock.readLock().tryLock()) {
 			BufferPoolMonitor.incrementReadWaitCounter();
-			profiler.startComponentProfiler(stage+"-Buffer.getVal internalLock");
+			profiler.startComponentProfiler(stage + op + "-Buffer.getVal readLock");
 			contentLock.readLock().lock();
-			profiler.stopComponentProfiler(stage+"-Buffer.getVal internalLock");
+			profiler.stopComponentProfiler(stage + op + "-Buffer.getVal readLock");
 		}
 
 		try {

@@ -121,16 +121,16 @@ class BufferPoolMgr {
 		// profiler
 		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
 		int stage = TransactionProfiler.getStageIndicator();
-
+		String op = TransactionProfiler.getOperationIndicator();
 		// The blockLock prevents race condition.
 		// Only one tx can trigger the swapping action for the same block.
 		ReentrantLock blockLock = prepareBlockLock(blk);
 		
-		profiler.startComponentProfiler(stage + "-BufferPoolMgr.pin block Lock");
+		profiler.startComponentProfiler(stage + op + "-BufferPoolMgr.pin blockLock");
 		blockLockWaitCount.incrementAndGet();
 		blockLock.lock();
 		blockLockWaitCount.decrementAndGet();
-		profiler.stopComponentProfiler(stage + "-BufferPoolMgr.pin block Lock");
+		profiler.stopComponentProfiler(stage + op + "-BufferPoolMgr.pin blockLock");
 
 		try {
 			// Find existing buffer
@@ -277,19 +277,19 @@ class BufferPoolMgr {
 		// profiler
 		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
 		int stage = TransactionProfiler.getStageIndicator();
+		String op = TransactionProfiler.getOperationIndicator();
 		
 		for (Buffer buff : buffs) {
 			try {
 				// Get the lock of buffer
-				profiler.startComponentProfiler(stage+"-BufferPoolMgr.unpin externalLock");
+				profiler.startComponentProfiler(stage + op + "-BufferPoolMgr.unpin swapLock");
 				buff.getSwapLock().lock();
-				profiler.stopComponentProfiler(stage+"-BufferPoolMgr.unpin externalLock");
+				profiler.stopComponentProfiler(stage + op + "-BufferPoolMgr.unpin swapLock");
 				
 				buff.unpin();
 				if (!buff.isPinned())
 					numAvailable.incrementAndGet();
 			} finally {
-				// Release the lock of buffer
 				buff.getSwapLock().unlock();
 			}
 		}
