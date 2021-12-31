@@ -2,32 +2,31 @@ package org.vanilladb.core.latch;
 
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public class ReadWriteLatch extends Latch{
-	
+public class ReentrantReadWriteLatch extends Latch {
+
 	private ReentrantReadWriteLock latch;
-	
-	public ReadWriteLatch() {
-		super();
+
+	public ReentrantReadWriteLatch() {
 		latch = new ReentrantReadWriteLock();
 	}
-	
+
 	public void lockReadLatch() {
 		increaseWaitingCount();
 		latch.readLock().lock();
 	}
-	
+
 	public void lockWriteLatch() {
 		increaseWaitingCount();
 		latch.writeLock().lock();
 	}
-	
-	public void unlockReadLatch () {
-		decreaseWaitingCount();
+
+	public void unlockReadLatch() {
 		latch.readLock().unlock();
-	}
-	
-	public void unlockWriteLatch() {
 		decreaseWaitingCount();
+	}
+
+	public void unlockWriteLatch() {
 		latch.writeLock().unlock();
+		decreaseWaitingCount();
 	}
 }

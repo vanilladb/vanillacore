@@ -2,24 +2,24 @@ package org.vanilladb.core.latch;
 
 import java.util.concurrent.locks.ReentrantLock;
 
-public class NormalLatch extends Latch{
-	
+public class ReentrantLatch extends Latch {
+
 	private ReentrantLock latch;
-	
-	public NormalLatch() {
-		super();
+
+	public ReentrantLatch() {
 		latch = new ReentrantLock();
 	}
-	
+
 	public void lockLatch() {
 		increaseWaitingCount();
 		latch.lock();
 	}
 
 	public void unlockLatch() {
-		decreaseWaitingCount();
 		latch.unlock();
+		decreaseWaitingCount();
 	}
+
 	public boolean isHeldByCurrentThred() {
 		return latch.isHeldByCurrentThread();
 	}
