@@ -83,13 +83,7 @@ public class JaydioDirectIoChannel implements IoChannel {
 
 	@Override
 	public long size() throws IOException {
-		// profiler
-		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
-		int stage = TransactionProfiler.getStageIndicator();
-		
-		profiler.startComponentProfiler(stage+"-JaydioDirectioChannel.size readLock");
 		lock.readLock().lock();
-		profiler.stopComponentProfiler(stage+"-JaydioDirectioChannel.size readLock");
 		try {
 			return fileSize;
 		} finally {

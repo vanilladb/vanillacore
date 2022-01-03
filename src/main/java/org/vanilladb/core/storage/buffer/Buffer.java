@@ -108,16 +108,9 @@ public class Buffer {
 	 * @return the constant value at that offset
 	 */
 	public Constant getVal(int offset, Type type) {
-		// profiler
-		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
-		int stage = TransactionProfiler.getStageIndicator();
-
-
 		if (!contentLock.readLock().tryLock()) {
 			BufferPoolMonitor.incrementReadWaitCounter();
-			profiler.startComponentProfiler(stage+"-Buffer.getVal internalLock");
 			contentLock.readLock().lock();
-			profiler.stopComponentProfiler(stage+"-Buffer.getVal internalLock");
 		}
 
 		try {
