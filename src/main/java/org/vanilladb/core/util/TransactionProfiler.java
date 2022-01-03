@@ -36,18 +36,6 @@ public class TransactionProfiler {
 			return new TransactionProfiler();
 		}
 	};
-	private static ThreadLocal<Integer> localStageIndicator = new ThreadLocal<Integer>();
-	
-	public static int getStageIndicator() {
-		if (localStageIndicator.get() == null) {
-			return 0;
-		}else {
-			return localStageIndicator.get();
-		}
-	}
-	public static void setStageIndicator(int stage) {
-		localStageIndicator.set(stage);
-	}
 	
 	/**
 	 * Get the profiler local to this thread.
