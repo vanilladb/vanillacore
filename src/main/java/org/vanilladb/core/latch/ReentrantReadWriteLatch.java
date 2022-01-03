@@ -12,7 +12,7 @@ public class ReentrantReadWriteLatch extends Latch {
 		latch = new ReentrantReadWriteLock();
 	}
 
-	public void lockReadLatch(LatchContext context) {
+	public void readLock(LatchContext context) {
 		setContextBeforeLock(context, latch.getQueueLength());
 
 		latch.readLock().lock();
@@ -20,7 +20,7 @@ public class ReentrantReadWriteLatch extends Latch {
 		setContextAfterLock(context);
 	}
 
-	public void lockWriteLatch(LatchContext context) {
+	public void writeLock(LatchContext context) {
 		setContextBeforeLock(context, latch.getQueueLength());
 
 		latch.writeLock().lock();
@@ -28,13 +28,13 @@ public class ReentrantReadWriteLatch extends Latch {
 		setContextAfterLock(context);
 	}
 
-	public void unlockReadLatch(LatchContext context) {
+	public void readUnlock(LatchContext context) {
 		latch.readLock().unlock();
 
 		setContextAfterUnlock(context);
 	}
 
-	public void unlockWriteLatch(LatchContext context) {
+	public void writeUnlock(LatchContext context) {
 		latch.writeLock().unlock();
 
 		setContextAfterUnlock(context);
