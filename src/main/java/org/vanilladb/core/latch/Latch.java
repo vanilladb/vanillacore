@@ -1,37 +1,25 @@
 package org.vanilladb.core.latch;
 
+import java.util.concurrent.atomic.AtomicLong;
+
+import org.vanilladb.core.latch.context.LatchContext;
+
 public abstract class Latch {
-	private int waitingCount;
-	private int maxWaitingCount;
-	private int totalAccessCount;
+	private final AtomicLong serialNumber = new AtomicLong();
 
-	public Latch() {
-		waitingCount = 0;
-		maxWaitingCount = 0;
-		totalAccessCount = 0;
+	protected void setContextBeforeLock(LatchContext context, int queueLength) {
+		context.setTimeBeforeLock();
+		context.setSerialNumberBeforeLock(serialNumber.get());
+		context.setWaitingQueueLength(queueLength);
 	}
 
-	public int getWaitingCount() {
-		return waitingCount;
+	protected void setContextAfterLock(LatchContext context) {
+		context.setTimeAfterLock();
+		context.setSerialNumberAfterLock(serialNumber.get());
 	}
 
-	public int getMaxWaitingCount() {
-		return maxWaitingCount;
-	}
-
-	public int getTotalAccessCount() {
-		return totalAccessCount;
-	}
-
-	protected synchronized void increaseWaitingCount() {
-		waitingCount = waitingCount + 1;
-		if (waitingCount > maxWaitingCount) {
-			maxWaitingCount = waitingCount;
-		}
-		totalAccessCount = totalAccessCount + 1;
-	}
-
-	protected synchronized void decreaseWaitingCount() {
-		waitingCount = waitingCount - 1;
+	protected void setContextAfterUnlock(LatchContext context) {
+		serialNumber.incrementAndGet();
+		context.setTimeAfterUnlock();
 	}
 }

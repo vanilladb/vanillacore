@@ -27,12 +27,4 @@ public class LatchMgr {
 	public String getKey(String caller, String callerMethod) {
 		return caller + callerMethod;
 	}
-
-	public void printLatchStats() {
-		for (String name : latchMap.keySet()) {
-			Latch latch = latchMap.get(name);
-			System.out.println(String.format("%s, max: %d, tot: %d", name, latch.getMaxWaitingCount(),
-					latch.getTotalAccessCount()));
-		}
-	}
 }

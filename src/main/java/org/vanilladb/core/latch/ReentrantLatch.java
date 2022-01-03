@@ -2,22 +2,23 @@ package org.vanilladb.core.latch;
 
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.vanilladb.core.latch.context.LatchContext;
+
 public class ReentrantLatch extends Latch {
+	private ReentrantLock latch = new ReentrantLock();
 
-	private ReentrantLock latch;
+	public void lock(LatchContext context) {
+		setContextBeforeLock(context, latch.getQueueLength());
 
-	public ReentrantLatch() {
-		latch = new ReentrantLock();
-	}
-
-	public void lockLatch() {
-		increaseWaitingCount();
 		latch.lock();
+
+		setContextAfterLock(context);
 	}
 
-	public void unlockLatch() {
+	public void unlock(LatchContext context) {
 		latch.unlock();
-		decreaseWaitingCount();
+
+		setContextAfterUnlock(context);
 	}
 
 	public boolean isHeldByCurrentThred() {
