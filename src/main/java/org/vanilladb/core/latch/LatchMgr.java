@@ -12,6 +12,10 @@ public class LatchMgr {
 		return new LatchContext();
 	}
 
+	public static String getKey(String caller, String callerMethod) {
+		return caller + callerMethod;
+	}
+
 	public ReentrantLatch registerReentrantLatch(String caller, String callerMethod) {
 		ReentrantLatch latch = new ReentrantLatch();
 		latchMap.put(getKey(caller, callerMethod), latch);
@@ -22,9 +26,5 @@ public class LatchMgr {
 		ReentrantReadWriteLatch latch = new ReentrantReadWriteLatch();
 		latchMap.put(getKey(caller, callerMethod), latch);
 		return latch;
-	}
-
-	public String getKey(String caller, String callerMethod) {
-		return caller + callerMethod;
 	}
 }
