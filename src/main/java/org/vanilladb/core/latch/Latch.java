@@ -2,6 +2,7 @@ package org.vanilladb.core.latch;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.vanilladb.core.latch.context.LatchContext;
 
 public abstract class Latch {
 	private String name;
@@ -10,7 +11,7 @@ public abstract class Latch {
 	private int maxWaitingCount;
 	private int totalAccessCount;
 	
-	protected Map<Long, LatchNote> noteMap;
+	protected Map<Long, LatchContext> contextMap;
 	private LatchHistory history;
 	
 	public Latch(String latchName) {
@@ -19,21 +20,24 @@ public abstract class Latch {
 		maxWaitingCount = 0;
 		totalAccessCount = 0;
 		
-		noteMap = new ConcurrentHashMap<Long, LatchNote>(); // Do I really need concurrent map?
+		contextMap = new ConcurrentHashMap<Long, LatchContext>(); // Do I really need concurrent map?
 	}
-
-	public int getWaitingCount() {
-		return waitingCount;
+	
+	public void addContextToLatchHistory(LatchContext context) {
+		history.addLatchContext(context);
 	}
-
+	
+	public LatchHistory getHistory() {
+		return history;
+	}
 	public int getMaxWaitingCount() {
 		return maxWaitingCount;
 	}
-
+	
 	public int getTotalAccessCount() {
 		return totalAccessCount;
 	}
-
+	
 	protected synchronized void recordStatsBeforeLock() {
 		waitingCount = waitingCount + 1;
 		if (waitingCount > maxWaitingCount) {
@@ -46,27 +50,19 @@ public abstract class Latch {
 		totalAccessCount = totalAccessCount + 1;
 	}
 	
-	protected void takeNoteBeforeLock(LatchNote note) {
-		note.setLatchName(name);
-		note.setWaitingQueueLength(waitingCount);
-		note.setTimeBeforeLock();
-		note.setSerialNumberBeforeLock(totalAccessCount);
+	protected void setContextBeforeLock(LatchContext context) {
+		context.setTimeBeforeLock();
+		context.setSerialNumberBeforeLock(totalAccessCount);
+		context.setWaitingQueueLength(waitingCount);
 	}
 	
-	protected void takeNoteAfterLock(LatchNote note) {
-		note.setTimeAfterLock();
-		note.setSerialNumberAfterLock(totalAccessCount);
+	protected void setContextAfterLock(LatchContext context) {
+		context.setLatchName(name);
+		context.setTimeAfterLock();
+		context.setSerialNumberAfterLock(totalAccessCount);
 	}
-	
-	protected void takeNoteAfterUnlock(LatchNote note) {
-		note.setTimeAfterUnlock();
-	}
-	
-	public void addNoteToLatchHistory(LatchNote note) {
-		history.addLatchNote(note);
-	}
-	
-	public LatchHistory getHistory() {
-		return history;
+
+	protected void setContextAfterUnlock(LatchContext context) {
+		context.setTimeAfterUnlock();
 	}
 }

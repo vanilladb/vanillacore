@@ -3,26 +3,28 @@ package org.vanilladb.core.latch;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import org.vanilladb.core.latch.context.LatchContext;
+
 public class LatchHistory {
 	private static final int MAX_HISTORY_LENGTH = 10;
-	private Queue<LatchNote> historyQueue;
+	private Queue<LatchContext> historyQueue;
 
 	public LatchHistory() {
-		historyQueue = new LinkedBlockingQueue<LatchNote>();
+		historyQueue = new LinkedBlockingQueue<LatchContext>();
 		for (int i = 0; i < MAX_HISTORY_LENGTH; i++) {
-			historyQueue.add(new LatchNote());
+			historyQueue.add(new LatchContext());
 		}
 	}
 
-	public synchronized void addLatchNote(LatchNote note) {
+	public synchronized void addLatchContext(LatchContext context) {
 		historyQueue.poll();
-		historyQueue.add(note);
+		historyQueue.add(context);
 	}
 	
-	public synchronized String toString() {
+	public synchronized String toRow() {
 		String historyString = "";
-		for (Object note: historyQueue.toArray()) {
-			historyString += ((LatchNote) note).toString() + ",";
+		for (Object context: historyQueue.toArray()) {
+			historyString += ((LatchContext) context).toRow() + ",";
 		}
 		return historyString;
 	}

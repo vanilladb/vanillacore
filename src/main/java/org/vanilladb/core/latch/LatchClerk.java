@@ -3,31 +3,32 @@ package org.vanilladb.core.latch;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import org.vanilladb.core.latch.context.LatchContext;
 import org.vanilladb.core.server.VanillaDb;
 
 public class LatchClerk extends Thread {
 
-	Queue<LatchNote> waitingNotes;
+	Queue<LatchContext> waitingContexts;
 	
 
 	public LatchClerk() {
-		waitingNotes = new LinkedBlockingQueue<LatchNote>();
+		waitingContexts = new LinkedBlockingQueue<LatchContext>();
 	}
 
 	@Override
 	public void run() {
 		LatchMgr latchMgr = VanillaDb.getLatchMgr();
 		while (true) {
-			LatchNote note = waitingNotes.poll();
-			while (note == null) continue;
+			LatchContext context = waitingContexts.poll();
+			while (context == null) continue;
 			
-			// clerk should add notes to history when notes exist
-			Latch latch = latchMgr.getLatchByName(note.getLatchName());
-			latch.addNoteToLatchHistory(note);
+			// clerk should add contexts to history when waitingContexts is not empty
+			Latch latch = latchMgr.getLatchByName(context.getLatchName());
+			latch.addContextToLatchHistory(context);
 		}
 	}
 
-	public void addToWaitingNotes(LatchNote note) {
-		waitingNotes.add(note);
+	public void addToWaitingContexts(LatchContext context) {
+		waitingContexts.add(context);
 	}
 }

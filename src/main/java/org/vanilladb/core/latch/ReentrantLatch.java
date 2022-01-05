@@ -1,33 +1,33 @@
 package org.vanilladb.core.latch;
 
 import java.util.concurrent.locks.ReentrantLock;
-
+import org.vanilladb.core.latch.context.LatchContext;
 import org.vanilladb.core.server.VanillaDb;
 
 public class ReentrantLatch extends Latch {
-
-	private ReentrantLock latch;
+	private ReentrantLock latch = new ReentrantLock();
 
 	public ReentrantLatch(String latchName) {
 		super(latchName);
 		latch = new ReentrantLock();
 	}
 
-	public void lockLatch() {
-		LatchNote note = new LatchNote();
-		noteMap.put(Thread.currentThread().getId(), note);
-		takeNoteBeforeLock(note);
-		
+	public void lock() {
+		LatchContext context = new LatchContext();
+		contextMap.put(Thread.currentThread().getId(), context);
+		setContextBeforeLock(context);
 		recordStatsBeforeLock();
 		latch.lock();
-		takeNoteAfterLock(note);
+		setContextAfterLock(context);
 	}
 
-	public void unlockLatch() {
+	public void unlock() {
 		latch.unlock();
 		recordStatsAfterUnlock();
-		LatchNote note = noteMap.get(Thread.currentThread().getId());
-		VanillaDb.getLatchMgr().dispatchNoteToClerk(note);
+		LatchContext context = contextMap.get(Thread.currentThread().getId());
+		setContextAfterUnlock(context);
+		VanillaDb.getLatchMgr().dispatchContextToClerk(context);
+
 	}
 
 	public boolean isHeldByCurrentThread() {
