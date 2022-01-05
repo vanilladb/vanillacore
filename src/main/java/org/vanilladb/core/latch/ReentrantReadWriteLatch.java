@@ -6,27 +6,28 @@ public class ReentrantReadWriteLatch extends Latch {
 
 	private ReentrantReadWriteLock latch;
 
-	public ReentrantReadWriteLatch() {
+	public ReentrantReadWriteLatch(String latchName) {
+		super(latchName);
 		latch = new ReentrantReadWriteLock();
 	}
 
 	public void lockReadLatch() {
-		increaseWaitingCount();
+		recordStatsBeforeLock();
 		latch.readLock().lock();
 	}
 
 	public void lockWriteLatch() {
-		increaseWaitingCount();
+		recordStatsBeforeLock();
 		latch.writeLock().lock();
 	}
 
 	public void unlockReadLatch() {
 		latch.readLock().unlock();
-		decreaseWaitingCount();
+		recordStatsAfterUnlock();
 	}
 
 	public void unlockWriteLatch() {
 		latch.writeLock().unlock();
-		decreaseWaitingCount();
+		recordStatsAfterUnlock();
 	}
 }
