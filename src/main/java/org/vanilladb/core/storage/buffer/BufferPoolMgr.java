@@ -21,6 +21,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.vanilladb.core.latch.Latch;
+import org.vanilladb.core.latch.LatchDataCollector;
+import org.vanilladb.core.latch.LatchMgr;
+import org.vanilladb.core.latch.ReentrantLatch;
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.file.FileMgr;
@@ -43,8 +47,11 @@ class BufferPoolMgr {
 	// Optimization: Lock striping
 	private static final int stripSize = 1009;
 	private ReentrantLock[] fileLocks = new ReentrantLock[stripSize];
-	private ReentrantLock[] blockLocks = new ReentrantLock[stripSize];
-
+//	private ReentrantLock[] blockLocks = new ReentrantLock[stripSize];
+	private ReentrantLatch[] blockLatches = new ReentrantLatch[stripSize];
+	private LatchDataCollector blockLatchDataCollector;
+	
+	private LatchMgr latchMgr = VanillaDb.getLatchMgr();
 	private static Logger logger = Logger.getLogger(BufferMgr.class.getName());
 	
 	/**
@@ -73,8 +80,11 @@ class BufferPoolMgr {
 
 		for (int i = 0; i < stripSize; ++i) {
 			fileLocks[i] = new ReentrantLock();
-			blockLocks[i] = new ReentrantLock();
+//			blockLocks[i] = new ReentrantLock();
+			blockLatches[i] = latchMgr.registerReentrantLatch("BufferPoolMgr", "block", i);
 		}
+		blockLatchDataCollector = new LatchDataCollector("blockLatch");
+		VanillaDb.taskMgr().runTask(blockLatchDataCollector);
 	}
 
 	// Optimization: Lock striping
@@ -86,11 +96,17 @@ class BufferPoolMgr {
 	}
 	
 	// Optimization: Lock striping
-	private ReentrantLock prepareBlockLock(Object o) {
-		int code = o.hashCode() % blockLocks.length;
+//	private ReentrantLock prepareBlockLock(Object o) {
+//		int code = o.hashCode() % blockLocks.length;
+//		if (code < 0)
+//			code += blockLocks.length;
+//		return blockLocks[code];
+//	}
+	private ReentrantLatch prepareBlockLatch(Object o) {
+		int code = o.hashCode() % blockLatches.length;
 		if (code < 0)
-			code += blockLocks.length;
-		return blockLocks[code];
+			code += blockLatches.length;
+		return blockLatches[code];
 	}
 
 	/**
@@ -120,9 +136,11 @@ class BufferPoolMgr {
 	Buffer pin(BlockId blk) {
 		// The blockLock prevents race condition.
 		// Only one tx can trigger the swapping action for the same block.
-		ReentrantLock blockLock = prepareBlockLock(blk);
+//		ReentrantLock blockLock = prepareBlockLock(blk);
+		ReentrantLatch blockLatch = prepareBlockLatch(blk);
 		blockLockWaitCount.incrementAndGet();
-		blockLock.lock();
+//		blockLock.lock();
+		blockLatch.lock();
 		blockLockWaitCount.decrementAndGet();
 
 		try {
@@ -178,7 +196,8 @@ class BufferPoolMgr {
 				// Optimization
 				// Early release the blockLock
 				// because the following txs, which need the same block, will get the same non-null buffer
-				blockLock.unlock();
+//				blockLock.unlock();
+				blockLatch.unlock(blockLatchDataCollector);
 				blockLockReleaseCount.incrementAndGet();
 				
 				try {
@@ -199,8 +218,12 @@ class BufferPoolMgr {
 		} finally {
 			// blockLock might be early released
 			// unlocking a lock twice will get an exception 
-			if (blockLock.isHeldByCurrentThread()) {
-				blockLock.unlock();
+//			if (blockLock.isHeldByCurrentThread()) {
+//				blockLock.unlock();
+//				blockLockReleaseCount.incrementAndGet();
+//			}
+			if (blockLatch.isHeldByCurrentThread()) {
+				blockLatch.unlock(blockLatchDataCollector);
 				blockLockReleaseCount.incrementAndGet();
 			}
 		}

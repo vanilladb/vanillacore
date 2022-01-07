@@ -43,19 +43,18 @@ public class LatchContext {
 		return name;
 	}
 
-	public String toHeader() {
+	public static String toHeader() {
 		return "time before lock,time after lock,time after unlock,serial number before lock,serial number after lock,waiting queue length";
 	}
 
-	public String toHeader(int idx) {
+	public static String toHeader(int idx) {
 		String s = "%d time before lock,%d time after lock,%d time after unlock,%d serial number before lock,%d serial number after lock,%d waiting queue length";
 		s = String.format(s, idx, idx, idx, idx, idx, idx);
 		return s;
 	}
 
 	public String toRow() {
-		return timeBeforeLock + "," + timeAfterLock + "," + timeAfterUnlock + "," + serialNumberBeforeLock + ","
-				+ serialNumberAfterLock + "," + waitingQueueLength;
+		return timeBeforeLock + "," + timeAfterLock + "," + timeAfterUnlock + "," + serialNumberBeforeLock + "," + serialNumberAfterLock + "," + waitingQueueLength;
 	}
 	
 }

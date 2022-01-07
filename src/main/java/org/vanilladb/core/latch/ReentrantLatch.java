@@ -13,6 +13,9 @@ public class ReentrantLatch extends Latch {
 	}
 
 	public void lock() {
+		String historyString = getHistory().toRow();
+		historyMap.put(Thread.currentThread().getId(), historyString);
+
 		LatchContext context = new LatchContext();
 		contextMap.put(Thread.currentThread().getId(), context);
 		setContextBeforeLock(context);
@@ -21,13 +24,26 @@ public class ReentrantLatch extends Latch {
 		setContextAfterLock(context);
 	}
 
-	public void unlock() {
+//	public void unlock() {
+//		latch.unlock();
+//		recordStatsAfterUnlock();
+//		LatchContext context = contextMap.get(Thread.currentThread().getId());
+//		setContextAfterUnlock(context);
+//		addContextToLatchHistory(context);
+//	}
+
+	public void unlock(LatchDataCollector collector) {
 		latch.unlock();
 		recordStatsAfterUnlock();
 		LatchContext context = contextMap.get(Thread.currentThread().getId());
 		setContextAfterUnlock(context);
-		VanillaDb.getLatchMgr().dispatchContextToClerk(context);
+		
+		// add to history
+		addContextToLatchHistory(context);
 
+		// save to collector
+		String historyString = historyMap.get(Thread.currentThread().getId());
+		collector.addLatchFeature(context.toRow(), historyString);
 	}
 
 	public boolean isHeldByCurrentThread() {
