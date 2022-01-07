@@ -18,9 +18,10 @@ public class ReentrantLatch extends Latch {
 
 		LatchContext context = new LatchContext();
 		contextMap.put(Thread.currentThread().getId(), context);
-		setContextBeforeLock(context);
-		recordStatsBeforeLock();
+		setContextBeforeLock(context, latch.getQueueLength());
+		
 		latch.lock();
+		
 		setContextAfterLock(context);
 	}
 
@@ -34,7 +35,7 @@ public class ReentrantLatch extends Latch {
 
 	public void unlock(LatchDataCollector collector) {
 		latch.unlock();
-		recordStatsAfterUnlock();
+		
 		LatchContext context = contextMap.get(Thread.currentThread().getId());
 		setContextAfterUnlock(context);
 		

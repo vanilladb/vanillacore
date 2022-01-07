@@ -2,6 +2,8 @@ package org.vanilladb.core.latch;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.vanilladb.core.latch.context.LatchContext;
 
 public abstract class Latch {
@@ -10,6 +12,7 @@ public abstract class Latch {
 	private int waitingCount;
 	private int maxWaitingCount;
 	private int totalAccessCount;
+	private AtomicInteger serialNumber;
 
 	protected Map<Long, LatchContext> contextMap;
 	protected Map<Long, String> historyMap;
@@ -21,6 +24,7 @@ public abstract class Latch {
 		waitingCount = 0;
 		maxWaitingCount = 0;
 		totalAccessCount = 0;
+		serialNumber = new AtomicInteger(0);
 
 		history = new LatchHistory();
 
@@ -44,28 +48,28 @@ public abstract class Latch {
 		return totalAccessCount;
 	}
 
-	protected synchronized void recordStatsBeforeLock() {
-		waitingCount = waitingCount + 1;
-		if (waitingCount > maxWaitingCount) {
-			maxWaitingCount = waitingCount;
-		}
-	}
+//	protected synchronized void recordStatsBeforeLock() {
+//		waitingCount = waitingCount + 1;
+//		if (waitingCount > maxWaitingCount) {
+//			maxWaitingCount = waitingCount;
+//		}
+//	}
+//
+//	protected synchronized void recordStatsAfterUnlock() {
+//		waitingCount = waitingCount - 1;
+//		totalAccessCount = totalAccessCount + 1;
+//	}
 
-	protected synchronized void recordStatsAfterUnlock() {
-		waitingCount = waitingCount - 1;
-		totalAccessCount = totalAccessCount + 1;
-	}
-
-	protected void setContextBeforeLock(LatchContext context) {
+	protected void setContextBeforeLock(LatchContext context, long queueLength) {
 		context.setTimeBeforeLock();
-		context.setSerialNumberBeforeLock(totalAccessCount);
-		context.setWaitingQueueLength(waitingCount);
+		context.setSerialNumberBeforeLock(serialNumber.get());
+		context.setWaitingQueueLength(queueLength);
 	}
 
 	protected void setContextAfterLock(LatchContext context) {
 		context.setLatchName(name);
 		context.setTimeAfterLock();
-		context.setSerialNumberAfterLock(totalAccessCount);
+		context.setSerialNumberAfterLock(serialNumber.addAndGet(1));
 	}
 
 	protected void setContextAfterUnlock(LatchContext context) {

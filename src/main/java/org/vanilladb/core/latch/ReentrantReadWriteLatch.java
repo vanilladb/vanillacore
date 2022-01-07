@@ -16,8 +16,7 @@ public class ReentrantReadWriteLatch extends Latch {
 	public void readLock() {
 		LatchContext context = new LatchContext();
 		contextMap.put(Thread.currentThread().getId(), context);
-		setContextBeforeLock(context);
-		recordStatsBeforeLock();
+		setContextBeforeLock(context, latch.getQueueLength());
 		latch.readLock().lock();
 		setContextAfterLock(context);
 	}
@@ -25,8 +24,7 @@ public class ReentrantReadWriteLatch extends Latch {
 	public void writeLock() {
 		LatchContext context = new LatchContext();
 		contextMap.put(Thread.currentThread().getId(), context);
-		setContextBeforeLock(context);
-		recordStatsBeforeLock();
+		setContextBeforeLock(context, latch.getQueueLength());
 		latch.writeLock().lock();
 		setContextAfterLock(context);
 	}
@@ -34,7 +32,6 @@ public class ReentrantReadWriteLatch extends Latch {
 	public void readUnlock() {
 		// readUnlock
 		latch.writeLock().unlock();
-		recordStatsAfterUnlock();
 		LatchContext context = contextMap.get(Thread.currentThread().getId());
 		setContextAfterUnlock(context);
 	}
@@ -42,7 +39,6 @@ public class ReentrantReadWriteLatch extends Latch {
 	public void writeUnlock() {
 		// writeUnlock
 		latch.writeLock().unlock();
-		recordStatsAfterUnlock();
 		LatchContext context = contextMap.get(Thread.currentThread().getId());
 		setContextAfterUnlock(context);
 	}
