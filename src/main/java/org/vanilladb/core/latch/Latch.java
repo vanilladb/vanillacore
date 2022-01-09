@@ -2,77 +2,59 @@ package org.vanilladb.core.latch;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
-import org.vanilladb.core.latch.context.LatchContext;
+import org.vanilladb.core.latch.feature.LatchContext;
+import org.vanilladb.core.latch.feature.LatchFeature;
+import org.vanilladb.core.latch.feature.LatchHistory;
+import org.vanilladb.core.server.VanillaDb;
 
 public abstract class Latch {
-	private String name;
+	protected static LatchDataCollector collector = new LatchDataCollector("latch-features");
 
-	private int waitingCount;
-	private int maxWaitingCount;
-	private int totalAccessCount;
-	private AtomicInteger serialNumber;
+	static {
+		VanillaDb.taskMgr().runTask(collector);
+	}
 
-	protected Map<Long, LatchContext> contextMap;
+	protected LatchHistory history;
 	protected Map<Long, String> historyMap;
+	protected Map<Long, LatchContext> contextMap;
 
-	private LatchHistory history;
+	private String name;
+	private AtomicLong serialNumber;
 
 	public Latch(String latchName) {
 		name = latchName;
-		waitingCount = 0;
-		maxWaitingCount = 0;
-		totalAccessCount = 0;
-		serialNumber = new AtomicInteger(0);
+		serialNumber = new AtomicLong();
 
 		history = new LatchHistory();
 
-		contextMap = new ConcurrentHashMap<Long, LatchContext>(); // Do I really need concurrent map?
 		historyMap = new ConcurrentHashMap<Long, String>();
+		contextMap = new ConcurrentHashMap<Long, LatchContext>();
 	}
-
-	public void addContextToLatchHistory(LatchContext context) {
-		history.addLatchContext(context);
-	}
-
-	public LatchHistory getHistory() {
-		return history;
-	}
-
-	public int getMaxWaitingCount() {
-		return maxWaitingCount;
-	}
-
-	public int getTotalAccessCount() {
-		return totalAccessCount;
-	}
-
-//	protected synchronized void recordStatsBeforeLock() {
-//		waitingCount = waitingCount + 1;
-//		if (waitingCount > maxWaitingCount) {
-//			maxWaitingCount = waitingCount;
-//		}
-//	}
-//
-//	protected synchronized void recordStatsAfterUnlock() {
-//		waitingCount = waitingCount - 1;
-//		totalAccessCount = totalAccessCount + 1;
-//	}
 
 	protected void setContextBeforeLock(LatchContext context, long queueLength) {
+		context.setLatchName(name);
 		context.setTimeBeforeLock();
 		context.setSerialNumberBeforeLock(serialNumber.get());
 		context.setWaitingQueueLength(queueLength);
 	}
 
 	protected void setContextAfterLock(LatchContext context) {
-		context.setLatchName(name);
 		context.setTimeAfterLock();
-		context.setSerialNumberAfterLock(serialNumber.addAndGet(1));
+		context.setSerialNumberAfterLock(serialNumber.getAndIncrement());
 	}
 
 	protected void setContextAfterUnlock(LatchContext context) {
 		context.setTimeAfterUnlock();
+	}
+
+	protected void addToHistory(LatchContext context) {
+		history.addLatchContext(context);
+	}
+
+	protected void addToCollector(LatchContext context) {
+		String historyString = historyMap.get(Thread.currentThread().getId());
+		collector.addLatchFeature(new LatchFeature(context.toRow(), historyString));
 	}
 }

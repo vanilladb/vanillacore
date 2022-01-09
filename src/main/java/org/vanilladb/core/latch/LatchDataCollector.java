@@ -1,59 +1,43 @@
 package org.vanilladb.core.latch;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import org.vanilladb.core.latch.context.LatchContext;
-import org.vanilladb.core.latch.csv.CsvRow;
 import org.vanilladb.core.latch.csv.CsvWriter;
+import org.vanilladb.core.latch.feature.LatchFeature;
 import org.vanilladb.core.server.task.Task;
 
 public class LatchDataCollector extends Task {
-	private String name;
+	private static final int FLUSH_TIMEOUT = 20;
+	private static Logger logger = Logger.getLogger(LatchDataCollector.class.getName());
+
+	private String fileName;
 	private LinkedBlockingQueue<LatchFeature> latchFeatureQueue;
 	private ArrayList<LatchFeature> latchFeatureList;
 
-	private static final int Time_To_Flush = 20;
-
-	public LatchDataCollector(String collectorName) {
-		name = collectorName;
+	public LatchDataCollector(String fileName) {
+		this.fileName = fileName;
 		latchFeatureQueue = new LinkedBlockingQueue<LatchFeature>();
 		latchFeatureList = new ArrayList<LatchFeature>();
 	}
 
-	private static class LatchFeature implements CsvRow {
-		private String contextString;
-		private String historyString;
-
-		LatchFeature(String contextString, String historyString) {
-			this.contextString = contextString;
-			this.historyString = historyString;
-		}
-
-		public static String toHeader() {
-			return LatchContext.toHeader() + "," + LatchHistory.toHeader();
-		}
-
-		@Override
-		public String toRow() {
-			return contextString + "," + historyString;
-		}
-	}
-
-	public void addLatchFeature(String contextString, String historyString) {
-		latchFeatureQueue.add(new LatchFeature(contextString, historyString));
+	public void addLatchFeature(LatchFeature latchFeature) {
+		latchFeatureQueue.add(latchFeature);
 	}
 
 	public void run() {
 		try {
 			// wait for first latch feature
 			LatchFeature latchFeature = latchFeatureQueue.take();
-			System.out.println("Latch feature collector starts to collect data");
+			if (logger.isLoggable(Level.INFO)) {
+				logger.info("Latch feature collector starts to collect data");
+			}
 
 			latchFeatureList.add(latchFeature);
-			while ((latchFeature = latchFeatureQueue.poll(Time_To_Flush, TimeUnit.SECONDS)) != null) {
+			while ((latchFeature = latchFeatureQueue.poll(FLUSH_TIMEOUT, TimeUnit.SECONDS)) != null) {
 				latchFeatureList.add(latchFeature);
 			}
 
@@ -66,7 +50,7 @@ public class LatchDataCollector extends Task {
 	}
 
 	private void saveToCsv() {
-		CsvWriter<LatchFeature> csvWriter = new CsvWriter<LatchFeature>(name + ".csv");
+		CsvWriter<LatchFeature> csvWriter = new CsvWriter<LatchFeature>(fileName);
 		csvWriter.generateOutputFile(LatchFeature.toHeader(), latchFeatureList);
 	}
 }

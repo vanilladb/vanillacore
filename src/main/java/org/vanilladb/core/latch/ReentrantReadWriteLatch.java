@@ -2,7 +2,7 @@ package org.vanilladb.core.latch;
 
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import org.vanilladb.core.latch.context.LatchContext;
+import org.vanilladb.core.latch.feature.LatchContext;
 
 public class ReentrantReadWriteLatch extends Latch {
 
@@ -16,6 +16,7 @@ public class ReentrantReadWriteLatch extends Latch {
 	public void readLock() {
 		LatchContext context = new LatchContext();
 		contextMap.put(Thread.currentThread().getId(), context);
+
 		setContextBeforeLock(context, latch.getQueueLength());
 		latch.readLock().lock();
 		setContextAfterLock(context);
@@ -24,6 +25,7 @@ public class ReentrantReadWriteLatch extends Latch {
 	public void writeLock() {
 		LatchContext context = new LatchContext();
 		contextMap.put(Thread.currentThread().getId(), context);
+
 		setContextBeforeLock(context, latch.getQueueLength());
 		latch.writeLock().lock();
 		setContextAfterLock(context);
@@ -32,14 +34,20 @@ public class ReentrantReadWriteLatch extends Latch {
 	public void readUnlock() {
 		// readUnlock
 		latch.writeLock().unlock();
+
 		LatchContext context = contextMap.get(Thread.currentThread().getId());
 		setContextAfterUnlock(context);
+		addToHistory(context);
+		addToCollector(context);
 	}
-	
+
 	public void writeUnlock() {
 		// writeUnlock
 		latch.writeLock().unlock();
+
 		LatchContext context = contextMap.get(Thread.currentThread().getId());
 		setContextAfterUnlock(context);
+		addToHistory(context);
+		addToCollector(context);
 	}
 }

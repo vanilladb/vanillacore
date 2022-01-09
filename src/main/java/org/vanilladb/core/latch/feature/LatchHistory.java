@@ -1,14 +1,19 @@
-package org.vanilladb.core.latch;
+package org.vanilladb.core.latch.feature;
 
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import org.vanilladb.core.latch.context.LatchContext;
-import org.vanilladb.core.latch.csv.CsvRow;
-
 public class LatchHistory {
 	private static final int MAX_HISTORY_LENGTH = 10;
 	private Queue<LatchContext> historyQueue;
+
+	public static String toHeader() {
+		String header = "";
+		for (int i = 0; i < MAX_HISTORY_LENGTH; i++) {
+			header += LatchContext.toHeader(i) + ",";
+		}
+		return header;
+	}
 
 	public LatchHistory() {
 		historyQueue = new LinkedBlockingQueue<LatchContext>();
@@ -28,13 +33,5 @@ public class LatchHistory {
 			historyString += ((LatchContext) context).toRow() + ",";
 		}
 		return historyString;
-	}
-
-	public static String toHeader() {
-		String header = "";
-		for (int i = 0; i < MAX_HISTORY_LENGTH; i++) {
-			header += LatchContext.toHeader(i) + ",";
-		}
-		return header;
 	}
 }
