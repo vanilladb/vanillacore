@@ -31,9 +31,6 @@ public class LatchFeatureCollector extends Task {
 
 	public void addLatchFeature(LatchFeature latchFeature) {
 		try {
-			if (logger.isLoggable(Level.INFO)) {
-				logger.info(Thread.currentThread().getName() + " adds a latchFeature");
-			}
 			latchFeatures.put(latchFeature);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
@@ -61,14 +58,14 @@ public class LatchFeatureCollector extends Task {
 				while ((latchFeature = latchFeatures.poll(FLUSH_TIMEOUT, TimeUnit.SECONDS)) != null) {
 					writer.append(latchFeature.toRow() + "\n");
 
-					flushCounter += 1;
-
-					if (flushCounter % FLUSH_INTERVAL == 0) {
-						if (logger.isLoggable(Level.FINE)) {
-							logger.info("flushing latch features");
-						}
-						writer.flush();
-					}
+//					flushCounter += 1;
+//
+//					if (flushCounter % FLUSH_INTERVAL == 0) {
+//						if (logger.isLoggable(Level.FINE)) {
+//							logger.info("flushing latch features");
+//						}
+//						writer.flush();
+//					}
 				}
 
 				if (logger.isLoggable(Level.INFO)) {
