@@ -14,7 +14,7 @@ import org.vanilladb.core.server.task.Task;
 
 public class LatchFeatureCollector extends Task {
 	private static final int FLUSH_TIMEOUT = 10;
-	private static final long FLUSH_INTERVAL = 1000;
+	private static final int BUFFER_SIZE = 4096;
 	private static Logger logger = Logger.getLogger(LatchFeatureCollector.class.getName());
 
 	private String fileName;
@@ -48,24 +48,12 @@ public class LatchFeatureCollector extends Task {
 				logger.info("Latch feature collector starts to collect data");
 			}
 
-			try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
-
+			try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName), BUFFER_SIZE)) {
 				writer.append(LatchFeature.toHeader() + "\n");
 				writer.append(latchFeature.toRow() + "\n");
 
-				long flushCounter = 0;
-
 				while ((latchFeature = latchFeatures.poll(FLUSH_TIMEOUT, TimeUnit.SECONDS)) != null) {
 					writer.append(latchFeature.toRow() + "\n");
-
-//					flushCounter += 1;
-//
-//					if (flushCounter % FLUSH_INTERVAL == 0) {
-//						if (logger.isLoggable(Level.FINE)) {
-//							logger.info("flushing latch features");
-//						}
-//						writer.flush();
-//					}
 				}
 
 				if (logger.isLoggable(Level.INFO)) {
