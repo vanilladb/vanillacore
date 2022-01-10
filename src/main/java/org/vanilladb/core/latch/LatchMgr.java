@@ -8,13 +8,13 @@ import org.vanilladb.core.latch.feature.LatchFeatureCollector;
 public class LatchMgr {
 //	private static Logger logger = Logger.getLogger(LatchMgr.class.getName());
 	private static final String FEATURE_CSV = "latch-features.csv";
-	protected LatchFeatureCollector collector = new LatchFeatureCollector(FEATURE_CSV);
-
-	private Map<String, Latch> latchMap = new HashMap<String, Latch>();
 
 	public static String getKey(String caller, String target, int index) {
 		return caller + "-" + target + "-" + index;
 	}
+
+	protected LatchFeatureCollector collector = new LatchFeatureCollector(FEATURE_CSV);
+	private Map<String, Latch> latchMap = new HashMap<String, Latch>();
 
 	public void startCollecting() {
 		collector.startCollecting();
