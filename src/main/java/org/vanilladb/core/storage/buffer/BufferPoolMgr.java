@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 
-import org.vanilladb.core.latch.LatchDataCollector;
 import org.vanilladb.core.latch.LatchMgr;
 import org.vanilladb.core.latch.ReentrantLatch;
 import org.vanilladb.core.server.VanillaDb;
@@ -47,7 +46,6 @@ class BufferPoolMgr {
 	private ReentrantLock[] fileLocks = new ReentrantLock[stripSize];
 //	private ReentrantLock[] blockLocks = new ReentrantLock[stripSize];
 	private ReentrantLatch[] blockLatches = new ReentrantLatch[stripSize];
-	private LatchDataCollector blockLatchDataCollector;
 
 	private LatchMgr latchMgr = VanillaDb.getLatchMgr();
 	private static Logger logger = Logger.getLogger(BufferMgr.class.getName());

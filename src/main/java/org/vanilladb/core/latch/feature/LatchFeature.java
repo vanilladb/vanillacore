@@ -1,7 +1,5 @@
 package org.vanilladb.core.latch.feature;
 
-import org.vanilladb.core.latch.csv.CsvRow;
-
 public class LatchFeature implements CsvRow {
 	private String contextString;
 	private String historyString;

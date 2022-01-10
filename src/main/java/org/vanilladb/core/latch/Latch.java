@@ -6,24 +6,19 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.vanilladb.core.latch.feature.LatchContext;
 import org.vanilladb.core.latch.feature.LatchFeature;
+import org.vanilladb.core.latch.feature.LatchFeatureCollector;
 import org.vanilladb.core.latch.feature.LatchHistory;
-import org.vanilladb.core.server.VanillaDb;
 
 public abstract class Latch {
-	protected static LatchDataCollector collector = new LatchDataCollector("latch-features");
-
-	static {
-		VanillaDb.taskMgr().runTask(collector);
-	}
-
 	protected LatchHistory history;
 	protected Map<Long, String> historyMap;
 	protected Map<Long, LatchContext> contextMap;
+	protected LatchFeatureCollector collector;
 
 	private String name;
 	private AtomicLong serialNumber;
 
-	public Latch(String latchName) {
+	public Latch(String latchName, LatchFeatureCollector collector) {
 		name = latchName;
 		serialNumber = new AtomicLong();
 
@@ -31,6 +26,8 @@ public abstract class Latch {
 
 		historyMap = new ConcurrentHashMap<Long, String>();
 		contextMap = new ConcurrentHashMap<Long, LatchContext>();
+		
+		this.collector = collector;
 	}
 
 	protected void setContextBeforeLock(LatchContext context, long queueLength) {
