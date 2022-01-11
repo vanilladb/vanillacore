@@ -12,11 +12,11 @@ public class LatchContext {
 	private long waitingQueueLength;
 
 	public static String toHeader() {
-		return "latch name, time before lock,time after lock,time after unlock,serial number before lock,serial number after lock,waiting queue length";
+		return "latch name,time before lock,time after lock,time after unlock,serial number before lock,serial number after lock,waiting queue length";
 	}
 
 	public static String toHeader(int idx) {
-		String s = "%d latch name, %d time before lock,%d time after lock,%d time after unlock,%d serial number before lock,%d serial number after lock,%d waiting queue length";
+		String s = "%d latch name,%d time before lock,%d time after lock,%d time after unlock,%d serial number before lock,%d serial number after lock,%d waiting queue length";
 		s = String.format(s, idx, idx, idx, idx, idx, idx, idx);
 		return s;
 	}
