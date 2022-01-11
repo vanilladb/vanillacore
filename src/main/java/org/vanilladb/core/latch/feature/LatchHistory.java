@@ -12,7 +12,7 @@ public class LatchHistory {
 		for (int i = 0; i < MAX_HISTORY_LENGTH; i++) {
 			header += LatchContext.toHeader(i) + ",";
 		}
-		return header;
+		return header.substring(0, header.length() - 1);
 	}
 
 	public LatchHistory() {
