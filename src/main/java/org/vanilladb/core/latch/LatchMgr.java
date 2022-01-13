@@ -3,34 +3,54 @@ package org.vanilladb.core.latch;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.vanilladb.core.latch.feature.LatchFeatureCollector;
+import org.vanilladb.core.latch.feature.ILatchFeatureCollector;
 
 public class LatchMgr {
 //	private static Logger logger = Logger.getLogger(LatchMgr.class.getName());
-	private static final String FEATURE_CSV = "latch-features.csv";
 
-	public static String getKey(String caller, String target, int index) {
+	/*
+	 * Latches within the same stripped mechanism are managed by a single collector.
+	 * caller + target maps to those latches. For example, 1009 latches, which
+	 * consist of a stripped latch, are managed by a single collector.
+	 */
+	public static String getCollectorKey(String caller, String target) {
+		return caller + "-" + target;
+	}
+
+	public static String getLatchKey(String caller, String target, int index) {
 		return caller + "-" + target + "-" + index;
 	}
 
-	protected LatchFeatureCollector collector = new LatchFeatureCollector(FEATURE_CSV);
+	private Map<String, ILatchFeatureCollector> collectorMap;
 	private Map<String, Latch> latchMap = new HashMap<String, Latch>();
 
-	public void startCollecting() {
-		collector.startCollecting();
+	public LatchMgr(Map<String, ILatchFeatureCollector> collectorMap) {
+		if (collectorMap != null) {
+			this.collectorMap = collectorMap;
+		} else {
+			this.collectorMap = new HashMap<String, ILatchFeatureCollector>();
+		}
 	}
 
 	public ReentrantLatch registerReentrantLatch(String caller, String target, int index) {
-		String key = getKey(caller, target, index);
-		ReentrantLatch latch = new ReentrantLatch(key, collector);
-		latchMap.put(key, latch);
+		// NOTICE: DON'T handle the null collector
+		ILatchFeatureCollector collector = collectorMap.get(getCollectorKey(caller, target));
+		String latchKey = getLatchKey(caller, target, index);
+
+		ReentrantLatch latch = new ReentrantLatch(latchKey, collector);
+
+		latchMap.put(latchKey, latch);
 		return latch;
 	}
 
 	public ReentrantReadWriteLatch registerReentrantReadWriteLatch(String caller, String target, int index) {
-		String key = getKey(caller, target, index);
-		ReentrantReadWriteLatch latch = new ReentrantReadWriteLatch(key, collector);
-		latchMap.put(key, latch);
+		// NOTICE: DON'T handle the null collector
+		ILatchFeatureCollector collector = collectorMap.get(getCollectorKey(caller, target));
+		String latchKey = getLatchKey(caller, target, index);
+
+		ReentrantReadWriteLatch latch = new ReentrantReadWriteLatch(latchKey, collector);
+
+		latchMap.put(latchKey, latch);
 		return latch;
 	}
 }

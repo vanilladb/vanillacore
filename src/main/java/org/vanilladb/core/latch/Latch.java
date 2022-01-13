@@ -6,19 +6,20 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.vanilladb.core.latch.feature.LatchContext;
 import org.vanilladb.core.latch.feature.LatchFeature;
-import org.vanilladb.core.latch.feature.LatchFeatureCollector;
+import org.vanilladb.core.latch.feature.ILatchFeatureCollector;
 import org.vanilladb.core.latch.feature.LatchHistory;
+import org.vanilladb.core.server.VanillaDb;
 
 public abstract class Latch {
 	protected LatchHistory history;
 	protected Map<Long, String> historyMap;
 	protected Map<Long, LatchContext> contextMap;
-	protected LatchFeatureCollector collector;
+	protected ILatchFeatureCollector collector;
 
 	private String name;
 	private AtomicLong serialNumber;
 
-	public Latch(String latchName, LatchFeatureCollector collector) {
+	public Latch(String latchName, ILatchFeatureCollector collector) {
 		name = latchName;
 		serialNumber = new AtomicLong();
 
@@ -26,7 +27,7 @@ public abstract class Latch {
 
 		historyMap = new ConcurrentHashMap<Long, String>();
 		contextMap = new ConcurrentHashMap<Long, LatchContext>();
-		
+
 		this.collector = collector;
 	}
 
@@ -53,5 +54,9 @@ public abstract class Latch {
 	protected void addToCollector(LatchContext context) {
 		String historyString = historyMap.get(Thread.currentThread().getId());
 		collector.addLatchFeature(new LatchFeature(context.toRow(), historyString));
+	}
+
+	protected Boolean isEnableCollecting() {
+		return collector != null && VanillaDb.isInited();
 	}
 }

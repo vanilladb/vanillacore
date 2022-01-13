@@ -20,10 +20,12 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.sql.Connection;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.vanilladb.core.latch.LatchMgr;
+import org.vanilladb.core.latch.feature.ILatchFeatureCollector;
 import org.vanilladb.core.query.planner.Planner;
 import org.vanilladb.core.query.planner.QueryPlanner;
 import org.vanilladb.core.query.planner.UpdatePlanner;
@@ -86,7 +88,17 @@ public class VanillaDb {
 	 * @param dirName the name of the database directory
 	 */
 	public static void init(String dirName) {
-		init(dirName, new SampleStoredProcedureFactory());
+		init(dirName, new SampleStoredProcedureFactory(), null);
+	}
+
+	/**
+	 * Initializes the system. This method is called during system startup.
+	 * 
+	 * @param dirName the name of the database directory
+	 * @param collectorMap a map contains multiple latch feature collectors
+	 */
+	public static void init(String dirName, Map<String, ILatchFeatureCollector> collectorMap) {
+		init(dirName, new SampleStoredProcedureFactory(), collectorMap);
 	}
 
 	/**
@@ -95,7 +107,8 @@ public class VanillaDb {
 	 * @param dirName the name of the database directory
 	 * @param factory the stored procedure factory for generating stored procedures
 	 */
-	public static void init(String dirName, StoredProcedureFactory factory) {
+	public static void init(String dirName, StoredProcedureFactory factory,
+			Map<String, ILatchFeatureCollector> collectorMap) {
 
 		if (inited) {
 			if (logger.isLoggable(Level.WARNING))
@@ -123,7 +136,7 @@ public class VanillaDb {
 		initTxMgr();
 
 		// initialize latch manager to allow others module to register latches
-		initLatchMgr();
+		initLatchMgr(collectorMap);
 
 		// the first transaction for initializing the system
 		Transaction initTx = txMgr.newTransaction(Connection.TRANSACTION_SERIALIZABLE, false);
@@ -160,9 +173,6 @@ public class VanillaDb {
 				.getPropertyAsBoolean(VanillaDb.class.getName() + ".DO_CHECKPOINT", true);
 		if (doCheckpointing)
 			initCheckpointingTask();
-
-		// start collecting latch features
-		latchMgr.startCollecting();
 
 		// finish initialization
 		inited = true;
@@ -332,8 +342,8 @@ public class VanillaDb {
 		}
 	}
 
-	public static void initLatchMgr() {
-		latchMgr = new LatchMgr();
+	public static void initLatchMgr(Map<String, ILatchFeatureCollector> collectorMap) {
+		latchMgr = new LatchMgr(collectorMap);
 	}
 
 	public static LatchMgr getLatchMgr() {

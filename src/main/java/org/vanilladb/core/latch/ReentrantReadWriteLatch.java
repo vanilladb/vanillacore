@@ -3,20 +3,19 @@ package org.vanilladb.core.latch;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.vanilladb.core.latch.feature.LatchContext;
-import org.vanilladb.core.latch.feature.LatchFeatureCollector;
-import org.vanilladb.core.server.VanillaDb;
+import org.vanilladb.core.latch.feature.ILatchFeatureCollector;
 
 public class ReentrantReadWriteLatch extends Latch {
 
 	private ReentrantReadWriteLock latch;
 
-	public ReentrantReadWriteLatch(String latchName, LatchFeatureCollector collector) {
+	public ReentrantReadWriteLatch(String latchName, ILatchFeatureCollector collector) {
 		super(latchName, collector);
 		latch = new ReentrantReadWriteLock();
 	}
 
 	public void readLock() {
-		if (VanillaDb.isInited()) {
+		if (isEnableCollecting()) {
 			LatchContext context = new LatchContext();
 			contextMap.put(Thread.currentThread().getId(), context);
 
@@ -29,7 +28,7 @@ public class ReentrantReadWriteLatch extends Latch {
 	}
 
 	public void writeLock() {
-		if (VanillaDb.isInited()) {
+		if (isEnableCollecting()) {
 			LatchContext context = new LatchContext();
 			contextMap.put(Thread.currentThread().getId(), context);
 
@@ -45,7 +44,7 @@ public class ReentrantReadWriteLatch extends Latch {
 		// readUnlock
 		latch.writeLock().unlock();
 
-		if (VanillaDb.isInited()) {
+		if (isEnableCollecting()) {
 			LatchContext context = contextMap.get(Thread.currentThread().getId());
 			setContextAfterUnlock(context);
 			addToHistory(context);
@@ -57,7 +56,7 @@ public class ReentrantReadWriteLatch extends Latch {
 		// writeUnlock
 		latch.writeLock().unlock();
 
-		if (VanillaDb.isInited()) {
+		if (isEnableCollecting()) {
 			LatchContext context = contextMap.get(Thread.currentThread().getId());
 			setContextAfterUnlock(context);
 			addToHistory(context);

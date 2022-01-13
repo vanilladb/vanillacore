@@ -3,19 +3,18 @@ package org.vanilladb.core.latch;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.vanilladb.core.latch.feature.LatchContext;
-import org.vanilladb.core.latch.feature.LatchFeatureCollector;
-import org.vanilladb.core.server.VanillaDb;
+import org.vanilladb.core.latch.feature.ILatchFeatureCollector;
 
 public class ReentrantLatch extends Latch {
 	private ReentrantLock latch = new ReentrantLock();
 
-	public ReentrantLatch(String latchName, LatchFeatureCollector collector) {
+	public ReentrantLatch(String latchName, ILatchFeatureCollector collector) {
 		super(latchName, collector);
 		latch = new ReentrantLock();
 	}
 
 	public void lock() {
-		if (VanillaDb.isInited()) {
+		if (isEnableCollecting()) {
 			String historyString = history.toRow();
 			historyMap.put(Thread.currentThread().getId(), historyString);
 
@@ -23,9 +22,9 @@ public class ReentrantLatch extends Latch {
 			contextMap.put(Thread.currentThread().getId(), context);
 
 			setContextBeforeLock(context, latch.getQueueLength());
-			
+
 			latch.lock();
-			
+
 			setContextAfterLock(context);
 		} else {
 			// no need to keep contexts during the initialized state
@@ -36,7 +35,7 @@ public class ReentrantLatch extends Latch {
 	public void unlock() {
 		latch.unlock();
 
-		if (VanillaDb.isInited()) {
+		if (isEnableCollecting()) {
 			LatchContext context = contextMap.get(Thread.currentThread().getId());
 			setContextAfterUnlock(context);
 			addToHistory(context);
