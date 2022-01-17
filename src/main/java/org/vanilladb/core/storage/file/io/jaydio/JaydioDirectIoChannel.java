@@ -21,7 +21,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.vanilladb.core.storage.file.io.IoBuffer;
 import org.vanilladb.core.storage.file.io.IoChannel;
-import org.vanilladb.core.util.TransactionProfiler;
 
 import net.smacke.jaydio.buffer.AlignedDirectByteBuffer;
 import net.smacke.jaydio.channel.BufferedChannel;
