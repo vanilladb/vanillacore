@@ -9,7 +9,7 @@ public class LatchContext {
 	private long serialNumberBeforeLock;
 	private long serialNumberAfterLock;
 
-	private long waitingQueueLength;
+	private int waitingQueueLength;
 
 	public static String toHeader() {
 		return "latch name,time before lock,time after lock,time after unlock,serial number before lock,serial number after lock,waiting queue length";
@@ -46,11 +46,19 @@ public class LatchContext {
 		serialNumberAfterLock = serialNumber;
 	}
 
-	public void setWaitingQueueLength(long queueLength) {
+	public void setWaitingQueueLength(int queueLength) {
 		waitingQueueLength = queueLength;
 	}
 
 	public void setLatchName(String latchName) {
 		name = latchName;
+	}
+	
+	public long getTimeBeforeLock() {
+		return timeBeforeLock;
+	}
+	
+	public int getWaitingQueueLength() {
+		return waitingQueueLength;
 	}
 }

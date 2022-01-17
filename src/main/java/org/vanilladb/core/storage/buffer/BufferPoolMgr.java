@@ -47,7 +47,6 @@ class BufferPoolMgr {
 //	private ReentrantLock[] blockLocks = new ReentrantLock[stripSize];
 	private ReentrantLatch[] blockLatches = new ReentrantLatch[stripSize];
 
-	private LatchMgr latchMgr = VanillaDb.getLatchMgr();
 	private static Logger logger = Logger.getLogger(BufferMgr.class.getName());
 
 	/**
@@ -76,7 +75,7 @@ class BufferPoolMgr {
 		for (int i = 0; i < stripSize; ++i) {
 			fileLocks[i] = new ReentrantLock();
 //			blockLocks[i] = new ReentrantLock();
-			blockLatches[i] = latchMgr.registerReentrantLatch("BufferPoolMgr", "block", i);
+			blockLatches[i] = LatchMgr.registerReentrantLatch("BufferPoolMgr", "block", i);
 		}
 	}
 

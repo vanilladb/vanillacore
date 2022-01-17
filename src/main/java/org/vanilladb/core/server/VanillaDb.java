@@ -20,12 +20,9 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.sql.Connection;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.vanilladb.core.latch.LatchMgr;
-import org.vanilladb.core.latch.feature.ILatchFeatureCollector;
 import org.vanilladb.core.query.planner.Planner;
 import org.vanilladb.core.query.planner.QueryPlanner;
 import org.vanilladb.core.query.planner.UpdatePlanner;
@@ -71,8 +68,6 @@ public class VanillaDb {
 	private static StatMgr statMgr;
 	private static TaskMgr taskMgr;
 	private static TransactionMgr txMgr;
-	private static LatchMgr latchMgr;
-
 	// Utility classes
 	private static StoredProcedureFactory spFactory;
 	private static Profiler profiler;
@@ -88,17 +83,7 @@ public class VanillaDb {
 	 * @param dirName the name of the database directory
 	 */
 	public static void init(String dirName) {
-		init(dirName, new SampleStoredProcedureFactory(), null);
-	}
-
-	/**
-	 * Initializes the system. This method is called during system startup.
-	 * 
-	 * @param dirName the name of the database directory
-	 * @param collectorMap a map contains multiple latch feature collectors
-	 */
-	public static void init(String dirName, Map<String, ILatchFeatureCollector> collectorMap) {
-		init(dirName, new SampleStoredProcedureFactory(), collectorMap);
+		init(dirName, new SampleStoredProcedureFactory());
 	}
 
 	/**
@@ -107,8 +92,7 @@ public class VanillaDb {
 	 * @param dirName the name of the database directory
 	 * @param factory the stored procedure factory for generating stored procedures
 	 */
-	public static void init(String dirName, StoredProcedureFactory factory,
-			Map<String, ILatchFeatureCollector> collectorMap) {
+	public static void init(String dirName, StoredProcedureFactory factory) {
 
 		if (inited) {
 			if (logger.isLoggable(Level.WARNING))
@@ -134,9 +118,6 @@ public class VanillaDb {
 		initFileAndLogMgr(dirName);
 		initTaskMgr();
 		initTxMgr();
-
-		// initialize latch manager to allow others module to register latches
-		initLatchMgr(collectorMap);
 
 		// the first transaction for initializing the system
 		Transaction initTx = txMgr.newTransaction(Connection.TRANSACTION_SERIALIZABLE, false);
@@ -340,13 +321,5 @@ public class VanillaDb {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-	}
-
-	public static void initLatchMgr(Map<String, ILatchFeatureCollector> collectorMap) {
-		latchMgr = new LatchMgr(collectorMap);
-	}
-
-	public static LatchMgr getLatchMgr() {
-		return latchMgr;
 	}
 }
