@@ -28,7 +28,6 @@ import org.vanilladb.core.sql.Type;
 import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.file.Page;
 import org.vanilladb.core.storage.log.LogSeqNum;
-import org.vanilladb.core.util.TransactionProfiler;
 
 /**
  * An individual buffer. A buffer wraps a page and stores information about its
@@ -112,7 +111,6 @@ public class Buffer {
 			BufferPoolMonitor.incrementReadWaitCounter();
 			contentLock.readLock().lock();
 		}
-
 		try {
 			if (offset < 0 || offset >= BUFFER_SIZE)
 				throw new IndexOutOfBoundsException("" + offset);

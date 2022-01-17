@@ -36,7 +36,7 @@ public class TransactionProfiler {
 			return new TransactionProfiler();
 		}
 	};
-	
+
 	/**
 	 * Get the profiler local to this thread.
 	 * 
