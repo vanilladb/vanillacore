@@ -2,6 +2,7 @@ package org.vanilladb.core.latch;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.vanilladb.core.latch.feature.ILatchFeatureCollector;
 
@@ -29,6 +30,11 @@ public class LatchMgr {
 			this.collectorMap = collectorMap;
 		} else {
 			this.collectorMap = new HashMap<String, ILatchFeatureCollector>();
+		}
+		
+		// start background threads to collect latch features
+		for (Entry<String, ILatchFeatureCollector> entry: collectorMap.entrySet()) {
+			entry.getValue().startCollecting();
 		}
 	}
 
