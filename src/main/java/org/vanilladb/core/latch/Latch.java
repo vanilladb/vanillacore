@@ -3,7 +3,6 @@ package org.vanilladb.core.latch;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.vanilladb.core.latch.feature.LatchContext;
 import org.vanilladb.core.latch.feature.LatchFeature;

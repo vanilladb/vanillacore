@@ -58,7 +58,7 @@ public class ReentrantLatch extends Latch {
 	public boolean isHeldByCurrentThread() {
 		return latch.isHeldByCurrentThread();
 	}
-	
+
 	@Override
 	protected int getQueueLength() {
 		return latch.getQueueLength();
