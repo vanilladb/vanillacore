@@ -14,9 +14,6 @@ public class ReentrantLatch extends Latch {
 
 	public void lock() {
 		if (isEnableCollecting()) {
-			// snapshot the history as features
-			snapshotHistory();
-
 			// create a brand new context to record the lock behavior
 			LatchContext context = new LatchContext();
 
@@ -25,10 +22,7 @@ public class ReentrantLatch extends Latch {
 
 			// set the context with several feature that can be acquired before acquiring
 			// lock
-			setContextBeforeLock(context, latch.getQueueLength());
-
-			// the context has been set with queueLength and time before lock
-			saveAsFeature(context);
+			setContextBeforeLock(context);
 
 			latch.lock();
 
@@ -63,5 +57,10 @@ public class ReentrantLatch extends Latch {
 
 	public boolean isHeldByCurrentThread() {
 		return latch.isHeldByCurrentThread();
+	}
+	
+	@Override
+	protected int getQueueLength() {
+		return latch.getQueueLength();
 	}
 }

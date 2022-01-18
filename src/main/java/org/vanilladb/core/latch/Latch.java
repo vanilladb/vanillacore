@@ -11,44 +11,27 @@ import org.vanilladb.core.latch.feature.LatchHistory;
 import org.vanilladb.core.server.VanillaDb;
 
 public abstract class Latch {
-	protected LatchHistory history;
-	protected Map<Long, String> historyMap;
-	protected Map<Long, LatchContext> contextMap;
-	protected AtomicReference<LatchFeature> currentFeature = new AtomicReference<LatchFeature>();
-
+	protected LatchHistory history = new LatchHistory();
+	protected Map<Long, LatchContext> contextMap = new ConcurrentHashMap<Long, LatchContext>();
+	private AtomicLong serialNumber = new AtomicLong();
+	
 	private String latchName;
-	private AtomicLong serialNumber;
-
+	
 	public Latch(String latchName) {
 		this.latchName = latchName;
-		serialNumber = new AtomicLong();
-
-		history = new LatchHistory();
-
-		historyMap = new ConcurrentHashMap<Long, String>();
-		contextMap = new ConcurrentHashMap<Long, LatchContext>();
 	}
+	
+	protected abstract int getQueueLength();
 
 	public LatchFeature getFeature() {
-		return currentFeature.get();
+		return new LatchFeature(latchName, getQueueLength(), history.toRow());
 	}
 
-	public void snapshotHistory() {
-		String historyString = history.toRow();
-		historyMap.put(Thread.currentThread().getId(), historyString);
-	}
-
-	protected void setContextBeforeLock(LatchContext context, int queueLength) {
+	protected void setContextBeforeLock(LatchContext context) {
 		context.setLatchName(latchName);
 		context.setTimeBeforeLock();
 		context.setSerialNumberBeforeLock(serialNumber.get());
-		context.setWaitingQueueLength(queueLength);
-	}
-
-	protected void saveAsFeature(LatchContext context) {
-		String historyString = historyMap.get(Thread.currentThread().getId());
-		currentFeature.set(new LatchFeature(latchName, context, historyString));
-		historyMap.remove(Thread.currentThread().getId());
+		context.setWaitingQueueLength(getQueueLength());
 	}
 
 	protected void setContextAfterLock(LatchContext context) {

@@ -30,4 +30,9 @@ public class ReentrantReadWriteLatch extends Latch {
 		// TODO: add feature collecting code
 		latch.writeLock().unlock();
 	}
+
+	@Override
+	protected int getQueueLength() {
+		return 0;
+	}
 }
