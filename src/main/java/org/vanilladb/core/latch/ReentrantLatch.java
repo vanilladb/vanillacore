@@ -60,7 +60,7 @@ public class ReentrantLatch extends Latch {
 	}
 
 	@Override
-	protected int getQueueLength() {
+	public int getQueueLength() {
 		return latch.getQueueLength();
 	}
 }

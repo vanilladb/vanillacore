@@ -26,6 +26,7 @@ import org.vanilladb.core.latch.ReentrantLatch;
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.file.FileMgr;
+import org.vanilladb.core.util.StripedLatchObserver;
 
 /**
  * Manages the pinning and unpinning of buffers to blocks.
@@ -40,6 +41,9 @@ class BufferPoolMgr {
 	private AtomicInteger missCount;
 	private AtomicInteger blockLockWaitCount;
 	private AtomicInteger blockLockReleaseCount;
+
+	// For observing
+	private StripedLatchObserver<BlockId> observer;
 
 	// Optimization: Lock striping
 	private static final int stripSize = 1009;
@@ -77,6 +81,11 @@ class BufferPoolMgr {
 //			blockLocks[i] = new ReentrantLock();
 			blockLatches[i] = LatchMgr.registerReentrantLatch("BufferPoolMgr", "block", i);
 		}
+
+		if (StripedLatchObserver.ENABLE_OBSERVE_STRIPED_LOCK) {
+			observer = new StripedLatchObserver<BlockId>("bufferpoolmgr-blocklatch-observation.csv");
+			VanillaDb.taskMgr().runTask(observer);
+		}
 	}
 
 	// Optimization: Lock striping
@@ -98,6 +107,13 @@ class BufferPoolMgr {
 		int code = o.hashCode() % blockLatches.length;
 		if (code < 0)
 			code += blockLatches.length;
+
+		ReentrantLatch latch = blockLatches[code];
+		
+		if (StripedLatchObserver.ENABLE_OBSERVE_STRIPED_LOCK) {
+			observer.increment(code, (BlockId) o, latch.getQueueLength());
+		}
+		
 		return blockLatches[code];
 	}
 

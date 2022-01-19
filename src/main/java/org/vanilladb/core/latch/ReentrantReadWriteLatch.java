@@ -32,7 +32,7 @@ public class ReentrantReadWriteLatch extends Latch {
 	}
 
 	@Override
-	protected int getQueueLength() {
+	public int getQueueLength() {
 		return 0;
 	}
 }

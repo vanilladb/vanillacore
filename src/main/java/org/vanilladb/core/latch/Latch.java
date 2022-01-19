@@ -20,7 +20,7 @@ public abstract class Latch {
 		this.latchName = latchName;
 	}
 	
-	protected abstract int getQueueLength();
+	public abstract int getQueueLength();
 
 	public LatchFeature getFeature() {
 		return new LatchFeature(latchName, getQueueLength(), history.toRow());
