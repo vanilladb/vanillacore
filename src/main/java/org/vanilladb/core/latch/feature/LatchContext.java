@@ -1,0 +1,64 @@
+package org.vanilladb.core.latch.feature;
+
+public class LatchContext {
+	private String name;
+	private long timeBeforeLock;
+	private long timeAfterLock;
+	private long timeAfterUnlock;
+
+	private long serialNumberBeforeLock;
+	private long serialNumberAfterLock;
+
+	private int waitingQueueLength;
+
+	public static String toHeader() {
+		return "latch name,time before lock,time after lock,time after unlock,serial number before lock,serial number after lock,waiting queue length";
+	}
+
+	public static String toHeader(int idx) {
+		String s = "%d latch name,%d time before lock,%d time after lock,%d time after unlock,%d serial number before lock,%d serial number after lock,%d waiting queue length";
+		s = String.format(s, idx, idx, idx, idx, idx, idx, idx);
+		return s;
+	}
+
+	public String toRow() {
+		return name + "," + timeBeforeLock + "," + timeAfterLock + "," + timeAfterUnlock + "," + serialNumberBeforeLock
+				+ "," + serialNumberAfterLock + "," + waitingQueueLength;
+	}
+
+	public void setTimeBeforeLock() {
+		timeBeforeLock = System.nanoTime();
+	}
+
+	public void setTimeAfterLock() {
+		timeAfterLock = System.nanoTime();
+	}
+
+	public void setTimeAfterUnlock() {
+		timeAfterUnlock = System.nanoTime();
+	}
+
+	public void setSerialNumberBeforeLock(long serialNumber) {
+		serialNumberBeforeLock = serialNumber;
+	}
+
+	public void setSerialNumberAfterLock(long serialNumber) {
+		serialNumberAfterLock = serialNumber;
+	}
+
+	public void setWaitingQueueLength(int queueLength) {
+		waitingQueueLength = queueLength;
+	}
+
+	public void setLatchName(String latchName) {
+		name = latchName;
+	}
+	
+	public long getTimeBeforeLock() {
+		return timeBeforeLock;
+	}
+	
+	public int getWaitingQueueLength() {
+		return waitingQueueLength;
+	}
+}

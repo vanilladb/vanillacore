@@ -46,9 +46,8 @@ import org.vanilladb.core.util.Profiler;
  * The class that provides system-wide static global values. These values must
  * be initialized by the method {@link #init(String) init} before use. The
  * methods {@link #initFileMgr(String) initFileMgr},
- * {@link #initFileAndLogMgr(String) initFileAndLogMgr},
- * {@link #initTaskMgr() initTaskMgr},
- * {@link #initTxMgr() initTxMgr},
+ * {@link #initFileAndLogMgr(String) initFileAndLogMgr}, {@link #initTaskMgr()
+ * initTaskMgr}, {@link #initTxMgr() initTxMgr},
  * {@link #initCatalogMgr(boolean, Transaction) initCatalogMgr},
  * {@link #initStatMgr(Transaction) initStatMgr}, and
  * {@link #initCheckpointingTask() initCheckpointingTask} provide limited
@@ -69,7 +68,6 @@ public class VanillaDb {
 	private static StatMgr statMgr;
 	private static TaskMgr taskMgr;
 	private static TransactionMgr txMgr;
-
 	// Utility classes
 	private static StoredProcedureFactory spFactory;
 	private static Profiler profiler;
@@ -77,13 +75,12 @@ public class VanillaDb {
 	/**
 	 * Initialization Flag
 	 */
-	private static boolean inited;
+	private static volatile boolean inited;
 
 	/**
 	 * Initializes the system. This method is called during system startup.
 	 * 
-	 * @param dirName
-	 *            the name of the database directory
+	 * @param dirName the name of the database directory
 	 */
 	public static void init(String dirName) {
 		init(dirName, new SampleStoredProcedureFactory());
@@ -92,10 +89,8 @@ public class VanillaDb {
 	/**
 	 * Initializes the system. This method is called during system startup.
 	 * 
-	 * @param dirName
-	 *            the name of the database directory
-	 * @param factory
-	 *            the stored procedure factory for generating stored procedures
+	 * @param dirName the name of the database directory
+	 * @param factory the stored procedure factory for generating stored procedures
 	 */
 	public static void init(String dirName, StoredProcedureFactory factory) {
 
@@ -104,35 +99,32 @@ public class VanillaDb {
 				logger.warning("discarding duplicated init request");
 			return;
 		}
-		
+
 		// Set the stored procedure factory
 		spFactory = factory;
 
 		/*
-		 * Note: We read properties file here before, but we moved it to a
-		 * utility class, PropertiesFetcher, for safety reason.
+		 * Note: We read properties file here before, but we moved it to a utility
+		 * class, PropertiesFetcher, for safety reason.
 		 */
 
 		// read classes
-		queryPlannerCls = CoreProperties.getLoader().getPropertyAsClass(
-				VanillaDb.class.getName() + ".QUERYPLANNER",
+		queryPlannerCls = CoreProperties.getLoader().getPropertyAsClass(VanillaDb.class.getName() + ".QUERYPLANNER",
 				HeuristicQueryPlanner.class, QueryPlanner.class);
-		updatePlannerCls = CoreProperties.getLoader().getPropertyAsClass(
-				VanillaDb.class.getName() + ".UPDATEPLANNER",
+		updatePlannerCls = CoreProperties.getLoader().getPropertyAsClass(VanillaDb.class.getName() + ".UPDATEPLANNER",
 				IndexUpdatePlanner.class, UpdatePlanner.class);
-		
+
 		// initialize storage engine
 		initFileAndLogMgr(dirName);
 		initTaskMgr();
 		initTxMgr();
 
 		// the first transaction for initializing the system
-		Transaction initTx = txMgr.newTransaction(
-				Connection.TRANSACTION_SERIALIZABLE, false);
+		Transaction initTx = txMgr.newTransaction(Connection.TRANSACTION_SERIALIZABLE, false);
 
 		/*
-		 * initialize the catalog manager to ensure the recovery process can get
-		 * the index info (required for index logical recovery)
+		 * initialize the catalog manager to ensure the recovery process can get the
+		 * index info (required for index logical recovery)
 		 */
 		boolean isDbNew = fileMgr.isNew();
 		initCatalogMgr(isDbNew, initTx);
@@ -150,7 +142,7 @@ public class VanillaDb {
 
 		// initialize the statistics manager to build the histogram
 		initStatMgr(initTx);
-		
+
 		// create a checkpoint
 		txMgr.createCheckpoint(initTx);
 
@@ -158,8 +150,8 @@ public class VanillaDb {
 		initTx.commit();
 
 		// initializing checkpointing task
-		boolean doCheckpointing = CoreProperties.getLoader().getPropertyAsBoolean(
-				VanillaDb.class.getName() + ".DO_CHECKPOINT", true);
+		boolean doCheckpointing = CoreProperties.getLoader()
+				.getPropertyAsBoolean(VanillaDb.class.getName() + ".DO_CHECKPOINT", true);
 		if (doCheckpointing)
 			initCheckpointingTask();
 
@@ -177,16 +169,14 @@ public class VanillaDb {
 	}
 
 	/*
-	 * The following initialization methods are useful for testing the
-	 * lower-level components of the system without having to initialize
-	 * everything.
+	 * The following initialization methods are useful for testing the lower-level
+	 * components of the system without having to initialize everything.
 	 */
 
 	/**
 	 * Initializes only the file manager.
 	 * 
-	 * @param dirName
-	 *            the name of the database directory
+	 * @param dirName the name of the database directory
 	 */
 	public static void initFileMgr(String dirName) {
 		fileMgr = new FileMgr(dirName);
@@ -195,8 +185,7 @@ public class VanillaDb {
 	/**
 	 * Initializes the file and log managers.
 	 * 
-	 * @param dirName
-	 *            the name of the database directory
+	 * @param dirName the name of the database directory
 	 */
 	public static void initFileAndLogMgr(String dirName) {
 		initFileMgr(dirName);
@@ -221,10 +210,8 @@ public class VanillaDb {
 	 * Initializes the catalog manager. Note that the catalog manager should be
 	 * initialized <em>before</em> system recovery.
 	 * 
-	 * @param isNew
-	 *            an indication of whether a new database needs to be created.
-	 * @param tx
-	 *            the transaction performing the initialization
+	 * @param isNew an indication of whether a new database needs to be created.
+	 * @param tx    the transaction performing the initialization
 	 */
 	public static void initCatalogMgr(boolean isNew, Transaction tx) {
 		catalogMgr = new CatalogMgr(isNew, tx);
@@ -234,8 +221,7 @@ public class VanillaDb {
 	 * Initializes the statistics manager. Note that this manager should be
 	 * initialized <em>after</em> system recovery.
 	 * 
-	 * @param tx
-	 *            the transaction performing the initialization
+	 * @param tx the transaction performing the initialization
 	 */
 	public static void initStatMgr(Transaction tx) {
 		statMgr = new StatMgr(tx);
@@ -277,8 +263,8 @@ public class VanillaDb {
 	}
 
 	/**
-	 * Creates a planner for SQL commands. To change how the planner works,
-	 * modify this method.
+	 * Creates a planner for SQL commands. To change how the planner works, modify
+	 * this method.
 	 * 
 	 * @return the system's planner for SQL commands
 	 */
@@ -315,10 +301,8 @@ public class VanillaDb {
 		try {
 			// Get path from property file
 			String path = CoreProperties.getLoader().getPropertyAsString(
-					VanillaDb.class.getName() + ".PROFILE_OUTPUT_DIR",
-					System.getProperty("user.home"));
-			File out = new File(path, System.currentTimeMillis()
-					+ "_profile.txt");
+					VanillaDb.class.getName() + ".PROFILE_OUTPUT_DIR", System.getProperty("user.home"));
+			File out = new File(path, System.currentTimeMillis() + "_profile.txt");
 			FileWriter wrFile = new FileWriter(out);
 			BufferedWriter bwrFile = new BufferedWriter(wrFile);
 
@@ -330,8 +314,8 @@ public class VanillaDb {
 			bwrFile.write(profiler.getTopLines(30));
 
 			/*
-			 * I should write a more careful code here. I didn't do it, because
-			 * of the same reason above.
+			 * I should write a more careful code here. I didn't do it, because of the same
+			 * reason above.
 			 */
 			bwrFile.close();
 		} catch (IOException e) {
