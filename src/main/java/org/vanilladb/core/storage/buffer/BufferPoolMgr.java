@@ -45,7 +45,8 @@ class BufferPoolMgr {
 	private static final int stripSize = 1009;
 	private ReentrantLock[] fileLocks = new ReentrantLock[stripSize];
 //	private ReentrantLock[] blockLocks = new ReentrantLock[stripSize];
-	private ReentrantLatch[] blockLatches = new ReentrantLatch[stripSize];
+	private ReentrantLatch[] indexBlockLatches = new ReentrantLatch[stripSize];
+	private ReentrantLatch[] dataBlockLatches = new ReentrantLatch[stripSize];
 
 	private static Logger logger = Logger.getLogger(BufferMgr.class.getName());
 
@@ -75,7 +76,9 @@ class BufferPoolMgr {
 		for (int i = 0; i < stripSize; ++i) {
 			fileLocks[i] = new ReentrantLock();
 //			blockLocks[i] = new ReentrantLock();
-			blockLatches[i] = LatchMgr.registerReentrantLatch("BufferPoolMgr", "block", i);
+//			blockLatches[i] = LatchMgr.registerReentrantLatch("BufferPoolMgr", "block", i);
+			indexBlockLatches[i] = LatchMgr.registerReentrantLatch("BufferPoolMgr", "indexBlock", i);
+			dataBlockLatches[i] = LatchMgr.registerReentrantLatch("BufferPoolMgr", "dataBlock", i);
 		}
 	}
 
@@ -94,11 +97,25 @@ class BufferPoolMgr {
 //			code += blockLocks.length;
 //		return blockLocks[code];
 //	}
-	private ReentrantLatch prepareBlockLatch(Object o) {
-		int code = o.hashCode() % blockLatches.length;
+//	private ReentrantLatch prepareBlockLatch(Object o) {
+//		int code = o.hashCode() % blockLatches.length;
+//		if (code < 0)
+//			code += blockLatches.length;
+//		return blockLatches[code];
+//	}
+
+	private ReentrantLatch prepareIndexBlockLatch(Object o) {
+		int code = o.hashCode() % indexBlockLatches.length;
 		if (code < 0)
-			code += blockLatches.length;
-		return blockLatches[code];
+			code += indexBlockLatches.length;
+		return indexBlockLatches[code];
+	}
+
+	private ReentrantLatch prepareDataBlockLatch(Object o) {
+		int code = o.hashCode() % dataBlockLatches.length;
+		if (code < 0)
+			code += dataBlockLatches.length;
+		return dataBlockLatches[code];
 	}
 
 	/**
@@ -128,7 +145,13 @@ class BufferPoolMgr {
 		// Only one tx can trigger the swapping action for the same block.
 
 //		ReentrantLock blockLock = prepareBlockLock(blk);
-		ReentrantLatch blockLatch = prepareBlockLatch(blk);
+		ReentrantLatch blockLatch;
+
+		String fileName = blk.fileName();
+		if (fileName.contains("idx"))
+			blockLatch = prepareIndexBlockLatch(blk);
+		else
+			blockLatch = prepareDataBlockLatch(blk);
 
 //		blockLockWaitCount.incrementAndGet();
 
