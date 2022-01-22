@@ -36,8 +36,6 @@ import org.junit.Test;
 import org.vanilladb.core.query.algebra.Plan;
 import org.vanilladb.core.query.algebra.Scan;
 import org.vanilladb.core.query.algebra.TablePlan;
-import org.vanilladb.core.query.algebra.materialize.GroupByPlan;
-import org.vanilladb.core.query.algebra.materialize.SortPlan;
 import org.vanilladb.core.server.ServerInit;
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.DoubleConstant;
