@@ -22,10 +22,12 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 
 import org.vanilladb.core.latch.LatchMgr;
+import org.vanilladb.core.latch.LatchName;
 import org.vanilladb.core.latch.ReentrantLatch;
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.file.FileMgr;
+import org.vanilladb.core.util.StripedLatchObserver;
 
 /**
  * Manages the pinning and unpinning of buffers to blocks.
@@ -40,6 +42,9 @@ class BufferPoolMgr {
 	private AtomicInteger missCount;
 	private AtomicInteger blockLockWaitCount;
 	private AtomicInteger blockLockReleaseCount;
+
+	// For observing
+	private StripedLatchObserver<BlockId> observer;
 
 	// Optimization: Lock striping
 	private static final int stripSize = 1009;
@@ -77,8 +82,13 @@ class BufferPoolMgr {
 			fileLocks[i] = new ReentrantLock();
 //			blockLocks[i] = new ReentrantLock();
 //			blockLatches[i] = LatchMgr.registerReentrantLatch("BufferPoolMgr", "block", i);
-			indexBlockLatches[i] = LatchMgr.registerReentrantLatch("BufferPoolMgr", "indexBlock", i);
-			dataBlockLatches[i] = LatchMgr.registerReentrantLatch("BufferPoolMgr", "dataBlock", i);
+			indexBlockLatches[i] = LatchMgr.registerReentrantLatch(LatchName.BUFFERPOOL_INDEX_BLOCK, i);
+			dataBlockLatches[i] = LatchMgr.registerReentrantLatch(LatchName.BUFFERPOOL_DATA_BLOCK, i);
+		}
+
+		if (StripedLatchObserver.ENABLE_OBSERVE_STRIPED_LOCK) {
+			observer = new StripedLatchObserver<BlockId>("bufferpoolmgr-blocklatch-observation.csv");
+			VanillaDb.taskMgr().runTask(observer);
 		}
 	}
 
@@ -105,17 +115,27 @@ class BufferPoolMgr {
 //	}
 
 	private ReentrantLatch prepareIndexBlockLatch(Object o) {
-		int code = o.hashCode() % indexBlockLatches.length;
-		if (code < 0)
-			code += indexBlockLatches.length;
-		return indexBlockLatches[code];
+		return prepareReentrantLatch(indexBlockLatches, o);
 	}
 
 	private ReentrantLatch prepareDataBlockLatch(Object o) {
-		int code = o.hashCode() % dataBlockLatches.length;
-		if (code < 0)
-			code += dataBlockLatches.length;
-		return dataBlockLatches[code];
+		return prepareReentrantLatch(dataBlockLatches, o);
+	}
+
+	private ReentrantLatch prepareReentrantLatch(ReentrantLatch[] latches, Object o) {
+		int code = o.hashCode() % latches.length;
+		if (code < 0) {
+			code += latches.length;
+		}
+
+		ReentrantLatch latch = latches[code];
+
+		// analyze blocks
+		if (StripedLatchObserver.ENABLE_OBSERVE_STRIPED_LOCK) {
+			observer.increment(code, (BlockId) o, latch.getQueueLength());
+		}
+
+		return latch;
 	}
 
 	/**

@@ -3,7 +3,6 @@ package org.vanilladb.core.latch;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.vanilladb.core.latch.feature.LatchContext;
 import org.vanilladb.core.latch.feature.LatchFeature;
@@ -21,7 +20,7 @@ public abstract class Latch {
 		this.latchName = latchName;
 	}
 	
-	protected abstract int getQueueLength();
+	public abstract int getQueueLength();
 
 	public LatchFeature getFeature() {
 		return new LatchFeature(latchName, getQueueLength(), history.toRow());

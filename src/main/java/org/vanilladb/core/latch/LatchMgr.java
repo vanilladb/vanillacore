@@ -17,21 +17,21 @@ public class LatchMgr {
 		return caller + "-" + target;
 	}
 
-	public static String getLatchKey(String caller, String target, int index) {
-		return caller + "-" + target + "-" + index;
+	public static String getLatchKey(LatchName latchName, int index) {
+		return latchName.getName() + "-" + index;
 	}
 
 	private static Map<String, Latch> latchMap = new HashMap<String, Latch>();
 
 	public static String getKeyLatchFeatures() {
-		String latchFeatures = getLatchFeature("BufferPoolMgr", "block", 38) + ","
-				+ getLatchFeature("BufferPoolMgr", "block", 788);
+		String latchFeatures = getLatchFeature(LatchName.BUFFERPOOL_INDEX_BLOCK, 38) + ","
+				+ getLatchFeature(LatchName.BUFFERPOOL_INDEX_BLOCK, 788);
 
 		return latchFeatures;
 	}
 
-	private static String getLatchFeature(String caller, String target, int index) {
-		Latch latch = latchMap.get(getLatchKey(caller, target, index));
+	private static String getLatchFeature(LatchName latchName, int index) {
+		Latch latch = latchMap.get(getLatchKey(latchName, index));
 
 		if (latch != null) {
 			LatchFeature feature = latch.getFeature();
@@ -43,8 +43,8 @@ public class LatchMgr {
 		return "";
 	}
 
-	public static ReentrantLatch registerReentrantLatch(String caller, String target, int index) {
-		String latchKey = getLatchKey(caller, target, index);
+	public static ReentrantLatch registerReentrantLatch(LatchName latchName, int index) {
+		String latchKey = getLatchKey(latchName, index);
 
 		ReentrantLatch latch = new ReentrantLatch(latchKey);
 
@@ -52,8 +52,8 @@ public class LatchMgr {
 		return latch;
 	}
 
-	public static ReentrantReadWriteLatch registerReentrantReadWriteLatch(String caller, String target, int index) {
-		String latchKey = getLatchKey(caller, target, index);
+	public static ReentrantReadWriteLatch registerReentrantReadWriteLatch(LatchName latchName, int index) {
+		String latchKey = getLatchKey(latchName, index);
 
 		ReentrantReadWriteLatch latch = new ReentrantReadWriteLatch(latchKey);
 
