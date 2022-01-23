@@ -22,6 +22,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 
 import org.vanilladb.core.latch.LatchMgr;
+import org.vanilladb.core.latch.LatchName;
 import org.vanilladb.core.latch.ReentrantLatch;
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.storage.file.BlockId;
@@ -53,6 +54,7 @@ class BufferPoolMgr {
 	private ReentrantLatch[] dataBlockLatches = new ReentrantLatch[stripSize];
 
 	private static Logger logger = Logger.getLogger(BufferMgr.class.getName());
+
 	/**
 	 * Creates a buffer manager having the specified number of buffer slots. This
 	 * constructor depends on both the {@link FileMgr} and
@@ -80,8 +82,8 @@ class BufferPoolMgr {
 			fileLocks[i] = new ReentrantLock();
 //			blockLocks[i] = new ReentrantLock();
 //			blockLatches[i] = LatchMgr.registerReentrantLatch("BufferPoolMgr", "block", i);
-			indexBlockLatches[i] = LatchMgr.registerReentrantLatch("BufferPoolMgr", "indexBlock", i);
-			dataBlockLatches[i] = LatchMgr.registerReentrantLatch("BufferPoolMgr", "dataBlock", i);
+			indexBlockLatches[i] = LatchMgr.registerReentrantLatch(LatchName.BUFFERPOOL_INDEX_BLOCK, i);
+			dataBlockLatches[i] = LatchMgr.registerReentrantLatch(LatchName.BUFFERPOOL_DATA_BLOCK, i);
 		}
 
 		if (StripedLatchObserver.ENABLE_OBSERVE_STRIPED_LOCK) {
