@@ -53,7 +53,6 @@ class BufferPoolMgr {
 	private ReentrantLatch[] dataBlockLatches = new ReentrantLatch[stripSize];
 
 	private static Logger logger = Logger.getLogger(BufferMgr.class.getName());
-
 	/**
 	 * Creates a buffer manager having the specified number of buffer slots. This
 	 * constructor depends on both the {@link FileMgr} and

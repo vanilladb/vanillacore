@@ -24,8 +24,8 @@ public class LatchMgr {
 	private static Map<String, Latch> latchMap = new HashMap<String, Latch>();
 
 	public static String getKeyLatchFeatures() {
-		String latchFeatures = getLatchFeature("BufferPoolMgr", "block", 38) + ","
-				+ getLatchFeature("BufferPoolMgr", "block", 788);
+		String latchFeatures = getLatchFeature("BufferPoolMgr", "indexBlock", 38) + ","
+				+ getLatchFeature("BufferPoolMgr", "indexBlock", 788);
 
 		return latchFeatures;
 	}
