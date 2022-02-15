@@ -11,7 +11,7 @@
 
 	<groupId>org.vanilladb</groupId>
 	<artifactId>core</artifactId>
-	<version>0.5.0</version>
+	<version>0.6.0</version>
 	<packaging>jar</packaging>
 
 	<name>vanillacore</name>
@@ -66,6 +66,10 @@
 		<developer>
 			<name>Pin-Yu Wang</name>
 			<email>pywang@datalab.cs.nthu.edu.tw</email>
+		</developer>
+		<developer>
+			<name>Yu-Xuan Lin</name>
+			<email>yxlin@datalab.cs.nthu.edu.tw</email>
 		</developer>
 	</developers>
 
