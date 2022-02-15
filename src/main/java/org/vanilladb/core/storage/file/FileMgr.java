@@ -229,7 +229,7 @@ public class FileMgr {
 	}
 	
 	/**
-	 * Returns true if a file is empty, else false.</br></br>
+	 * Returns true if a file is empty, else false.<br><br>
 	 * 
 	 * <b>Side Effect:</b> These method has cache mechanism.
 	 * If the file is no longer empty,
