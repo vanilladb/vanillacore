@@ -1,5 +1,22 @@
 # Release Notes
 
+## Version 0.6.0 (2022-02-15)
+
+### Enhancements
+
+- Update `TransactionProfiler`. ([#72][#75][#76])
+- Add author. ([#74])
+- Optimize buffer & index. ([#78])
+- Reduce the call of synchronized block in BufferMgr.unpin. ([#79])
+
+
+[#72]: https://github.com/vanilladb/vanillacore/pull/72
+[#74]: https://github.com/vanilladb/vanillacore/pull/74
+[#75]: https://github.com/vanilladb/vanillacore/pull/75
+[#76]: https://github.com/vanilladb/vanillacore/pull/76
+[#78]: https://github.com/vanilladb/vanillacore/pull/78
+[#79]: https://github.com/vanilladb/vanillacore/pull/79
+
 ## Version 0.5.0 (2021-09-02)
 
 ### Enhancements
