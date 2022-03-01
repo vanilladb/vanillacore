@@ -115,10 +115,10 @@ public class Buffer {
 			if (offset < 0 || offset >= BUFFER_SIZE)
 				throw new IndexOutOfBoundsException("" + offset);
 				
-			pageGetValWaitCount.incrementAndGet();
+//			pageGetValWaitCount.incrementAndGet();
 			Constant c = contents.getVal(DATA_START_OFFSET + offset, type);
-			pageGetValWaitCount.decrementAndGet();
-			pageGetValReleaseCount.incrementAndGet();
+//			pageGetValWaitCount.decrementAndGet();
+//			pageGetValReleaseCount.incrementAndGet();
 			return c;
 		} finally {
 			contentLock.readLock().unlock();
@@ -134,10 +134,10 @@ public class Buffer {
 			if (offset < 0 || offset >= BUFFER_SIZE)
 				throw new IndexOutOfBoundsException("" + offset);
 			
-			pageSetValWaitCount.incrementAndGet();
+//			pageSetValWaitCount.incrementAndGet();
 			contents.setVal(DATA_START_OFFSET + offset, val);
-			pageSetValWaitCount.decrementAndGet();
-			pageSetValReleaseCount.incrementAndGet();
+//			pageSetValWaitCount.decrementAndGet();
+//			pageSetValReleaseCount.incrementAndGet();
 		} finally {
 			contentLock.writeLock().unlock();
 		}
@@ -178,10 +178,10 @@ public class Buffer {
 				lastLsn.writeToPage(contents, LAST_LSN_OFFSET);
 			}
 			
-			pageSetValWaitCount.incrementAndGet();
+//			pageSetValWaitCount.incrementAndGet();
 			contents.setVal(DATA_START_OFFSET + offset, val);
-			pageSetValWaitCount.decrementAndGet();
-			pageSetValReleaseCount.incrementAndGet();
+//			pageSetValWaitCount.decrementAndGet();
+//			pageSetValReleaseCount.incrementAndGet();
 		} finally {
 			contentLock.writeLock().unlock();
 		}

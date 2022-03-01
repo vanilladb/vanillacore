@@ -32,6 +32,7 @@ import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.file.Page;
 import org.vanilladb.core.storage.log.LogSeqNum;
 import org.vanilladb.core.storage.tx.Transaction;
+import org.vanilladb.core.util.TransactionProfiler;
 
 /**
  * A page corresponding to a single B-tree block in a file for {@link BTreeDir}
@@ -315,10 +316,13 @@ public class BTreePage {
 	 * @return the number of the new block
 	 */
 	public long split(int splitSlot, long[] flags) {
+		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
+		profiler.startComponentProfilerAtGivenStage("OU7 - BTreePage - Split", 7);
 		BlockId newBlk = appendBlock(flags);
 		BTreePage newPage = new BTreePage(newBlk, flags.length, schema, tx);
 		transferRecords(splitSlot, newPage, 0, getNumRecords() - splitSlot);
 		newPage.close();
+		profiler.stopComponentProfilerAtGivenStage("OU7 - BTreePage - Split", 7);
 		return newBlk.number();
 	}
 
