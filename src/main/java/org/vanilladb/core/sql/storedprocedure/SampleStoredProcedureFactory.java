@@ -18,7 +18,7 @@ package org.vanilladb.core.sql.storedprocedure;
 public class SampleStoredProcedureFactory implements StoredProcedureFactory {
 
 	@Override
-	public StoredProcedure<?> getStroredProcedure(int pid) {
+	public StoredProcedure<?> getStoredProcedure(int pid) {
 		throw new UnsupportedOperationException();
 	}
 
