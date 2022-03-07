@@ -238,14 +238,14 @@ public class RecordPage implements Record {
 	 * @return false if the insertion was not possible
 	 */
 	public boolean insertIntoNextEmptySlot() {
-		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
-		profiler.startComponentProfilerAtGivenStage("OU7 - insertIntoNextEmptySlot()", 7);
+//		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
+//		profiler.startComponentProfilerAtGivenStage("OU7 - insertIntoNextEmptySlot()", 7);
 		boolean found = searchFor(EMPTY);
 		if (found) {
 			Constant flag = INUSE_CONST;
 			setVal(currentPos(), flag);
 		}
-		profiler.stopComponentProfilerAtGivenStage("OU7 - insertIntoNextEmptySlot()", 7);
+//		profiler.stopComponentProfilerAtGivenStage("OU7 - insertIntoNextEmptySlot()", 7);
 		return found;
 	}
 

@@ -258,7 +258,7 @@ public class RecordFile implements Record {
 		}
 		
 		try {
-			profiler.startComponentProfilerAtGivenStage("OU7 - after new FileHeaderPage", 7);
+//			profiler.startComponentProfilerAtGivenStage("OU7 - after new FileHeaderPage", 7);
 			// Log that this logical operation starts
 			tx.recoveryMgr().logLogicalStart();
 	
@@ -270,36 +270,37 @@ public class RecordFile implements Record {
 			} else {
 				// Insert into a empty slot
 				if (!fhp.hasDataRecords()) { // no record inserted before
-					profiler.startComponentProfilerAtGivenStage("OU7 - fhp.hasDataRecords()", 7);
+//					profiler.startComponentProfilerAtGivenStage("OU7 - fhp.hasDataRecords()", 7);
 					// Create the first data block
 					appendBlock();
 					moveTo(1);
 					rp.insertIntoNextEmptySlot();
-					profiler.stopComponentProfilerAtGivenStage("OU7 - fhp.hasDataRecords()", 7);
+//					profiler.stopComponentProfilerAtGivenStage("OU7 - fhp.hasDataRecords()", 7);
 				} else {
-					profiler.startComponentProfilerAtGivenStage("OU7 - !fhp.hasDataRecords()", 7);
+//					profiler.startComponentProfilerAtGivenStage("OU7 - !fhp.hasDataRecords()", 7);
 					// Find the tail page
 					RecordId tailSlot = fhp.getTailSolt();
-					profiler.startComponentProfilerAtGivenStage("OU7 - moveToRecordId", 7);
+//					profiler.startComponentProfilerAtGivenStage("OU7 - moveToRecordId", 7);
 					moveToRecordId(tailSlot);
-					profiler.stopComponentProfilerAtGivenStage("OU7 - moveToRecordId", 7);
+//					profiler.stopComponentProfilerAtGivenStage("OU7 - moveToRecordId", 7);
 					
 					
-					profiler.startComponentProfilerAtGivenStage("OU7 - block full", 7);
+//					profiler.startComponentProfilerAtGivenStage("OU7 - block full", 7);
 					while (!rp.insertIntoNextEmptySlot()) {
 						if (atLastBlock())
 							appendBlock();
-						profiler.startComponentProfilerAtGivenStage("OU7 - moveTo", 7);
+						// 100th percentile latency: 3099
+//						profiler.startComponentProfilerAtGivenStage("OU7 - moveTo", 7);
 						moveTo(currentBlkNum + 1);
-						profiler.stopComponentProfilerAtGivenStage("OU7 - moveTo", 7);
+//						profiler.stopComponentProfilerAtGivenStage("OU7 - moveTo", 7);
 					}
-					profiler.stopComponentProfilerAtGivenStage("OU7 - block full", 7);
+//					profiler.stopComponentProfilerAtGivenStage("OU7 - block full", 7);
 					
-					profiler.stopComponentProfilerAtGivenStage("OU7 - !fhp.hasDataRecords()", 7);
+//					profiler.stopComponentProfilerAtGivenStage("OU7 - !fhp.hasDataRecords()", 7);
 				}
-				profiler.startComponentProfilerAtGivenStage("OU7 - fhp.setTailSolt", 7);
+//				profiler.startComponentProfilerAtGivenStage("OU7 - fhp.setTailSolt", 7);
 				fhp.setTailSlot(currentRecordId());
-				profiler.stopComponentProfilerAtGivenStage("OU7 - fhp.setTailSolt", 7);
+//				profiler.stopComponentProfilerAtGivenStage("OU7 - fhp.setTailSolt", 7);
 			}
 	
 			// Log that this logical operation ends
@@ -312,7 +313,7 @@ public class RecordFile implements Record {
 			
 			fhp = null;
 		}
-		profiler.stopComponentProfilerAtGivenStage("OU7 - after new FileHeaderPage", 7);
+//		profiler.stopComponentProfilerAtGivenStage("OU7 - after new FileHeaderPage", 7);
 	}
 
 	/**
@@ -420,8 +421,8 @@ public class RecordFile implements Record {
 	}
 
 	private void appendBlock() {
-		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
-		profiler.startComponentProfilerAtGivenStage("OU7 - append block", 7);
+//		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
+//		profiler.startComponentProfilerAtGivenStage("OU7 - append block", 7);
 		if (!isTempTable())
 			tx.concurrencyMgr().modifyFile(fileName);
 		RecordFormatter fmtr = new RecordFormatter(ti);
@@ -431,7 +432,7 @@ public class RecordFile implements Record {
 		if (!isTempTable())
 			tx.concurrencyMgr().insertBlock(buff.block());
 		tx.bufferMgr().unpin(buff);	
-		profiler.stopComponentProfilerAtGivenStage("OU7 - append block", 7);
+//		profiler.stopComponentProfilerAtGivenStage("OU7 - append block", 7);
 	}
 
 	private FileHeaderPage openHeaderForModification() {

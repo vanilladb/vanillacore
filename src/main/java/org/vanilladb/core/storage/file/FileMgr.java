@@ -57,6 +57,8 @@ public class FileMgr {
 	private Map<String, IoChannel> openFiles = new ConcurrentHashMap<String, IoChannel>();
 	// Optimization: if files art not empty, cache them
 	private ConcurrentHashMap<String, Boolean> fileNotEmptyCache;
+	
+	private IoBuffer dummyBuffer = IoAllocator.newIoBuffer(BLOCK_SIZE);
 
 	static {
 		String dbDir = CoreProperties.getLoader().getPropertyAsString(FileMgr.class.getName() + ".DB_FILES_DIR",
@@ -200,7 +202,7 @@ public class FileMgr {
 			buffer.rewind();
 
 			// Append the block to the file
-			long newSize = fileChannel.append(buffer);
+			long newSize = fileChannel.append(dummyBuffer);
 
 			// Return the new block id
 			return new BlockId(fileName, newSize / BLOCK_SIZE - 1);
