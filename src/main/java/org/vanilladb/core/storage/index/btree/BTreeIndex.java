@@ -29,7 +29,6 @@ import org.vanilladb.core.storage.metadata.index.IndexInfo;
 import org.vanilladb.core.storage.record.RecordId;
 import org.vanilladb.core.storage.tx.Transaction;
 import org.vanilladb.core.storage.tx.concurrency.ConcurrencyMgr;
-import org.vanilladb.core.util.TransactionProfiler;
 
 /**
  * A B-tree implementation of {@link Index}.
@@ -165,14 +164,10 @@ public class BTreeIndex extends Index {
 		if (tx.isReadOnly())
 			throw new UnsupportedOperationException();
 
-		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
-		profiler.startComponentProfilerAtGivenStage("OU7 - BTreeIndex - Insert - Search", 7);
 		// search leaf block for insertion
 		search(new SearchRange(key), SearchPurpose.INSERT);
-		profiler.stopComponentProfilerAtGivenStage("OU7 - BTreeIndex - Insert - Search", 7);
-		profiler.startComponentProfilerAtGivenStage("OU7 - BTreeIndex - Insert - LeafInsert", 7);
+
 		DirEntry newEntry = leaf.insert(dataRecordId);
-		profiler.stopComponentProfilerAtGivenStage("OU7 - BTreeIndex - Insert - LeafInsert", 7);
 		leaf.close();
 		if (newEntry == null)
 			return;
@@ -185,9 +180,7 @@ public class BTreeIndex extends Index {
 		for (int i = dirsMayBeUpdated.size() - 1; i >= 0; i--) {
 			BlockId dirBlk = dirsMayBeUpdated.get(i);
 			BTreeDir dir = new BTreeDir(dirBlk, keyType, tx);
-			profiler.startComponentProfilerAtGivenStage("OU7 - BTreeIndex - Insert - DirInsert", 7);
 			newEntry = dir.insert(newEntry);
-			profiler.stopComponentProfilerAtGivenStage("OU7 - BTreeIndex - Insert - DirInsert", 7);
 			dir.close();
 			if (newEntry == null)
 				break;

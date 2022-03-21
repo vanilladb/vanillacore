@@ -27,27 +27,39 @@ import net.smacke.jaydio.buffer.AlignedDirectByteBuffer;
 import net.smacke.jaydio.channel.BufferedChannel;
 import net.smacke.jaydio.channel.DirectIoByteChannel;
 
+/*
+ * Optimization:
+ * This channel will append 100_000 blocks at once if there is no empty blocks for insertion.
+ * However, we need to hide the information of redundant blocks and pretend to only append one block
+ * because the upper level depends on the file size that has no empty blocks.
+ * 
+ * Notice:
+ * This IoChannel is an EXPERIMENTAL version and CANNOT be merged into the main branch.
+ * Some information will be lost if we restart the server,
+ * so this IoChannel should collaborate with Auto-bencher because Auto-bencher will reset the record files
+ * whenever we start the experiments.
+ */
 public class JaydioDirectIoChannel implements IoChannel {
 	// There will be a lot of empty blocks if append happens
-	// We keep a fake file size that is equal to the size of non-empty blocks + 1
-	private static ConcurrentHashMap<String, Long> fakeFileSizes = new ConcurrentHashMap<String, Long>();
+	// We keep a limited file size that is equal to the size of non-empty blocks + 1
+	private static ConcurrentHashMap<String, Long> pretendFileSizes = new ConcurrentHashMap<String, Long>();
 
 	private BufferedChannel<AlignedDirectByteBuffer> fileChannel;
 	private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
 	// Optimization: store the size of each table
-	// realFileSize includes all empty blocks
+	// realFileSize considers all empty blocks
 	private long realFileSize;
 	private String fileName;
-	private int appendSize;
+	private int singleAppendSize;
 
 	public JaydioDirectIoChannel(File file) throws IOException {
 		fileChannel = DirectIoByteChannel.getChannel(file, false);
 		fileName = file.getName();
 		
 		realFileSize = fileChannel.size();
-		fakeFileSizes.put(fileName, realFileSize);
-		appendSize = 0;
+		pretendFileSizes.put(fileName, realFileSize);
+		singleAppendSize = 0;
 	}
 
 	@Override
@@ -68,9 +80,10 @@ public class JaydioDirectIoChannel implements IoChannel {
 			JaydioDirectByteBuffer jaydioBuffer = (JaydioDirectByteBuffer) buffer;
 			int writeSize = fileChannel.write(jaydioBuffer.getAlignedDirectByteBuffer(), position);
 
-			// Check if we need to update the size
-			if (position + writeSize > fakeFileSizes.get(fileName)) {
-				fakeFileSizes.put(fileName, position + writeSize);
+			long expectedSize = position + writeSize;
+			// Check if an extra block is needed for this write.
+			if (expectedSize > pretendFileSizes.get(fileName)) {
+				pretendFileSizes.put(fileName, expectedSize);
 			}
 
 			return writeSize;
@@ -85,25 +98,27 @@ public class JaydioDirectIoChannel implements IoChannel {
 		try {
 			JaydioDirectByteBuffer jaydioBuffer = (JaydioDirectByteBuffer) buffer;
 			
-			Long prevFileSize = fakeFileSizes.get(fileName);
+			Long prevFileSize = pretendFileSizes.get(fileName);
 			
-			// if there are no more empty blocks, append multiple blocks.
+			// If there are no more empty blocks, append multiple blocks.
 			if (prevFileSize == realFileSize) {
-				// Test code: append 100_000 blocks (~400 MB)
-				for (int i = 0; i < 100_000; i++) {
+				// Append 100_000 blocks at once (~400 MB)
+				int appendOnceSize = 100_000;
+				for (int i = 0; i < appendOnceSize; i++) {
 					int tmpAppendSize = fileChannel.write(jaydioBuffer.getAlignedDirectByteBuffer(), realFileSize);
-					if (appendSize == 0) {
-						appendSize = tmpAppendSize;
+					if (singleAppendSize == 0) {
+						singleAppendSize = tmpAppendSize;
 					}
-					realFileSize += appendSize;
+					realFileSize += singleAppendSize;
 				}
 			}
 			
-			Long fakeFileSize = prevFileSize + appendSize;
-			fakeFileSizes.put(fileName, fakeFileSize);
+			// Pretend we only append a block!!!
+			Long pretendFileSize = prevFileSize + singleAppendSize;
+			pretendFileSizes.put(fileName, pretendFileSize);
 			
-			// tells a lie
-			return fakeFileSize;
+			// Tells a lie
+			return pretendFileSize;
 			
 		} finally {
 			lock.writeLock().unlock();
@@ -114,7 +129,7 @@ public class JaydioDirectIoChannel implements IoChannel {
 	public long size() throws IOException {
 		lock.readLock().lock();
 		try {
-			return fakeFileSizes.get(fileName);
+			return pretendFileSizes.get(fileName);
 		} finally {
 			lock.readLock().unlock();
 		}

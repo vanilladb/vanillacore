@@ -28,7 +28,6 @@ import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.file.Page;
 import org.vanilladb.core.storage.metadata.TableInfo;
 import org.vanilladb.core.storage.tx.Transaction;
-import org.vanilladb.core.util.TransactionProfiler;
 
 /**
  * Manages a file of records. There are methods for iterating through the
@@ -233,7 +232,6 @@ public class RecordFile implements Record {
 	 * then a new block is appended to the file.
 	 */
 	public void insert() {
-		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
 		// Block read-only transaction
 		if (tx.isReadOnly() && !isTempTable())
 			throw new UnsupportedOperationException();
@@ -248,17 +246,14 @@ public class RecordFile implements Record {
 		ReentrantLock fhpLock = null;
 		
 		if (fhp == null) {
-			fhpLock = tx.concurrencyMgr().getLockForFileHeader(headerBlk);
-			profiler.startComponentProfilerAtGivenStage("OU7 - new file header page", 7);
+			if (!isTempTable()) {
+				fhpLock = tx.concurrencyMgr().getLockForFileHeader(headerBlk);
+			}
 			fhp = new FileHeaderPage(fileName, tx);
-			profiler.stopComponentProfilerAtGivenStage("OU7 - new file header page", 7);
-			profiler.startComponentProfilerAtGivenStage("OU7 - wait for fhpLock", 7);
 			fhpLock.lock();
-			profiler.stopComponentProfilerAtGivenStage("OU7 - wait for fhpLock", 7);
 		}
 		
 		try {
-//			profiler.startComponentProfilerAtGivenStage("OU7 - after new FileHeaderPage", 7);
 			// Log that this logical operation starts
 			tx.recoveryMgr().logLogicalStart();
 	
@@ -269,38 +264,24 @@ public class RecordFile implements Record {
 				fhp.setLastDeletedSlot(lds);
 			} else {
 				// Insert into a empty slot
-				if (!fhp.hasDataRecords()) { // no record inserted before
-//					profiler.startComponentProfilerAtGivenStage("OU7 - fhp.hasDataRecords()", 7);
+				if (!fhp.hasDataRecords()) {
 					// Create the first data block
 					appendBlock();
 					moveTo(1);
 					rp.insertIntoNextEmptySlot();
-//					profiler.stopComponentProfilerAtGivenStage("OU7 - fhp.hasDataRecords()", 7);
 				} else {
-//					profiler.startComponentProfilerAtGivenStage("OU7 - !fhp.hasDataRecords()", 7);
 					// Find the tail page
 					RecordId tailSlot = fhp.getTailSolt();
-//					profiler.startComponentProfilerAtGivenStage("OU7 - moveToRecordId", 7);
 					moveToRecordId(tailSlot);
-//					profiler.stopComponentProfilerAtGivenStage("OU7 - moveToRecordId", 7);
-					
-					
-//					profiler.startComponentProfilerAtGivenStage("OU7 - block full", 7);
+
 					while (!rp.insertIntoNextEmptySlot()) {
 						if (atLastBlock())
 							appendBlock();
 						// 100th percentile latency: 3099
-//						profiler.startComponentProfilerAtGivenStage("OU7 - moveTo", 7);
 						moveTo(currentBlkNum + 1);
-//						profiler.stopComponentProfilerAtGivenStage("OU7 - moveTo", 7);
 					}
-//					profiler.stopComponentProfilerAtGivenStage("OU7 - block full", 7);
-					
-//					profiler.stopComponentProfilerAtGivenStage("OU7 - !fhp.hasDataRecords()", 7);
 				}
-//				profiler.startComponentProfilerAtGivenStage("OU7 - fhp.setTailSolt", 7);
 				fhp.setTailSlot(currentRecordId());
-//				profiler.stopComponentProfilerAtGivenStage("OU7 - fhp.setTailSolt", 7);
 			}
 	
 			// Log that this logical operation ends
@@ -313,7 +294,6 @@ public class RecordFile implements Record {
 			
 			fhp = null;
 		}
-//		profiler.stopComponentProfilerAtGivenStage("OU7 - after new FileHeaderPage", 7);
 	}
 
 	/**
@@ -421,8 +401,6 @@ public class RecordFile implements Record {
 	}
 
 	private void appendBlock() {
-//		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
-//		profiler.startComponentProfilerAtGivenStage("OU7 - append block", 7);
 		if (!isTempTable())
 			tx.concurrencyMgr().modifyFile(fileName);
 		RecordFormatter fmtr = new RecordFormatter(ti);
@@ -432,21 +410,10 @@ public class RecordFile implements Record {
 		if (!isTempTable())
 			tx.concurrencyMgr().insertBlock(buff.block());
 		tx.bufferMgr().unpin(buff);	
-//		profiler.stopComponentProfilerAtGivenStage("OU7 - append block", 7);
 	}
 
 	private FileHeaderPage openHeaderForModification() {
-		// acquires exclusive access to the header
-		if (!isTempTable()) {
-//			fhpWaitCount.incrementAndGet();
-//			tx.concurrencyMgr().lockRecordFileHeader(headerBlk);
-//			fhpReleaseCount.incrementAndGet();
-//			fhpWaitCount.decrementAndGet();
-		}
-		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
-		profiler.startComponentProfilerAtGivenStage("OU7 - new FileHeaderPage()", 7);
 		FileHeaderPage fhp = new FileHeaderPage(fileName, tx);
-		profiler.stopComponentProfilerAtGivenStage("OU7 - new FileHeaderPage()", 7);
 		return fhp;
 	}
 

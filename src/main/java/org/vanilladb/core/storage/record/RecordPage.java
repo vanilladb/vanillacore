@@ -33,7 +33,6 @@ import org.vanilladb.core.storage.file.Page;
 import org.vanilladb.core.storage.log.LogSeqNum;
 import org.vanilladb.core.storage.metadata.TableInfo;
 import org.vanilladb.core.storage.tx.Transaction;
-import org.vanilladb.core.util.TransactionProfiler;
 
 /**
  * Manages the placement and access of records in a block.
@@ -238,14 +237,11 @@ public class RecordPage implements Record {
 	 * @return false if the insertion was not possible
 	 */
 	public boolean insertIntoNextEmptySlot() {
-//		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
-//		profiler.startComponentProfilerAtGivenStage("OU7 - insertIntoNextEmptySlot()", 7);
 		boolean found = searchFor(EMPTY);
 		if (found) {
 			Constant flag = INUSE_CONST;
 			setVal(currentPos(), flag);
 		}
-//		profiler.stopComponentProfilerAtGivenStage("OU7 - insertIntoNextEmptySlot()", 7);
 		return found;
 	}
 

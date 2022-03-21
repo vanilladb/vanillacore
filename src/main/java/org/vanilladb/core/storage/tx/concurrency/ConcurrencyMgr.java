@@ -16,7 +16,6 @@
 package org.vanilladb.core.storage.tx.concurrency;
 
 import java.util.concurrent.locks.ReentrantLock;
-
 import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.record.RecordId;
 import org.vanilladb.core.storage.tx.Transaction;
