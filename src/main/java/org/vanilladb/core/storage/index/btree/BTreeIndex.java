@@ -166,7 +166,6 @@ public class BTreeIndex extends Index {
 
 		// search leaf block for insertion
 		search(new SearchRange(key), SearchPurpose.INSERT);
-
 		DirEntry newEntry = leaf.insert(dataRecordId);
 		leaf.close();
 		if (newEntry == null)
