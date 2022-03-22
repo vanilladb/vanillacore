@@ -85,6 +85,10 @@ public class JaydioDirectIoChannel implements IoChannel {
 			if (expectedSize > pretendFileSizes.get(fileName)) {
 				pretendFileSizes.put(fileName, expectedSize);
 			}
+			
+			if (expectedSize > realFileSize) {
+				realFileSize = expectedSize;
+			}
 
 			return writeSize;
 		} finally {
