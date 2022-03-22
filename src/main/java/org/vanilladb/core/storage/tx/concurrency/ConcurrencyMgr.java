@@ -15,6 +15,7 @@
  *******************************************************************************/
 package org.vanilladb.core.storage.tx.concurrency;
 
+import java.util.concurrent.locks.ReentrantLock;
 import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.record.RecordId;
 import org.vanilladb.core.storage.tx.Transaction;
@@ -177,5 +178,9 @@ public abstract class ConcurrencyMgr implements TransactionLifecycleListener {
 
 	public void releaseRecordFileHeader(BlockId blk) {
 		lockTbl.release(blk, txNum, LockTable.X_LOCK);
+	}
+	
+	public ReentrantLock getLockForFileHeader(BlockId blk) {
+		return lockTbl.getFhpLatch(blk);
 	}
 }
