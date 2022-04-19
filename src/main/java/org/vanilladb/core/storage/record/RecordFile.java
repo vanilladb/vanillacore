@@ -202,7 +202,11 @@ public class RecordFile implements Record {
 				fhpLock = tx.concurrencyMgr().getLockForFileHeader(headerBlk);
 			}
 			fhp = new FileHeaderPage(fileName, tx);
-			fhpLock.lock();
+			
+			// if this is a temp table
+			if (fhpLock != null) {
+				fhpLock.lock();
+			}
 		}
 		
 		try {
@@ -261,8 +265,13 @@ public class RecordFile implements Record {
 			if (!isTempTable()) {
 				fhpLock = tx.concurrencyMgr().getLockForFileHeader(headerBlk);
 			}
+			
 			fhp = new FileHeaderPage(fileName, tx);
-			fhpLock.lock();
+			
+			// if this is a temp table
+			if (fhpLock != null) {
+				fhpLock.lock();
+			}
 		}
 		
 		try {
@@ -331,7 +340,11 @@ public class RecordFile implements Record {
 				fhpLock = tx.concurrencyMgr().getLockForFileHeader(headerBlk);
 			}
 			fhp = new FileHeaderPage(fileName, tx);
-			fhpLock.lock();
+			
+			// if this is a temp table
+			if (fhpLock != null) {
+				fhpLock.lock();
+			}
 		}
 
 		try {
