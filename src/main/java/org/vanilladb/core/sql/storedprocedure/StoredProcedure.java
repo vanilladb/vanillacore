@@ -28,26 +28,26 @@ import org.vanilladb.core.storage.tx.concurrency.LockAbortException;
 /**
  * An abstract class that denotes the stored procedure supported in VanillaDb.
  */
-public abstract class StoredProcedure<H extends StoredProcedureParamHelper> {
+public abstract class StoredProcedure<H extends StoredProcedureHelper> {
 	private static Logger logger = Logger.getLogger(StoredProcedure.class
 			.getName());
 	
-	private H paramHelper;
+	private H helper;
 	private Transaction tx;
 	
 	public StoredProcedure(H helper) {
 		if (helper == null)
-			throw new IllegalArgumentException("paramHelper should not be null");
+			throw new IllegalArgumentException("helper should not be null");
 		
-		paramHelper = helper;
+		this.helper = helper;
 	}
 	
 	public void prepare(Object... pars) {
 		// prepare parameters
-		paramHelper.prepareParameters(pars);
+		helper.prepareParameters(pars);
 		
 		// create a transaction
-		boolean isReadOnly = paramHelper.isReadOnly();
+		boolean isReadOnly = helper.isReadOnly();
 		tx = VanillaDb.txMgr().newTransaction(
 			Connection.TRANSACTION_SERIALIZABLE, isReadOnly);
 	}
@@ -81,15 +81,15 @@ public abstract class StoredProcedure<H extends StoredProcedureParamHelper> {
 
 		return new SpResultSet(
 			isCommitted,
-			paramHelper.getResultSetSchema(),
-			paramHelper.newResultSetRecord()
+			helper.getResultSetSchema(),
+			helper.newResultSetRecord()
 		);
 	}
 	
 	protected abstract void executeSql();
 	
-	protected H getParamHelper() {
-		return paramHelper;
+	protected H getHelper() {
+		return helper;
 	}
 	
 	protected Transaction getTransaction() {
