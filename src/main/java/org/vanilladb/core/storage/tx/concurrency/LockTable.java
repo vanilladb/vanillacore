@@ -95,7 +95,7 @@ class LockTable {
 		}
 	}
 
-	private Map<Object, Lockers> lockerMap = new HashMap<Object, Lockers>();
+	private Map<Object, Lockers> lockerMap = new ConcurrentHashMap<>();
 	private Map<Long, Set<Object>> lockByMap = new ConcurrentHashMap<Long, Set<Object>>();
 	private Set<Long> txnsToBeAborted = Collections.synchronizedSet(new HashSet<Long>());
 	private Map<Long, Object> txWaitMap = new ConcurrentHashMap<Long, Object>();
