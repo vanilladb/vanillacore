@@ -145,7 +145,7 @@ public class TransactionProfiler {
 		}
 		
 		private long getEndTime() {
-			return (totalElapsedTime - elapsedTimeStart) / 1000;
+			return totalElapsedTime + getStartTime();
 		}
 		
 		private long getTotalElapsedTime() {
