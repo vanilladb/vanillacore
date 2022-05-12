@@ -139,7 +139,14 @@ public class TransactionProfiler {
 			this.totalNetworkOutSize += networkOutSize;
 			this.invocationCount += invocationCount;
 		}
+		
+		private long getStartTime() { 
+			return elapsedTimeStart / 1000; 
+		}
 
+		private long getEndTime() { 
+			return totalElapsedTime + getStartTime(); 
+		}
 		
 		private long getTotalElapsedTime() {
 			return totalElapsedTime;
@@ -283,6 +290,20 @@ public class TransactionProfiler {
 		if (profiler == null)
 			return -1;
 		return profiler.getTotalElapsedTime();
+	}
+
+	public long getComponentStartTime(Object component) { 
+		SubProfiler profiler = subProfilers.get(component); 
+		if (profiler == null) 
+			return -1; 
+		return profiler.getStartTime(); 
+	}
+
+	public long getComponentEndTime(Object component) { 
+		SubProfiler profiler = subProfilers.get(component); 
+		if (profiler == null) 
+			return -1; 
+		return profiler.getEndTime(); 
 	}
 
 	public long getComponentCpuTime(Object component) {
