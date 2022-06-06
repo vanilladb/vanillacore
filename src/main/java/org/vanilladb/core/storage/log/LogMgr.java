@@ -29,6 +29,7 @@ import org.vanilladb.core.storage.file.FileMgr;
 import org.vanilladb.core.storage.file.Page;
 import org.vanilladb.core.storage.tx.recovery.ReversibleIterator;
 import org.vanilladb.core.util.CoreProperties;
+import org.vanilladb.core.util.TransactionProfiler;
 
 /**
  * The low-level log manager. This log manager is responsible for writing log
@@ -133,7 +134,11 @@ public class LogMgr implements Iterable<BasicLogRecord> {
 	 * @return the LSN of the log record
 	 */
 	public LogSeqNum append(Constant[] rec) {
+		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
+		profiler.startComponentProfilerAtGivenStage("log append lock time", 7);
 		logMgrLock.lock();
+		profiler.stopComponentProfilerAtGivenStage("log append lock time", 7);
+		profiler.startComponentProfilerAtGivenStage("log append after lock", 7);
 		try {
 			// two integers that point to the previous and next log records
 			int recsize = pointerSize * 2;
@@ -142,8 +147,10 @@ public class LogMgr implements Iterable<BasicLogRecord> {
 
 			// if the log record doesn't fit, move to the next block
 			if (currentPos + recsize >= BLOCK_SIZE) {
+				profiler.startComponentProfilerAtGivenStage("log append flush", 7);
 				flush();
 				appendNewBlock();
+				profiler.stopComponentProfilerAtGivenStage("log append flush", 7);
 			}
 			
 			// Get the current LSN
@@ -160,6 +167,7 @@ public class LogMgr implements Iterable<BasicLogRecord> {
 			return lsn;
 		} finally {
 			logMgrLock.unlock();
+			profiler.stopComponentProfilerAtGivenStage("log append after lock", 7);
 		}
 	}
 

@@ -35,6 +35,7 @@ import org.vanilladb.core.storage.index.SearchKeyType;
 import org.vanilladb.core.storage.log.LogSeqNum;
 import org.vanilladb.core.storage.tx.Transaction;
 import org.vanilladb.core.storage.tx.TransactionLifecycleListener;
+import org.vanilladb.core.util.TransactionProfiler;
 
 /**
  * The recovery manager. Each transaction has its own recovery manager.
@@ -92,10 +93,13 @@ public class RecoveryMgr implements TransactionLifecycleListener {
 	 */
 	@Override
 	public void onTxCommit(Transaction tx) {
+		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
+		profiler.startComponentProfiler("ReconveryMgr onTxCommit");
 		if (!tx.isReadOnly() && enableLogging) {
 			LogSeqNum lsn = new CommitRecord(txNum).writeToLog();
 			VanillaDb.logMgr().flush(lsn);
 		}
+		profiler.stopComponentProfiler("ReconveryMgr onTxCommit");
 	}
 
 	/**
