@@ -203,7 +203,7 @@ public class RecordFile implements Record {
 			}
 			fhp = new FileHeaderPage(fileName, tx);
 			
-			// if this is a temp table
+			// if this is not a temp table
 			if (fhpLock != null) {
 				fhpLock.lock();
 			}
@@ -268,7 +268,7 @@ public class RecordFile implements Record {
 			
 			fhp = new FileHeaderPage(fileName, tx);
 			
-			// if this is a temp table
+			// if this is not a temp table
 			if (fhpLock != null) {
 				fhpLock.lock();
 			}
@@ -341,7 +341,7 @@ public class RecordFile implements Record {
 			}
 			fhp = new FileHeaderPage(fileName, tx);
 			
-			// if this is a temp table
+			// if this is not a temp table
 			if (fhpLock != null) {
 				fhpLock.lock();
 			}
