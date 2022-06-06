@@ -106,8 +106,8 @@ public class JaydioDirectIoChannel implements IoChannel {
 			
 			// If there are no more empty blocks, append multiple blocks.
 			if (prevFileSize == realFileSize) {
-				// Append 100_000 blocks at once (~400 MB)
-				int appendOnceSize = 100_000;
+				// Append only 1 block, this behavior is as normal.
+				int appendOnceSize = 1;
 				for (int i = 0; i < appendOnceSize; i++) {
 					int tmpAppendSize = fileChannel.write(jaydioBuffer.getAlignedDirectByteBuffer(), realFileSize);
 					if (singleAppendSize == 0) {
