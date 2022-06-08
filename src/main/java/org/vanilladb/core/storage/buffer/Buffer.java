@@ -263,10 +263,11 @@ public class Buffer {
 		flushLock.lock();
 		try {
 			if (isNew || isModified) {
-				VanillaDb.logMgr().flush(lastLsn);
-				contents.write(blk);
-				isModified = false;
-				isNew = false;
+				throw new RuntimeException("No-steal is set but buffer swapping happened");
+//				VanillaDb.logMgr().flush(lastLsn);
+//				contents.write(blk);
+//				isModified = false;
+//				isNew = false;
 			}
 		} finally {
 			flushLock.unlock();
