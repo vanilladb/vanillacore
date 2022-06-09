@@ -257,8 +257,6 @@ public class Buffer {
 	 * to writing the page to disk.
 	 */
 	void flush() {
-		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
-		profiler.startComponentProfiler("Buffer Flush");
 		if (!contentLock.writeLock().tryLock()) {
 			BufferPoolMonitor.incrementWriteWaitCounter();
 			contentLock.writeLock().lock();
@@ -275,7 +273,6 @@ public class Buffer {
 		} finally {
 			flushLock.unlock();
 			contentLock.writeLock().unlock();
-			profiler.stopComponentProfiler("Buffer Flush");
 		}
 	}
 
