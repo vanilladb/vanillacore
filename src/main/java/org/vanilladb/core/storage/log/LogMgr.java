@@ -29,6 +29,7 @@ import org.vanilladb.core.storage.file.FileMgr;
 import org.vanilladb.core.storage.file.Page;
 import org.vanilladb.core.storage.tx.recovery.ReversibleIterator;
 import org.vanilladb.core.util.CoreProperties;
+import org.vanilladb.core.util.TransactionProfiler;
 
 /**
  * The low-level log manager. This log manager is responsible for writing log
@@ -208,8 +209,11 @@ public class LogMgr implements Iterable<BasicLogRecord> {
 	 * Writes the current page to the log file.
 	 */
 	private void flush() {
+		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
+		profiler.startComponentProfiler("LogMgr Flush");
 		myPage.write(currentBlk);
 		lastFlushedLsn = lastLsn;
+		profiler.stopComponentProfiler("LogMgr Flush");
 	}
 
 	/**
