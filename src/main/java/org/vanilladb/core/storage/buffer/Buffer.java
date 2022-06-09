@@ -258,7 +258,6 @@ public class Buffer {
 	 */
 	void flush() {
 		TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
-		profiler.startComponentProfiler("Buffer Flush");
 		if (!contentLock.writeLock().tryLock()) {
 			BufferPoolMonitor.incrementWriteWaitCounter();
 			contentLock.writeLock().lock();
@@ -266,15 +265,16 @@ public class Buffer {
 		flushLock.lock();
 		try {
 			if (isNew || isModified) {
+				profiler.startComponentProfiler("Buffer Flush");
 				VanillaDb.logMgr().flush(lastLsn);
 				contents.write(blk);
 				isModified = false;
 				isNew = false;
+				profiler.stopComponentProfiler("Buffer Flush");
 			}
 		} finally {
 			flushLock.unlock();
 			contentLock.writeLock().unlock();
-			profiler.stopComponentProfiler("Buffer Flush");
 		}
 	}
 
