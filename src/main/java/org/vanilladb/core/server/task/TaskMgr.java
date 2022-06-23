@@ -47,7 +47,8 @@ public class TaskMgr {
 	 * WorkStealingPool can be replaced someday if we purse code readability than performance.
 	 */
 	public TaskMgr() {
-		executor = Executors.newWorkStealingPool(THREAD_POOL_SIZE);
+//		executor = Executors.newWorkStealingPool(THREAD_POOL_SIZE);
+		executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 	}
 
 	public void runTask(Task task) {
@@ -55,6 +56,6 @@ public class TaskMgr {
 	}
 	
 	public int getActiveCount() {
-		return ((ForkJoinPool) executor).getRunningThreadCount();
+		return ((ThreadPoolExecutor) executor).getActiveCount();
 	}
 }
