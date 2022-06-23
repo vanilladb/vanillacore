@@ -33,6 +33,7 @@ public class TaskMgr {
 	static {
 		THREAD_POOL_SIZE = CoreProperties.getLoader().getPropertyAsInteger(
 				TaskMgr.class.getName() + ".THREAD_POOL_SIZE", 150);
+		System.out.println("Fixed Thread Pool");
 	}
 	
 	private ExecutorService executor;
