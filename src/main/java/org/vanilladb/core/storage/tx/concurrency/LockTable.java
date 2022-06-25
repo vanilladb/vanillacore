@@ -188,8 +188,13 @@ class LockTable {
 				while (!sLockable(lks, txNum) && !waitingTooLong(timestamp)) {
 					avoidDeadlock(lks, txNum, S_LOCK);
 					lks.requestSet.add(txNum);
+					
+					TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
+					profiler.startComponentProfilerAtGivenStage("sLock - Wait", 4);
 
 					anchor.wait(MAX_TIME);
+					
+					profiler.stopComponentProfilerAtGivenStage("sLock - Wait", 4);
 					lks.requestSet.remove(txNum);
 				}
 				if (!sLockable(lks, txNum))
