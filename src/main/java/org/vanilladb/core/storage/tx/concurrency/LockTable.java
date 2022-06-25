@@ -28,6 +28,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.server.task.Task;
 import org.vanilladb.core.util.CoreProperties;
+import org.vanilladb.core.util.TransactionProfiler;
 
 /**
  * Checks the compatibility of locking requests on a single item (e.g., file,
@@ -233,8 +234,13 @@ class LockTable {
 				while (!xLockable(lks, txNum) && !waitingTooLong(timestamp)) {
 					avoidDeadlock(lks, txNum, X_LOCK);
 					lks.requestSet.add(txNum);
+					
+					TransactionProfiler profiler = TransactionProfiler.getLocalProfiler();
+					profiler.startComponentProfilerAtGivenStage("xLock - Wait", 7);
 
 					anchor.wait(MAX_TIME);
+					
+					profiler.stopComponentProfilerAtGivenStage("xLock - Wait", 7);
 					lks.requestSet.remove(txNum);
 				}
 				if (!xLockable(lks, txNum))
