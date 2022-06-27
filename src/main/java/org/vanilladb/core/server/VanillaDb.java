@@ -198,6 +198,10 @@ public class VanillaDb {
 	public static void initTaskMgr() {
 		taskMgr = new TaskMgr();
 	}
+	
+	public static void initCustomizedTaskMgr() {
+		taskMgr = new TaskMgr(8);
+	}
 
 	/**
 	 * Initializes the transaction manager.
