@@ -49,6 +49,7 @@ public class TaskMgr {
 	 */
 	public TaskMgr() {
 //		executor = Executors.newWorkStealingPool(THREAD_POOL_SIZE);
+		System.out.print("Fixed ThreadPool");
 		executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 	}
 	
