@@ -57,10 +57,31 @@ public class Buffer {
 	// TODO: We use (-1, -1) for the default value. Will this be a problem ?
 	private LogSeqNum lastLsn = LogSeqNum.DEFAULT_VALUE;
 	
+	private static final AtomicInteger pageGetValWaitCount = new AtomicInteger(); 
+	private static final AtomicInteger pageSetValWaitCount = new AtomicInteger();
+	private static final AtomicInteger pageGetValReleaseCount = new AtomicInteger(); 
+	private static final AtomicInteger pageSetValReleaseCount = new AtomicInteger();
+	
 	// Locks
 	private final ReadWriteLock contentLock = new ReentrantReadWriteLock();
 	private final Lock swapLock = new ReentrantLock();
 	private final Lock flushLock = new ReentrantLock();
+	
+	public static int getPageGetValWaitCount() { 
+		return pageGetValWaitCount.getAndSet(0); 
+	}
+	
+	public static int getPageSetValWaitCount() { 
+		return pageSetValWaitCount.getAndSet(0); 
+	}
+	
+	public static int getPageGetValReleaseCount() { 
+		return pageGetValReleaseCount.getAndSet(0); 
+	} 
+	 
+	public static int getPageSetValReleaseCount() { 
+		return pageSetValReleaseCount.getAndSet(0); 
+	}
 	
 	/**
 	 * Creates a new buffer, wrapping a new {@link Page page}. This constructor
@@ -86,11 +107,14 @@ public class Buffer {
 	 * @return the constant value at that offset
 	 */
 	public Constant getVal(int offset, Type type) {
-		contentLock.readLock().lock();
+		if (!contentLock.readLock().tryLock()) {
+			BufferPoolMonitor.incrementReadWaitCounter();
+			contentLock.readLock().lock();
+		}
 		try {
 			if (offset < 0 || offset >= BUFFER_SIZE)
 				throw new IndexOutOfBoundsException("" + offset);
-				
+		
 			return contents.getVal(DATA_START_OFFSET + offset, type);
 		} finally {
 			contentLock.readLock().unlock();
@@ -98,11 +122,14 @@ public class Buffer {
 	}
 	
 	void setVal(int offset, Constant val) {
-		contentLock.writeLock().lock();
+		if (!contentLock.writeLock().tryLock()) {
+			BufferPoolMonitor.incrementWriteWaitCounter();
+			contentLock.writeLock().lock();
+		}
 		try {
 			if (offset < 0 || offset >= BUFFER_SIZE)
 				throw new IndexOutOfBoundsException("" + offset);
-			
+
 			contents.setVal(DATA_START_OFFSET + offset, val);
 		} finally {
 			contentLock.writeLock().unlock();
@@ -126,17 +153,24 @@ public class Buffer {
 	 *            the LSN of the corresponding log record
 	 */
 	public void setVal(int offset, Constant val, long txNum, LogSeqNum lsn) {
-		contentLock.writeLock().lock();
+		if (!contentLock.writeLock().tryLock()) {
+			BufferPoolMonitor.incrementWriteWaitCounter();
+			contentLock.writeLock().lock();
+		}
 		try {
 			if (offset < 0 || offset >= BUFFER_SIZE)
 				throw new IndexOutOfBoundsException("" + offset);
 			
 			isModified = true;
+
 			if (lsn != null && lsn.compareTo(lastLsn) > 0)
 				lastLsn = lsn;
 			
-			// Put the last LSN in front of the data
-			lastLsn.writeToPage(contents, LAST_LSN_OFFSET);
+			if (lsn != null) {
+				// Put the last LSN in front of the data
+				lastLsn.writeToPage(contents, LAST_LSN_OFFSET);
+			}
+			
 			contents.setVal(DATA_START_OFFSET + offset, val);
 		} finally {
 			contentLock.writeLock().unlock();
@@ -151,8 +185,11 @@ public class Buffer {
 	 * @return the LSN of the latest affected log record
 	 */
 	public LogSeqNum lastLsn(){
-		// Use contentLock because lastLsn will be modified from setVal.
-		contentLock.readLock().lock();
+		if (!contentLock.readLock().tryLock()) {
+			BufferPoolMonitor.incrementReadWaitCounter();
+			// Use contentLock because lastLsn will be modified from setVal.
+			contentLock.readLock().lock();
+		}
 		try {
 			return lastLsn;
 		} finally {
@@ -202,7 +239,10 @@ public class Buffer {
 	}
 
 	protected void close() {
-		contentLock.writeLock().lock();
+		if (!contentLock.writeLock().tryLock()) {
+			BufferPoolMonitor.incrementWriteWaitCounter();
+			contentLock.writeLock().lock();
+		}
 		try {
 			contents.close();
 		} finally {
@@ -216,7 +256,10 @@ public class Buffer {
 	 * to writing the page to disk.
 	 */
 	void flush() {
-		contentLock.writeLock().lock();
+		if (!contentLock.writeLock().tryLock()) {
+			BufferPoolMonitor.incrementWriteWaitCounter();
+			contentLock.writeLock().lock();
+		}
 		flushLock.lock();
 		try {
 			if (isNew || isModified) {
@@ -275,7 +318,10 @@ public class Buffer {
 	 * @return true if the buffer is dirty
 	 */
 	boolean isModified() {
-		contentLock.writeLock().lock();
+		if (!contentLock.writeLock().tryLock()) {
+			BufferPoolMonitor.incrementWriteWaitCounter();
+			contentLock.writeLock().lock();
+		}
 		try {
 			return isModified;
 		} finally {
@@ -339,5 +385,9 @@ public class Buffer {
 	 */
 	Page getUnderlyingPage() {
 		return contents;
+	}
+	
+	int getPinCount() {
+		return pins.get();
 	}
 }

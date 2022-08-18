@@ -17,6 +17,8 @@ package org.vanilladb.core.server.task;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import org.vanilladb.core.util.CoreProperties;
 
@@ -35,11 +37,24 @@ public class TaskMgr {
 	
 	private ExecutorService executor;
 
+	/*
+	 * Optimization: WorkStealingPool provides better handover latency than FixedThreadPool
+	 * because it reduces contention for accessing a single global queue
+	 * by creating a queue for each thread.
+	 * For more information, please refer to the link below
+	 * http://www.h-online.com/developer/features/The-fork-join-framework-in-Java-7-1762357.html
+	 * Moreover, using WorkStealingPool is not necessary.
+	 * WorkStealingPool can be replaced someday if we purse code readability than performance.
+	 */
 	public TaskMgr() {
-		executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+		executor = Executors.newWorkStealingPool(THREAD_POOL_SIZE);
 	}
 
 	public void runTask(Task task) {
 		executor.execute(task);
+	}
+	
+	public int getActiveCount() {
+		return ((ForkJoinPool) executor).getRunningThreadCount();
 	}
 }

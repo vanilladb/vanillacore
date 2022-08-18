@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 
 public class TransactionProfiler {
-
 	private static final String TOTAL_KEY = "Total";
 	public static final boolean ENABLE_CPU_TIMER = true;
 	public static final boolean ENABLE_DISKIO_COUNTER = true;
@@ -140,7 +139,14 @@ public class TransactionProfiler {
 			this.totalNetworkOutSize += networkOutSize;
 			this.invocationCount += invocationCount;
 		}
+		
+		private long getStartTime() { 
+			return elapsedTimeStart / 1000; 
+		}
 
+		private long getEndTime() { 
+			return totalElapsedTime + getStartTime(); 
+		}
 		
 		private long getTotalElapsedTime() {
 			return totalElapsedTime;
@@ -181,6 +187,7 @@ public class TransactionProfiler {
 	private int diskIOCount = 0;
 	private int networkInSize = 0;
 	private int networkOutSize = 0;
+	private int stageIndicator = -1;
 
 	public TransactionProfiler(TransactionProfiler profiler) {
 		for (Map.Entry<Object, SubProfiler> subProfiler : profiler.subProfilers.entrySet())
@@ -201,6 +208,21 @@ public class TransactionProfiler {
 		diskIOCount = 0;
 		networkInSize = 0;
 		networkOutSize = 0;
+	}
+	
+	public void setStageIndicator(int stage) {
+		if (stage < 0) {
+			throw new IllegalArgumentException("Negative stage value is unacceptable. Use resetStageIndicator instead.");
+		}
+		stageIndicator = stage;
+	}
+	
+	public void resetStageIndicator() {
+		stageIndicator = -1;
+	}
+	
+	private boolean isMatchStage(int stage) {
+		return stageIndicator == stage;
 	}
 
 	public void incrementDiskIOCount() {
@@ -243,11 +265,23 @@ public class TransactionProfiler {
 		SubProfiler profiler = getOrNewSubProfiler(component);
 		profiler.startProfiler(diskIOCount, networkInSize, networkOutSize);
 	}
+	
+	public void startComponentProfilerAtGivenStage(Object component, int stage) {
+		if (isMatchStage(stage)) {
+			startComponentProfiler(component);
+		}
+	}
 
 	public void stopComponentProfiler(Object component) {
 		SubProfiler profiler = subProfilers.get(component);
 		if (profiler != null) {
 			profiler.stopProfiler(diskIOCount, networkInSize, networkOutSize);		
+		}
+	}
+	
+	public void stopComponentProfilerAtGivenStage(Object component, int stage) {
+		if (isMatchStage(stage)) {
+			stopComponentProfiler(component);
 		}
 	}
 
@@ -256,6 +290,20 @@ public class TransactionProfiler {
 		if (profiler == null)
 			return -1;
 		return profiler.getTotalElapsedTime();
+	}
+
+	public long getComponentStartTime(Object component) { 
+		SubProfiler profiler = subProfilers.get(component); 
+		if (profiler == null) 
+			return -1; 
+		return profiler.getStartTime(); 
+	}
+
+	public long getComponentEndTime(Object component) { 
+		SubProfiler profiler = subProfilers.get(component); 
+		if (profiler == null) 
+			return -1; 
+		return profiler.getEndTime(); 
 	}
 
 	public long getComponentCpuTime(Object component) {
