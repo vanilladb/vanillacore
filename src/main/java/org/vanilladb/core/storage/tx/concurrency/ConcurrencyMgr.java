@@ -171,14 +171,6 @@ public abstract class ConcurrencyMgr implements TransactionLifecycleListener {
 	public void crabBackDirBlockForRead(BlockId blk) {
 		lockTbl.release(blk, txNum, LockTable.S_LOCK);
 	}
-
-	public void lockRecordFileHeader(BlockId blk) {
-		lockTbl.xLock(blk, txNum);
-	}
-
-	public void releaseRecordFileHeader(BlockId blk) {
-		lockTbl.release(blk, txNum, LockTable.X_LOCK);
-	}
 	
 	public ReentrantLock getLockForFileHeader(BlockId blk) {
 		return lockTbl.getFhpLatch(blk);

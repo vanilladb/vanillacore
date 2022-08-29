@@ -19,15 +19,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.logging.Logger;
 
-import org.vanilladb.core.latch.LatchMgr;
-import org.vanilladb.core.latch.LatchName;
-import org.vanilladb.core.latch.ReentrantLatch;
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.file.FileMgr;
-import org.vanilladb.core.util.StripedLatchObserver;
 
 /**
  * Manages the pinning and unpinning of buffers to blocks.
@@ -37,23 +32,12 @@ class BufferPoolMgr {
 	private Map<BlockId, Buffer> blockMap;
 	private volatile int lastReplacedBuff;
 	private AtomicInteger numAvailable;
-
-	private AtomicInteger totalCount;
-	private AtomicInteger missCount;
-	private AtomicInteger blockLockWaitCount;
-	private AtomicInteger blockLockReleaseCount;
-
-	// For observing
-	private StripedLatchObserver<BlockId> observer;
-
+	
 	// Optimization: Lock striping
 	private static final int stripSize = 1009;
 	private ReentrantLock[] fileLocks = new ReentrantLock[stripSize];
-//	private ReentrantLock[] blockLocks = new ReentrantLock[stripSize];
-	private ReentrantLatch[] indexBlockLatches = new ReentrantLatch[stripSize];
-	private ReentrantLatch[] dataBlockLatches = new ReentrantLatch[stripSize];
-
-	private static Logger logger = Logger.getLogger(BufferMgr.class.getName());
+	private ReentrantLock[] indexBlockLatches = new ReentrantLock[stripSize];
+	private ReentrantLock[] dataBlockLatches = new ReentrantLock[stripSize];
 
 	/**
 	 * Creates a buffer manager having the specified number of buffer slots. This
@@ -69,26 +53,14 @@ class BufferPoolMgr {
 		bufferPool = new Buffer[numBuffs];
 		blockMap = new ConcurrentHashMap<BlockId, Buffer>(numBuffs);
 		numAvailable = new AtomicInteger(numBuffs);
-		totalCount = new AtomicInteger();
-		missCount = new AtomicInteger();
-		blockLockWaitCount = new AtomicInteger();
-		blockLockReleaseCount = new AtomicInteger();
-
 		lastReplacedBuff = 0;
 		for (int i = 0; i < numBuffs; i++)
 			bufferPool[i] = new Buffer();
 
 		for (int i = 0; i < stripSize; ++i) {
 			fileLocks[i] = new ReentrantLock();
-//			blockLocks[i] = new ReentrantLock();
-//			blockLatches[i] = LatchMgr.registerReentrantLatch("BufferPoolMgr", "block", i);
-			indexBlockLatches[i] = LatchMgr.registerReentrantLatch(LatchName.BUFFERPOOL_INDEX_BLOCK, i);
-			dataBlockLatches[i] = LatchMgr.registerReentrantLatch(LatchName.BUFFERPOOL_DATA_BLOCK, i);
-		}
-
-		if (StripedLatchObserver.ENABLE_OBSERVE_STRIPED_LOCK) {
-			observer = new StripedLatchObserver<BlockId>("bufferpoolmgr-blocklatch-observation.csv");
-			VanillaDb.taskMgr().runTask(observer);
+			indexBlockLatches[i] = new ReentrantLock();
+			dataBlockLatches[i] = new ReentrantLock();
 		}
 	}
 
@@ -101,41 +73,22 @@ class BufferPoolMgr {
 	}
 
 	// Optimization: Lock striping
-//	private ReentrantLock prepareBlockLock(Object o) {
-//		int code = o.hashCode() % blockLocks.length;
-//		if (code < 0)
-//			code += blockLocks.length;
-//		return blockLocks[code];
-//	}
-//	private ReentrantLatch prepareBlockLatch(Object o) {
-//		int code = o.hashCode() % blockLatches.length;
-//		if (code < 0)
-//			code += blockLatches.length;
-//		return blockLatches[code];
-//	}
 
-	private ReentrantLatch prepareIndexBlockLatch(Object o) {
+	private ReentrantLock prepareIndexBlockLatch(Object o) {
 		return prepareReentrantLatch(indexBlockLatches, o);
 	}
 
-	private ReentrantLatch prepareDataBlockLatch(Object o) {
+	private ReentrantLock prepareDataBlockLatch(Object o) {
 		return prepareReentrantLatch(dataBlockLatches, o);
 	}
 
-	private ReentrantLatch prepareReentrantLatch(ReentrantLatch[] latches, Object o) {
+	private ReentrantLock prepareReentrantLatch(ReentrantLock[] latches, Object o) {
 		int code = o.hashCode() % latches.length;
 		if (code < 0) {
 			code += latches.length;
 		}
 
-		ReentrantLatch latch = latches[code];
-
-		// analyze blocks
-		if (StripedLatchObserver.ENABLE_OBSERVE_STRIPED_LOCK) {
-			observer.increment(code, (BlockId) o, latch.getQueueLength());
-		}
-
-		return latch;
+		return latches[code];
 	}
 
 	/**
@@ -161,11 +114,9 @@ class BufferPoolMgr {
 	 * @return the pinned buffer
 	 */
 	Buffer pin(BlockId blk) {
-		// The blockLock prevents race condition.
+		// The blockLatch prevents race condition.
 		// Only one tx can trigger the swapping action for the same block.
-
-//		ReentrantLock blockLock = prepareBlockLock(blk);
-		ReentrantLatch blockLatch;
+		ReentrantLock blockLatch;
 
 		String fileName = blk.fileName();
 		if (fileName.contains("idx"))
@@ -173,22 +124,15 @@ class BufferPoolMgr {
 		else
 			blockLatch = prepareDataBlockLatch(blk);
 
-//		blockLockWaitCount.incrementAndGet();
-
-//		blockLock.lock();
 		blockLatch.lock();
-
-//		blockLockWaitCount.decrementAndGet();
 
 		try {
 			// Find existing buffer
 			Buffer buff = findExistingBuffer(blk);
 
-			totalCount.incrementAndGet();
 			// If there is no such buffer
 			if (buff == null) {
 
-				missCount.incrementAndGet();
 				// Choose Unpinned Buffer
 				int lastReplacedBuff = this.lastReplacedBuff;
 				int currBlk = (lastReplacedBuff + 1) % bufferPool.length;
@@ -225,18 +169,16 @@ class BufferPoolMgr {
 				}
 				return null;
 
-				// If it exists
+			// If it exists
 			} else {
 				// Get the lock of buffer
 				buff.getSwapLock().lock();
 
 				// Optimization
-				// Early release the blockLock
+				// Early release the blockLatch
 				// because the following txs, which need the same block, will get the same
 				// non-null buffer
-//				blockLock.unlock();
 				blockLatch.unlock();
-//				blockLockReleaseCount.incrementAndGet();
 
 				try {
 					// Check its block id before pinning since it might be swapped
@@ -254,15 +196,10 @@ class BufferPoolMgr {
 				}
 			}
 		} finally {
-			// blockLock might be early released
-			// unlocking a lock twice will get an exception
-//			if (blockLock.isHeldByCurrentThread()) {
-//				blockLock.unlock();
-//				blockLockReleaseCount.incrementAndGet();
-//			}
+			// blockLatch might be early released
+			// unlocking a lock twice will throw an exception
 			if (blockLatch.isHeldByCurrentThread()) {
 				blockLatch.unlock();
-//				blockLockReleaseCount.incrementAndGet();
 			}
 		}
 	}
@@ -349,26 +286,5 @@ class BufferPoolMgr {
 
 	private Buffer findExistingBuffer(BlockId blk) {
 		return blockMap.get(blk);
-	}
-
-	Buffer[] buffers() {
-		return bufferPool;
-	}
-
-	double hitRate() {
-		int miss = missCount.getAndSet(0);
-		int total = totalCount.getAndSet(0);
-		if (total == 0)
-			return 1.0;
-		else
-			return (1 - ((double) miss) / ((double) total));
-	}
-
-	int blockLockReleaseCount() {
-		return blockLockReleaseCount.getAndSet(0);
-	}
-
-	int blockLockWaitCount() {
-		return blockLockWaitCount.get();
 	}
 }

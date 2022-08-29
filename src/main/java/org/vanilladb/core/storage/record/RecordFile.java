@@ -15,9 +15,7 @@
  *******************************************************************************/
 package org.vanilladb.core.storage.record;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
-
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.Constant;
 import org.vanilladb.core.sql.Record;
@@ -50,11 +48,10 @@ public class RecordFile implements Record {
 	private String fileName;
 	private RecordPage rp;
 	private FileHeaderPage fhp;
+	private ReentrantLock fhpLock;
 	private long currentBlkNum;
 	private boolean doLog;
 	private boolean isBeforeFirsted;
-	private static AtomicInteger fhpWaitCount = new AtomicInteger();
-	private static AtomicInteger fhpReleaseCount= new AtomicInteger();
 
 	/**
 	 * Constructs an object to manage a file of records. If the file does not
@@ -76,6 +73,7 @@ public class RecordFile implements Record {
 		this.doLog = doLog;
 		fileName = ti.fileName();
 		headerBlk = new BlockId(fileName, 0);
+		fhpLock = tx.concurrencyMgr().getLockForFileHeader(headerBlk);
 	}
 
 	/**
@@ -94,14 +92,6 @@ public class RecordFile implements Record {
 			Buffer buff = tx.bufferMgr().pinNew(fileName, fhf);
 			tx.bufferMgr().unpin(buff);
 		}
-	}
-	
-	public static int fhpWaitCount() {
-		return fhpWaitCount.get();
-	}
-	
-	public static int fhpReleaseCount() {
-		return fhpReleaseCount.getAndSet(0);
 	}
 
 	/**
@@ -194,20 +184,9 @@ public class RecordFile implements Record {
 	public void delete() {
 		if (tx.isReadOnly() && !isTempTable())
 			throw new UnsupportedOperationException();
-
-		ReentrantLock fhpLock = null;
 		
-		if (fhp == null) {
-			if (!isTempTable()) {
-				fhpLock = tx.concurrencyMgr().getLockForFileHeader(headerBlk);
-			}
-			fhp = new FileHeaderPage(fileName, tx);
-			
-			// if this is a temp table
-			if (fhpLock != null) {
-				fhpLock.lock();
-			}
-		}
+		if (fhp == null)
+			fhp = openHeaderForModification();
 		
 		try {
 			// Log that this logical operation starts
@@ -221,11 +200,8 @@ public class RecordFile implements Record {
 			// Log that this logical operation ends
 			tx.recoveryMgr().logRecordFileDeletionEnd(ti.tableName(), deletedRid.block().number(), deletedRid.id());
 		} finally {
-			if(fhpLock != null && fhpLock.isHeldByCurrentThread()) {
-				fhpLock.unlock();
-			}
-			
-			fhp = null;
+			// Close the header (release the header latch)
+			closeHeader();
 		}
 	}
 
@@ -259,20 +235,8 @@ public class RecordFile implements Record {
 
 		// Modify the free chain which is start from a pointer in
 		// the header of the file.
-		ReentrantLock fhpLock = null;
-		
-		if (fhp == null) {
-			if (!isTempTable()) {
-				fhpLock = tx.concurrencyMgr().getLockForFileHeader(headerBlk);
-			}
-			
-			fhp = new FileHeaderPage(fileName, tx);
-			
-			// if this is a temp table
-			if (fhpLock != null) {
-				fhpLock.lock();
-			}
-		}
+		if (fhp == null)
+			fhp = openHeaderForModification();
 		
 		try {
 			// Log that this logical operation starts
@@ -309,11 +273,8 @@ public class RecordFile implements Record {
 			RecordId insertedRid = currentRecordId();
 			tx.recoveryMgr().logRecordFileInsertionEnd(ti.tableName(), insertedRid.block().number(), insertedRid.id());
 		} finally {
-			if(fhpLock != null && fhpLock.isHeldByCurrentThread()) {
-				fhpLock.unlock();
-			}
-			
-			fhp = null;
+			// Close the header (release the header latch)
+			closeHeader();
 		}
 	}
 
@@ -333,19 +294,9 @@ public class RecordFile implements Record {
 		if (!isTempTable())
 			tx.concurrencyMgr().modifyFile(fileName);
 
-		ReentrantLock fhpLock = null;
 		// Open the header
-		if (fhp == null) {
-			if (!isTempTable()) {
-				fhpLock = tx.concurrencyMgr().getLockForFileHeader(headerBlk);
-			}
-			fhp = new FileHeaderPage(fileName, tx);
-			
-			// if this is a temp table
-			if (fhpLock != null) {
-				fhpLock.lock();
-			}
-		}
+		if (fhp == null)
+			fhp = openHeaderForModification();
 
 		try {
 			// Log that this logical operation starts
@@ -382,11 +333,8 @@ public class RecordFile implements Record {
 			// Log that this logical operation ends
 			tx.recoveryMgr().logRecordFileInsertionEnd(ti.tableName(), rid.block().number(), rid.id());
 		} finally {
-			if(fhpLock != null && fhpLock.isHeldByCurrentThread()) {
-				fhpLock.unlock();
-			}
-			
-			fhp = null;
+			// Close the header (release the header latch)
+			closeHeader();
 		}
 	}
 
@@ -449,14 +397,16 @@ public class RecordFile implements Record {
 	}
 
 	private FileHeaderPage openHeaderForModification() {
-		FileHeaderPage fhp = new FileHeaderPage(fileName, tx);
-		return fhp;
+		// lock file header
+		if (!isTempTable())
+			fhpLock.lock();
+		return new FileHeaderPage(fileName, tx);
 	}
 
 	private void closeHeader() {
 		// Release the lock of the header
-		if (fhp != null) {
-			tx.concurrencyMgr().releaseRecordFileHeader(headerBlk);
+		if (fhp != null && fhpLock.isHeldByCurrentThread()) {
+			fhpLock.unlock();
 			fhp = null;
 		}
 	}
