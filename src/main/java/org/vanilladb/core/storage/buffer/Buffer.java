@@ -26,6 +26,7 @@ import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.Constant;
 import org.vanilladb.core.sql.Type;
 import org.vanilladb.core.storage.file.BlockId;
+import org.vanilladb.core.storage.file.FileMgr;
 import org.vanilladb.core.storage.file.Page;
 import org.vanilladb.core.storage.log.LogSeqNum;
 
@@ -56,6 +57,7 @@ public class Buffer {
 	private boolean isModified = false;
 	// TODO: We use (-1, -1) for the default value. Will this be a problem ?
 	private LogSeqNum lastLsn = LogSeqNum.DEFAULT_VALUE;
+	private FileMgr fileMgr = VanillaDb.fileMgr();
 	
 	// Locks
 	private final ReadWriteLock contentLock = new ReentrantReadWriteLock();
@@ -318,8 +320,8 @@ public class Buffer {
 	 *            a page formatter, used to initialize the page
 	 */
 	void assignToNew(String fileName, PageFormatter fmtr) {
-		// Optimization: This might be a danger optimization
-		// This method is called because no tx pin this buffer,
+		// Optimization: This might be a dangerous optimization
+		// This method is called because no tx is pinning this buffer,
 		// which means no tx will modify or read the content.
 		if (pins.get() > 0) {
 			throw new RuntimeException("The buffer is pinned by other transactions");
@@ -327,7 +329,8 @@ public class Buffer {
 		
 		flush();
 		fmtr.format(this);
-		blk = contents.append(fileName);
+		blk = fileMgr.newPage(fileName);
+//		blk = contents.append(fileName);
 		pins.set(0);
 		isNew = true;
 		lastLsn = LogSeqNum.DEFAULT_VALUE;

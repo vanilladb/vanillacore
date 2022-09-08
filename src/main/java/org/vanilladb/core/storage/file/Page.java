@@ -124,12 +124,13 @@ public class Page {
 	}
 
 	/**
-	 * Appends the contents of the page to the specified file.
+	 * Appends the contents of the page to the specified file. (deprecated)
 	 * 
 	 * @param fileName
 	 *            the name of the file
 	 * 
 	 * @return the reference to the newly-created disk block
+	 * @deprecated
 	 */
 	public synchronized BlockId append(String fileName) {
 		return fileMgr.append(fileName, contents);

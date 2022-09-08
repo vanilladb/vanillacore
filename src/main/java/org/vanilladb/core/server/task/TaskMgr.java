@@ -38,13 +38,13 @@ public class TaskMgr {
 	private ExecutorService executor;
 
 	/*
-	 * Optimization: WorkStealingPool provides better handover latency than FixedThreadPool
+	 * Optimization: WorkStealingPool provides better hand-over latency than FixedThreadPool
 	 * because it reduces contention for accessing a single global queue
 	 * by creating a queue for each thread.
 	 * For more information, please refer to the link below
 	 * http://www.h-online.com/developer/features/The-fork-join-framework-in-Java-7-1762357.html
 	 * Moreover, using WorkStealingPool is not necessary.
-	 * WorkStealingPool can be replaced someday if we purse code readability than performance.
+	 * WorkStealingPool can be replaced someday if we prefer code readability to performance.
 	 */
 	public TaskMgr() {
 		executor = Executors.newWorkStealingPool(THREAD_POOL_SIZE);

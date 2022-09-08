@@ -54,8 +54,9 @@ public class FileMgr {
 
 	private File dbDirectory, logDirectory;
 	private boolean isNew;
-	private Map<String, IoChannel> openFiles = new ConcurrentHashMap<String, IoChannel>();
-	// Optimization: if files art not empty, cache them
+	private Map<String, PageAllocator> openFiles = new ConcurrentHashMap<String, PageAllocator>();
+	
+	// Optimization: if files are not empty, cache them
 	private ConcurrentHashMap<String, Boolean> fileNotEmptyCache;
 
 	static {
@@ -141,7 +142,7 @@ public class FileMgr {
 	 */
 	void read(BlockId blk, IoBuffer buffer) {
 		try {
-			IoChannel fileChannel = getFileChannel(blk.fileName());
+			IoChannel fileChannel = getPageAllocator(blk.fileName()).getFileChannel();
 
 			// clear the buffer
 			buffer.clear();
@@ -167,7 +168,7 @@ public class FileMgr {
 	 */
 	void write(BlockId blk, IoBuffer buffer) {
 		try {
-			IoChannel fileChannel = getFileChannel(blk.fileName());
+			IoChannel fileChannel = getPageAllocator(blk.fileName()).getFileChannel();
 
 			// rewind the buffer
 			buffer.rewind();
@@ -191,20 +192,25 @@ public class FileMgr {
 	 * @param buffer
 	 *            the byte buffer
 	 * @return a block ID refers to the newly-created block.
+	 * @deprecated Use newPage method instead
 	 */
 	BlockId append(String fileName, IoBuffer buffer) {
 		try {
-			IoChannel fileChannel = getFileChannel(fileName);
-
-			// Rewind the buffer for writing
+			BlockId newPage = newPage(fileName);
 			buffer.rewind();
-
-			// Append the block to the file
-			long newSize = fileChannel.append(buffer);
-
-			// Return the new block id
-			return new BlockId(fileName, newSize / BLOCK_SIZE - 1);
-
+			IoChannel fileChannel = getPageAllocator(fileName).getFileChannel();
+			fileChannel.write(buffer, newPage.number() * BLOCK_SIZE);
+			return newPage;
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	public BlockId newPage(String fileName) {
+		try {
+			BlockId newPage = getPageAllocator(fileName).getPage();
+			return newPage;
 		} catch (IOException e) {
 			e.printStackTrace();
 			return null;
@@ -221,8 +227,7 @@ public class FileMgr {
 	 */
 	public long size(String fileName) {
 		try {
-			IoChannel fileChannel = getFileChannel(fileName);
-			return fileChannel.size() / BLOCK_SIZE;
+			return getPageAllocator(fileName).getFileSize();
 		} catch (IOException e) {
 			throw new RuntimeException("cannot access " + fileName);
 		}
@@ -272,19 +277,20 @@ public class FileMgr {
 	 * @return the file channel associated with the open file.
 	 * @throws IOException
 	 */
-	private IoChannel getFileChannel(String fileName) throws IOException {
+	private PageAllocator getPageAllocator(String fileName) throws IOException {
 		synchronized (prepareAnchor(fileName)) {
-			IoChannel fileChannel = openFiles.get(fileName);
+			PageAllocator pageAllocator = openFiles.get(fileName);
 
-			if (fileChannel == null) {
+			if (pageAllocator == null) {
 				File dbFile = fileName.equals(DEFAULT_LOG_FILE) ? new File(logDirectory, fileName)
 						: new File(dbDirectory, fileName);
-				fileChannel = IoAllocator.newIoChannel(dbFile);
-
-				openFiles.put(fileName, fileChannel);
+				IoChannel fileChannel = IoAllocator.newIoChannel(dbFile);
+				pageAllocator = new PageAllocator(fileName, fileChannel);
+				
+				openFiles.put(fileName, pageAllocator);
 			}
 
-			return fileChannel;
+			return pageAllocator;
 		}
 	}
 
@@ -298,7 +304,7 @@ public class FileMgr {
 		try {
 			synchronized (prepareAnchor(fileName)) {
 				// Close file, if it was opened
-				IoChannel fileChannel = openFiles.remove(fileName);
+				IoChannel fileChannel = openFiles.remove(fileName).getFileChannel();
 				if (fileChannel != null)
 					fileChannel.close();
 

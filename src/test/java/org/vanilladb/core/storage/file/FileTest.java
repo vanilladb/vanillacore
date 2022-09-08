@@ -22,7 +22,10 @@ import static org.junit.Assert.fail;
 import static org.vanilladb.core.sql.Type.INTEGER;
 import static org.vanilladb.core.sql.Type.VARCHAR;
 import static org.vanilladb.core.storage.file.Page.BLOCK_SIZE;
+import static org.vanilladb.core.storage.log.LogMgr.DEFAULT_LOG_FILE;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -36,6 +39,8 @@ import org.vanilladb.core.server.ServerInit;
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.IntegerConstant;
 import org.vanilladb.core.sql.VarcharConstant;
+import org.vanilladb.core.storage.file.io.IoAllocator;
+import org.vanilladb.core.storage.file.io.IoChannel;
 
 public class FileTest {
 	private static Logger logger = Logger.getLogger(FileTest.class.getName());
@@ -102,6 +107,7 @@ public class FileTest {
 		// append the content of page 1 and test the block number of the new block
 		long lastblock = fm.size(filename) - 1;
 		BlockId blk2 = p1.append(filename);
+
 		assertEquals("*****FileTest: bad append", lastblock + 1, blk2.number());
 
 		// read the content of appended block and assert
@@ -111,16 +117,16 @@ public class FileTest {
 						&& p2.getVal(INT_SIZE, INTEGER).equals(TEST_INT_456));
 	}
 
-	@Test
-	/**
-	 * Test if FileMgr could automatically extend files to the writing position
-	 */
-	public void testFileList() {
-		String filename = FileMgr.TMP_FILE_NAME_PREFIX + "_test_list";
-		BlockId blk = new BlockId(filename, 14);
-		p1.write(blk);
-		assertEquals("*****FileTest: bad file list", 15, fm.size(filename));
-	}
+//	@Test
+//	/**
+//	 * Test if FileMgr could automatically extend files to the writing position
+//	 */
+//	public void testFileList() {
+//		String filename = FileMgr.TMP_FILE_NAME_PREFIX + "_test_list";
+//		BlockId blk = new BlockId(filename, 14);
+//		p1.write(blk); // write p1 to page 14 of filename
+//		assertEquals("*****FileTest: bad file list", 15, fm.size(filename));
+//	}
 
 	@Test
 	public void testSetAndGet() {
@@ -231,7 +237,7 @@ public class FileTest {
 				fm.isFileEmpty(filename));
 		
 		// write 123 and 456 at block 0
-		BlockId blk = new BlockId(filename, 0);
+		BlockId blk = fm.newPage(filename);
 		p1.setVal(0, TEST_INT_123);
 		p1.setVal(INT_SIZE, TEST_INT_456);
 		p1.write(blk);

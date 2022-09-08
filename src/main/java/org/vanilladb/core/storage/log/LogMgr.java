@@ -61,6 +61,7 @@ public class LogMgr implements Iterable<BasicLogRecord> {
 	}
 	
 	private String logFile;
+	private FileMgr fileMgr = VanillaDb.fileMgr();
 
 	/**
 	 * Creates the manager for the specified log file. If the log file does not
@@ -218,7 +219,7 @@ public class LogMgr implements Iterable<BasicLogRecord> {
 	private void appendNewBlock() {
 		setLastRecordPosition(0);
 		currentPos = pointerSize * 2;
-		currentBlk = myPage.append(logFile);
+		currentBlk = fileMgr.newPage(logFile);
 	}
 
 	/**
