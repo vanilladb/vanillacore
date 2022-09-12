@@ -29,6 +29,7 @@ import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.storage.file.io.IoAllocator;
 import org.vanilladb.core.storage.file.io.IoBuffer;
 import org.vanilladb.core.storage.file.io.IoChannel;
+import org.vanilladb.core.storage.file.io.VirtualChannel;
 import org.vanilladb.core.util.CoreProperties;
 import org.vanilladb.core.util.TransactionProfiler;
 
@@ -54,7 +55,7 @@ public class FileMgr {
 
 	private File dbDirectory, logDirectory;
 	private boolean isNew;
-	private Map<String, PageAllocator> openFiles = new ConcurrentHashMap<String, PageAllocator>();
+	private Map<String, IoChannel> openFiles = new ConcurrentHashMap<String, IoChannel>();
 	
 	// Optimization: if files are not empty, cache them
 	private ConcurrentHashMap<String, Boolean> fileNotEmptyCache;
@@ -142,7 +143,7 @@ public class FileMgr {
 	 */
 	void read(BlockId blk, IoBuffer buffer) {
 		try {
-			IoChannel fileChannel = getPageAllocator(blk.fileName()).getFileChannel();
+			IoChannel fileChannel = getFileChannel(blk.fileName());
 
 			// clear the buffer
 			buffer.clear();
@@ -168,7 +169,7 @@ public class FileMgr {
 	 */
 	void write(BlockId blk, IoBuffer buffer) {
 		try {
-			IoChannel fileChannel = getPageAllocator(blk.fileName()).getFileChannel();
+			IoChannel fileChannel = getFileChannel(blk.fileName());
 
 			// rewind the buffer
 			buffer.rewind();
@@ -185,32 +186,23 @@ public class FileMgr {
 	}
 
 	/**
-	 * Appends the contents of a byte buffer to the end of the specified file.
+	 * Append will not write to file, call write to make to write buffer to file.
 	 * 
 	 * @param fileName
 	 *            the name of the file
 	 * @param buffer
 	 *            the byte buffer
 	 * @return a block ID refers to the newly-created block.
-	 * @deprecated Use newPage method instead
 	 */
 	BlockId append(String fileName, IoBuffer buffer) {
 		try {
-			BlockId newPage = newPage(fileName);
-			buffer.rewind();
-			IoChannel fileChannel = getPageAllocator(fileName).getFileChannel();
-			fileChannel.write(buffer, newPage.number() * BLOCK_SIZE);
-			return newPage;
-		} catch (IOException e) {
-			e.printStackTrace();
-			return null;
-		}
-	}
-	
-	public BlockId newPage(String fileName) {
-		try {
-			BlockId newPage = getPageAllocator(fileName).getPage();
-			return newPage;
+			IoChannel fileChannel = getFileChannel(fileName);
+			
+			// Optimization: Doesn't actually append to file
+			long pageId = fileChannel.append(buffer);
+			
+			// Return the new block id
+			return new BlockId(fileName, pageId);
 		} catch (IOException e) {
 			e.printStackTrace();
 			return null;
@@ -227,7 +219,8 @@ public class FileMgr {
 	 */
 	public long size(String fileName) {
 		try {
-			return getPageAllocator(fileName).getFileSize();
+			IoChannel fileChannel = getFileChannel(fileName);
+			return fileChannel.size() / BLOCK_SIZE;
 		} catch (IOException e) {
 			throw new RuntimeException("cannot access " + fileName);
 		}
@@ -277,20 +270,19 @@ public class FileMgr {
 	 * @return the file channel associated with the open file.
 	 * @throws IOException
 	 */
-	private PageAllocator getPageAllocator(String fileName) throws IOException {
+	private IoChannel getFileChannel(String fileName) throws IOException {
 		synchronized (prepareAnchor(fileName)) {
-			PageAllocator pageAllocator = openFiles.get(fileName);
+			IoChannel fileChannel = openFiles.get(fileName);
 
-			if (pageAllocator == null) {
+			if (fileChannel == null) {
 				File dbFile = fileName.equals(DEFAULT_LOG_FILE) ? new File(logDirectory, fileName)
 						: new File(dbDirectory, fileName);
-				IoChannel fileChannel = IoAllocator.newIoChannel(dbFile);
-				pageAllocator = new PageAllocator(fileName, fileChannel);
+				fileChannel = new VirtualChannel(IoAllocator.newIoChannel(dbFile));
 				
-				openFiles.put(fileName, pageAllocator);
+				openFiles.put(fileName, fileChannel);
 			}
 
-			return pageAllocator;
+			return fileChannel;
 		}
 	}
 
@@ -304,7 +296,7 @@ public class FileMgr {
 		try {
 			synchronized (prepareAnchor(fileName)) {
 				// Close file, if it was opened
-				IoChannel fileChannel = openFiles.remove(fileName).getFileChannel();
+				IoChannel fileChannel = openFiles.remove(fileName);
 				if (fileChannel != null)
 					fileChannel.close();
 

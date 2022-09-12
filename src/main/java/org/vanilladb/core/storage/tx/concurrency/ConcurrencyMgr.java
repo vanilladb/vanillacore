@@ -31,6 +31,7 @@ public abstract class ConcurrencyMgr implements TransactionLifecycleListener {
 	protected long txNum;
 
 	protected static LockTable lockTbl = new LockTable();
+	private static LatchTable fileHeaderLatches = new LatchTable();
 
 	/**
 	 * Sets lock according to the transaction's isolation level on the specified
@@ -173,6 +174,6 @@ public abstract class ConcurrencyMgr implements TransactionLifecycleListener {
 	}
 	
 	public ReentrantLock getLockForFileHeader(BlockId blk) {
-		return lockTbl.getFhpLatch(blk);
+		return fileHeaderLatches.getFhpLatch(blk);
 	}
 }

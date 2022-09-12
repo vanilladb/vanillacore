@@ -26,7 +26,6 @@ import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.Constant;
 import org.vanilladb.core.sql.Type;
 import org.vanilladb.core.storage.file.BlockId;
-import org.vanilladb.core.storage.file.FileMgr;
 import org.vanilladb.core.storage.file.Page;
 import org.vanilladb.core.storage.log.LogSeqNum;
 
@@ -57,7 +56,6 @@ public class Buffer {
 	private boolean isModified = false;
 	// TODO: We use (-1, -1) for the default value. Will this be a problem ?
 	private LogSeqNum lastLsn = LogSeqNum.DEFAULT_VALUE;
-	private FileMgr fileMgr = VanillaDb.fileMgr();
 	
 	// Locks
 	private final ReadWriteLock contentLock = new ReentrantReadWriteLock();
@@ -329,8 +327,7 @@ public class Buffer {
 		
 		flush();
 		fmtr.format(this);
-		blk = fileMgr.newPage(fileName);
-//		blk = contents.append(fileName);
+		blk = contents.append(fileName);
 		pins.set(0);
 		isNew = true;
 		lastLsn = LogSeqNum.DEFAULT_VALUE;

@@ -102,12 +102,10 @@ class LockTable {
 	private Map<Long, Object> txWaitMap = new ConcurrentHashMap<Long, Object>();
 	private BlockingQueue<Long> toBeNotified = new ArrayBlockingQueue<Long>(1000);
 	private final Object anchors[] = new Object[1009];
-	private final ReentrantLock fhpLatches[] = new ReentrantLock[1009];
 	
 	public LockTable() {
 		for (int i = 0; i < anchors.length; ++i) {
 			anchors[i] = new Object();
-			fhpLatches[i] = new ReentrantLock();
 		}
 		VanillaDb.taskMgr().runTask(new LocktableNotifier());
 	}
@@ -200,13 +198,6 @@ class LockTable {
 			}
 		}
 		txWaitMap.remove(txNum);
-	}
-	
-	public ReentrantLock getFhpLatch(Object obj) {
-		int code = Math.abs(obj.hashCode()); // avoid negative value
-		code %= fhpLatches.length;
-		
-		return (ReentrantLock) fhpLatches[code];
 	}
 
 	/**

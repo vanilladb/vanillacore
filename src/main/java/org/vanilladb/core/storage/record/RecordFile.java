@@ -48,7 +48,7 @@ public class RecordFile implements Record {
 	private String fileName;
 	private RecordPage rp;
 	private FileHeaderPage fhp;
-	private final ReentrantLock fhpLock;
+	private ReentrantLock fhpLatch;
 	private long currentBlkNum;
 	private boolean doLog;
 	private boolean isBeforeFirsted;
@@ -73,7 +73,6 @@ public class RecordFile implements Record {
 		this.doLog = doLog;
 		fileName = ti.fileName();
 		headerBlk = new BlockId(fileName, 0);
-		fhpLock = tx.concurrencyMgr().getLockForFileHeader(headerBlk);
 	}
 
 	/**
@@ -399,17 +398,20 @@ public class RecordFile implements Record {
 
 	private FileHeaderPage openHeaderForModification() {
 		// lock file header
-		if (!isTempTable())
-			fhpLock.lock();
+		if (!isTempTable()) {
+			fhpLatch = tx.concurrencyMgr().getLockForFileHeader(headerBlk);
+			fhpLatch.lock();			
+		}
 		return new FileHeaderPage(fileName, tx);
 	}
 
 	private void closeHeader() {
 		// Release the lock of the header
-		if (fhp != null && fhpLock.isHeldByCurrentThread()) {
-			fhpLock.unlock();
+		if (fhpLatch != null && fhpLatch.isHeldByCurrentThread())
+			fhpLatch.unlock();
+		
+		if (fhp != null)
 			fhp = null;
-		}
 	}
 
 	private boolean isTempTable() {

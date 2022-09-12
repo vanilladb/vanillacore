@@ -22,10 +22,7 @@ import static org.junit.Assert.fail;
 import static org.vanilladb.core.sql.Type.INTEGER;
 import static org.vanilladb.core.sql.Type.VARCHAR;
 import static org.vanilladb.core.storage.file.Page.BLOCK_SIZE;
-import static org.vanilladb.core.storage.log.LogMgr.DEFAULT_LOG_FILE;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -39,8 +36,6 @@ import org.vanilladb.core.server.ServerInit;
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.IntegerConstant;
 import org.vanilladb.core.sql.VarcharConstant;
-import org.vanilladb.core.storage.file.io.IoAllocator;
-import org.vanilladb.core.storage.file.io.IoChannel;
 
 public class FileTest {
 	private static Logger logger = Logger.getLogger(FileTest.class.getName());
@@ -107,7 +102,6 @@ public class FileTest {
 		// append the content of page 1 and test the block number of the new block
 		long lastblock = fm.size(filename) - 1;
 		BlockId blk2 = p1.append(filename);
-
 		assertEquals("*****FileTest: bad append", lastblock + 1, blk2.number());
 
 		// read the content of appended block and assert
@@ -237,7 +231,7 @@ public class FileTest {
 				fm.isFileEmpty(filename));
 		
 		// write 123 and 456 at block 0
-		BlockId blk = fm.newPage(filename);
+		BlockId blk = p1.append(filename);
 		p1.setVal(0, TEST_INT_123);
 		p1.setVal(INT_SIZE, TEST_INT_456);
 		p1.write(blk);
