@@ -111,16 +111,16 @@ public class FileTest {
 						&& p2.getVal(INT_SIZE, INTEGER).equals(TEST_INT_456));
 	}
 
-//	@Test
-//	/**
-//	 * Test if FileMgr could automatically extend files to the writing position
-//	 */
-//	public void testFileList() {
-//		String filename = FileMgr.TMP_FILE_NAME_PREFIX + "_test_list";
-//		BlockId blk = new BlockId(filename, 14);
-//		p1.write(blk); // write p1 to page 14 of filename
-//		assertEquals("*****FileTest: bad file list", 15, fm.size(filename));
-//	}
+	@Test
+	/**
+	 * Test if FileMgr could automatically extend files to the writing position
+	 */
+	public void testFileList() {
+		String filename = FileMgr.TMP_FILE_NAME_PREFIX + "_test_list";
+		BlockId blk = new BlockId(filename, 14);
+		p1.write(blk); // write p1 to page 14 of filename
+		assertEquals("*****FileTest: bad file list", 15, fm.size(filename));
+	}
 
 	@Test
 	public void testSetAndGet() {

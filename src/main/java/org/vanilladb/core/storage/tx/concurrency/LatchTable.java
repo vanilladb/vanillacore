@@ -4,18 +4,18 @@ import java.util.concurrent.locks.ReentrantLock;
 
 class LatchTable {
 
-	private final ReentrantLock fhpLatches[] = new ReentrantLock[1009];
+	private final ReentrantLock latches[] = new ReentrantLock[1009];
 	
 	public LatchTable() {
-		for (int i = 0; i < fhpLatches.length; i++) {
-			fhpLatches[i] = new ReentrantLock();
+		for (int i = 0; i < latches.length; i++) {
+			latches[i] = new ReentrantLock();
 		}
 	}
 	
-	public ReentrantLock getFhpLatch(Object obj) {
+	public ReentrantLock getLatch(Object obj) {
 		int code = Math.abs(obj.hashCode()); // avoid negative value
-		code %= fhpLatches.length;
+		code %= latches.length;
 		
-		return (ReentrantLock) fhpLatches[code];
+		return (ReentrantLock) latches[code];
 	}
 }

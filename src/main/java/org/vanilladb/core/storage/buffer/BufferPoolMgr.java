@@ -119,7 +119,7 @@ class BufferPoolMgr {
 		ReentrantLock blockLatch;
 
 		String fileName = blk.fileName();
-		if (fileName.contains("idx"))
+		if (fileName.endsWith(".idx"))
 			blockLatch = prepareIndexBlockLatch(blk);
 		else
 			blockLatch = prepareDataBlockLatch(blk);

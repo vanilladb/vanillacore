@@ -378,7 +378,6 @@ public class RecordFile implements Record {
 		if (b >= fileSize()) // block b not allocated yet
 			return false;
 		currentBlkNum = b;
-//		System.out.println("Block number: " + currentBlkNum);
 		BlockId blk = new BlockId(fileName, currentBlkNum);
 		rp = new RecordPage(blk, ti, tx, doLog);
 		return true;

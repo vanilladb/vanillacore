@@ -199,10 +199,10 @@ public class FileMgr {
 			IoChannel fileChannel = getFileChannel(fileName);
 			
 			// Optimization: Doesn't actually append to file
-			long pageId = fileChannel.append(buffer);
+			long blkNum = fileChannel.append(buffer);
 			
 			// Return the new block id
-			return new BlockId(fileName, pageId);
+			return new BlockId(fileName, blkNum);
 		} catch (IOException e) {
 			e.printStackTrace();
 			return null;

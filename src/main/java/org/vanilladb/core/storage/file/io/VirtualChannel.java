@@ -5,6 +5,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.vanilladb.core.storage.file.Page;
 
+/**
+ * Through VirtualChannel, unnecessary I/O on append can be removed to improve performance
+ * VirtualChannel makes use of the decorator pattern
+ * 
+ * @author wilbertharriman
+ *
+ */
 public class VirtualChannel implements IoChannel{
 	private final IoChannel fileChannel;
 	private AtomicInteger curFileSize = new AtomicInteger();
@@ -21,7 +28,13 @@ public class VirtualChannel implements IoChannel{
 
 	@Override
 	public int write(IoBuffer buffer, long position) throws IOException {
-		return fileChannel.write(buffer, position);
+		int writeSize = fileChannel.write(buffer, position);
+		
+		if (size() < fileChannel.size()) {
+			curFileSize.set((int) fileChannel.size() / Page.BLOCK_SIZE);
+		}
+		
+		return writeSize;
 	}
 
 	/**

@@ -174,6 +174,6 @@ public abstract class ConcurrencyMgr implements TransactionLifecycleListener {
 	}
 	
 	public ReentrantLock getLockForFileHeader(BlockId blk) {
-		return fileHeaderLatches.getFhpLatch(blk);
+		return fileHeaderLatches.getLatch(blk);
 	}
 }
