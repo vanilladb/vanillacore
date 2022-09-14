@@ -186,7 +186,10 @@ public class FileMgr {
 	}
 
 	/**
-	 * Append will not write to file, call write to make to write buffer to file.
+	 * Gets the block id of the new block appended in the specified file.
+	 * 
+	 * <b>Warning:</b><br>
+	 * Append will not write to file, call write to write buffer to file.
 	 * 
 	 * @param fileName
 	 *            the name of the file

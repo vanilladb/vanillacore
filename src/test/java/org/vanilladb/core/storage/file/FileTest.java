@@ -118,7 +118,7 @@ public class FileTest {
 	public void testFileList() {
 		String filename = FileMgr.TMP_FILE_NAME_PREFIX + "_test_list";
 		BlockId blk = new BlockId(filename, 14);
-		p1.write(blk); // write p1 to page 14 of filename
+		p1.write(blk);
 		assertEquals("*****FileTest: bad file list", 15, fm.size(filename));
 	}
 
@@ -231,7 +231,7 @@ public class FileTest {
 				fm.isFileEmpty(filename));
 		
 		// write 123 and 456 at block 0
-		BlockId blk = p1.append(filename);
+		BlockId blk = new BlockId(filename, 0);
 		p1.setVal(0, TEST_INT_123);
 		p1.setVal(INT_SIZE, TEST_INT_456);
 		p1.write(blk);
