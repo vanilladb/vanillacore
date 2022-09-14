@@ -90,7 +90,7 @@ public class Buffer {
 		try {
 			if (offset < 0 || offset >= BUFFER_SIZE)
 				throw new IndexOutOfBoundsException("" + offset);
-				
+		
 			return contents.getVal(DATA_START_OFFSET + offset, type);
 		} finally {
 			contentLock.readLock().unlock();
@@ -102,7 +102,7 @@ public class Buffer {
 		try {
 			if (offset < 0 || offset >= BUFFER_SIZE)
 				throw new IndexOutOfBoundsException("" + offset);
-			
+
 			contents.setVal(DATA_START_OFFSET + offset, val);
 		} finally {
 			contentLock.writeLock().unlock();
@@ -137,6 +137,7 @@ public class Buffer {
 			
 			// Put the last LSN in front of the data
 			lastLsn.writeToPage(contents, LAST_LSN_OFFSET);
+			
 			contents.setVal(DATA_START_OFFSET + offset, val);
 		} finally {
 			contentLock.writeLock().unlock();
@@ -317,8 +318,8 @@ public class Buffer {
 	 *            a page formatter, used to initialize the page
 	 */
 	void assignToNew(String fileName, PageFormatter fmtr) {
-		// Optimization: This might be a danger optimization
-		// This method is called because no tx pin this buffer,
+		// Optimization: This might be a dangerous optimization
+		// This method is called because no tx is pinning this buffer,
 		// which means no tx will modify or read the content.
 		if (pins.get() > 0) {
 			throw new RuntimeException("The buffer is pinned by other transactions");
@@ -339,5 +340,9 @@ public class Buffer {
 	 */
 	Page getUnderlyingPage() {
 		return contents;
+	}
+	
+	int getPinCount() {
+		return pins.get();
 	}
 }

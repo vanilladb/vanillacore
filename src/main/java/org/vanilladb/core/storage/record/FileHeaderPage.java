@@ -139,7 +139,7 @@ public class FileHeaderPage {
 	 * @param rid
 	 *            the id of tail slot
 	 */
-	public void setTailSolt(RecordId rid) {
+	public void setTailSlot(RecordId rid) {
 		setVal(OFFSET_TS_BLOCKID, new BigIntConstant(rid.block().number()));
 		setVal(OFFSET_TS_RID, new IntegerConstant(rid.id()));
 	}

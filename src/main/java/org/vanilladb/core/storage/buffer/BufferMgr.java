@@ -223,7 +223,7 @@ public class BufferMgr implements TransactionLifecycleListener {
 				buffersToFlush.add(buff);
 			}
 
-			// Optimization: A tx, which have waited once to pin a buffer,
+			// Optimization: A tx, which has waited once to pin a buffer,
 			// is responsible for notifying other waiting txs.
 			if (waitOnce) {
 				synchronized (bufferPool) {

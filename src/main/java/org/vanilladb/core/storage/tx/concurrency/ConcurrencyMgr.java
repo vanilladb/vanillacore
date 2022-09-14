@@ -15,6 +15,7 @@
  *******************************************************************************/
 package org.vanilladb.core.storage.tx.concurrency;
 
+import java.util.concurrent.locks.ReentrantLock;
 import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.record.RecordId;
 import org.vanilladb.core.storage.tx.Transaction;
@@ -30,6 +31,7 @@ public abstract class ConcurrencyMgr implements TransactionLifecycleListener {
 	protected long txNum;
 
 	protected static LockTable lockTbl = new LockTable();
+	private static LatchTable fileHeaderLatches = new LatchTable();
 
 	/**
 	 * Sets lock according to the transaction's isolation level on the specified
@@ -170,12 +172,8 @@ public abstract class ConcurrencyMgr implements TransactionLifecycleListener {
 	public void crabBackDirBlockForRead(BlockId blk) {
 		lockTbl.release(blk, txNum, LockTable.S_LOCK);
 	}
-
-	public void lockRecordFileHeader(BlockId blk) {
-		lockTbl.xLock(blk, txNum);
-	}
-
-	public void releaseRecordFileHeader(BlockId blk) {
-		lockTbl.release(blk, txNum, LockTable.X_LOCK);
+	
+	public ReentrantLock getLockForFileHeader(BlockId blk) {
+		return fileHeaderLatches.getLatch(blk);
 	}
 }

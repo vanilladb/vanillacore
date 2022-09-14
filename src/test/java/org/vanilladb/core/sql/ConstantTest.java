@@ -18,9 +18,6 @@ package org.vanilladb.core.sql;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
-import org.vanilladb.core.sql.BigIntConstant;
-import org.vanilladb.core.sql.IntegerConstant;
-import org.vanilladb.core.sql.VarcharConstant;
 
 public class ConstantTest {
 
