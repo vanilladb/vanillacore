@@ -15,6 +15,7 @@
  *******************************************************************************/
 package org.vanilladb.core.storage.record;
 
+import java.util.concurrent.locks.ReentrantLock;
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.Constant;
 import org.vanilladb.core.sql.Record;
@@ -47,6 +48,7 @@ public class RecordFile implements Record {
 	private String fileName;
 	private RecordPage rp;
 	private FileHeaderPage fhp;
+	private ReentrantLock fhpLatch;
 	private long currentBlkNum;
 	private boolean doLog;
 	private boolean isBeforeFirsted;
@@ -181,23 +183,25 @@ public class RecordFile implements Record {
 	public void delete() {
 		if (tx.isReadOnly() && !isTempTable())
 			throw new UnsupportedOperationException();
-
+		
 		if (fhp == null)
 			fhp = openHeaderForModification();
-
-		// Log that this logical operation starts
-		RecordId deletedRid = currentRecordId();
-		tx.recoveryMgr().logLogicalStart();
-
-		// Delete the current record
-		rp.delete(fhp.getLastDeletedSlot());
-		fhp.setLastDeletedSlot(currentRecordId());
-
-		// Log that this logical operation ends
-		tx.recoveryMgr().logRecordFileDeletionEnd(ti.tableName(), deletedRid.block().number(), deletedRid.id());
-
-		// Close the header (release the header lock)
-		closeHeader();
+		
+		try {
+			// Log that this logical operation starts
+			RecordId deletedRid = currentRecordId();
+			tx.recoveryMgr().logLogicalStart();
+	
+			// Delete the current record
+			rp.delete(fhp.getLastDeletedSlot());
+			fhp.setLastDeletedSlot(currentRecordId());
+	
+			// Log that this logical operation ends
+			tx.recoveryMgr().logRecordFileDeletionEnd(ti.tableName(), deletedRid.block().number(), deletedRid.id());
+		} finally {
+			// Close the header (release the header latch)
+			closeHeader();
+		}
 	}
 
 	/**
@@ -232,41 +236,45 @@ public class RecordFile implements Record {
 		// the header of the file.
 		if (fhp == null)
 			fhp = openHeaderForModification();
-
-		// Log that this logical operation starts
-		tx.recoveryMgr().logLogicalStart();
-
-		if (fhp.hasDeletedSlots()) {
-			// Insert into a deleted slot
-			moveToRecordId(fhp.getLastDeletedSlot());
-			RecordId lds = rp.insertIntoDeletedSlot();
-			fhp.setLastDeletedSlot(lds);
-		} else {
-			// Insert into a empty slot
-			if (!fhp.hasDataRecords()) { // no record inserted before
-				// Create the first data block
-				appendBlock();
-				moveTo(1);
-				rp.insertIntoNextEmptySlot();
+		
+		try {
+			// Log that this logical operation starts
+			tx.recoveryMgr().logLogicalStart();
+	
+			if (fhp.hasDeletedSlots()) {
+				// Insert into a deleted slot
+				moveToRecordId(fhp.getLastDeletedSlot());
+				RecordId lds = rp.insertIntoDeletedSlot();
+				fhp.setLastDeletedSlot(lds);
 			} else {
-				// Find the tail page
-				RecordId tailSlot = fhp.getTailSolt();
-				moveToRecordId(tailSlot);
-				while (!rp.insertIntoNextEmptySlot()) {
-					if (atLastBlock())
-						appendBlock();
-					moveTo(currentBlkNum + 1);
+				// Insert into a empty slot
+				if (!fhp.hasDataRecords()) {
+					// Create the first data block
+					appendBlock();
+					moveTo(1);
+					rp.insertIntoNextEmptySlot();
+				} else {
+					// Find the tail page
+					RecordId tailSlot = fhp.getTailSolt();
+					moveToRecordId(tailSlot);
+
+					while (!rp.insertIntoNextEmptySlot()) {
+						if (atLastBlock())
+							appendBlock();
+						// 100th percentile latency: 3099
+						moveTo(currentBlkNum + 1);
+					}
 				}
+				fhp.setTailSlot(currentRecordId());
 			}
-			fhp.setTailSolt(currentRecordId());
+	
+			// Log that this logical operation ends
+			RecordId insertedRid = currentRecordId();
+			tx.recoveryMgr().logRecordFileInsertionEnd(ti.tableName(), insertedRid.block().number(), insertedRid.id());
+		} finally {
+			// Close the header (release the header latch)
+			closeHeader();
 		}
-
-		// Log that this logical operation ends
-		RecordId insertedRid = currentRecordId();
-		tx.recoveryMgr().logRecordFileInsertionEnd(ti.tableName(), insertedRid.block().number(), insertedRid.id());
-
-		// Close the header (release the header lock)
-		closeHeader();
 	}
 
 	/**
@@ -289,42 +297,44 @@ public class RecordFile implements Record {
 		if (fhp == null)
 			fhp = openHeaderForModification();
 
-		// Log that this logical operation starts
-		tx.recoveryMgr().logLogicalStart();
-
-		// Mark the specified slot as in used
-		moveToRecordId(rid);
-		if (!rp.insertIntoTheCurrentSlot())
-			throw new RuntimeException("the specified slot: " + rid + " is in used");
-
-		// Traverse the free chain to find the specified slot
-		RecordId lastSlot = null;
-		RecordId currentSlot = fhp.getLastDeletedSlot();
-		while (!currentSlot.equals(rid) && currentSlot.block().number() != FileHeaderPage.NO_SLOT_BLOCKID) {
-			moveToRecordId(currentSlot);
-			lastSlot = currentSlot;
-			currentSlot = rp.getNextDeletedSlotId();
+		try {
+			// Log that this logical operation starts
+			tx.recoveryMgr().logLogicalStart();
+	
+			// Mark the specified slot as in used
+			moveToRecordId(rid);
+			if (!rp.insertIntoTheCurrentSlot())
+				throw new RuntimeException("the specified slot: " + rid + " is in used");
+	
+			// Traverse the free chain to find the specified slot
+			RecordId lastSlot = null;
+			RecordId currentSlot = fhp.getLastDeletedSlot();
+			while (!currentSlot.equals(rid) && currentSlot.block().number() != FileHeaderPage.NO_SLOT_BLOCKID) {
+				moveToRecordId(currentSlot);
+				lastSlot = currentSlot;
+				currentSlot = rp.getNextDeletedSlotId();
+			}
+	
+			// Remove the specified slot from the chain
+			// If it is the first slot
+			if (lastSlot == null) {
+				moveToRecordId(currentSlot);
+				fhp.setLastDeletedSlot(rp.getNextDeletedSlotId());
+	
+				// If it is in the middle
+			} else if (currentSlot.block().number() != FileHeaderPage.NO_SLOT_BLOCKID) {
+				moveToRecordId(currentSlot);
+				RecordId nextSlot = rp.getNextDeletedSlotId();
+				moveToRecordId(lastSlot);
+				rp.setNextDeletedSlotId(nextSlot);
+			}
+	
+			// Log that this logical operation ends
+			tx.recoveryMgr().logRecordFileInsertionEnd(ti.tableName(), rid.block().number(), rid.id());
+		} finally {
+			// Close the header (release the header latch)
+			closeHeader();
 		}
-
-		// Remove the specified slot from the chain
-		// If it is the first slot
-		if (lastSlot == null) {
-			moveToRecordId(currentSlot);
-			fhp.setLastDeletedSlot(rp.getNextDeletedSlotId());
-
-			// If it is in the middle
-		} else if (currentSlot.block().number() != FileHeaderPage.NO_SLOT_BLOCKID) {
-			moveToRecordId(currentSlot);
-			RecordId nextSlot = rp.getNextDeletedSlotId();
-			moveToRecordId(lastSlot);
-			rp.setNextDeletedSlotId(nextSlot);
-		}
-
-		// Log that this logical operation ends
-		tx.recoveryMgr().logRecordFileInsertionEnd(ti.tableName(), rid.block().number(), rid.id());
-
-		// Close the header (release the header lock)
-		closeHeader();
 	}
 
 	/**
@@ -386,18 +396,21 @@ public class RecordFile implements Record {
 	}
 
 	private FileHeaderPage openHeaderForModification() {
-		// acquires exclusive access to the header
-		if (!isTempTable())
-			tx.concurrencyMgr().lockRecordFileHeader(headerBlk);
+		// lock file header
+		if (!isTempTable()) {
+			fhpLatch = tx.concurrencyMgr().getLockForFileHeader(headerBlk);
+			fhpLatch.lock();			
+		}
 		return new FileHeaderPage(fileName, tx);
 	}
 
 	private void closeHeader() {
 		// Release the lock of the header
-		if (fhp != null) {
-			tx.concurrencyMgr().releaseRecordFileHeader(headerBlk);
+		if (fhpLatch != null && fhpLatch.isHeldByCurrentThread())
+			fhpLatch.unlock();
+		
+		if (fhp != null)
 			fhp = null;
-		}
 	}
 
 	private boolean isTempTable() {

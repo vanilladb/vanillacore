@@ -181,9 +181,9 @@ private static Logger logger = Logger.getLogger(MultiKeyIndexPlanningTest.class.
 	public void testMultiKeysSelection() {
 		String sql = "SELECT data FROM " + TABLE_NAME + " WHERE key_1 = 1 AND "
 				+ "key_2 = 2 AND key_3 = 3";
-		Planner planer = VanillaDb.newPlanner();
+		Planner planner = VanillaDb.newPlanner();
 		
-		Plan p = planer.createQueryPlan(sql, tx);
+		Plan p = planner.createQueryPlan(sql, tx);
 		
 		// Check the explain string
 		String explain = p.toString();

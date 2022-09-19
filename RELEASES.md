@@ -1,5 +1,17 @@
 # Release Notes
 
+## Version 0.7.0 (2022-09-15)
+
+### Enhancements
+
+- VanillaDB initialization flag is declared volatile. ([#96])
+- New work stealing pool for better hand-over latency. ([#96])
+- Index blocks and record blocks no longer block each other. ([#96])
+- File header pages acquire reentrant latches instead of exclusive locks. ([#96])
+- Append no longer performs I/O. ([#96])
+
+[#96]: https://github.com/vanilladb/vanillacore/pull/96
+
 ## Version 0.6.0 (2022-02-15)
 
 ### Enhancements

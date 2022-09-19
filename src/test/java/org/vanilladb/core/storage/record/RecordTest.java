@@ -181,7 +181,7 @@ public class RecordTest {
 		tx = VanillaDb.txMgr().newTransaction(
 				Connection.TRANSACTION_SERIALIZABLE, false);
 		
-		// initial header page
+		// initialize header page
 		FileHeaderFormatter fhf = new FileHeaderFormatter();
 		Buffer buff = tx.bufferMgr().pinNew(ti2.fileName(), fhf);
 		tx.bufferMgr().unpin(buff);

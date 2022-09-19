@@ -101,7 +101,7 @@ class LockTable {
 	private Map<Long, Object> txWaitMap = new ConcurrentHashMap<Long, Object>();
 	private BlockingQueue<Long> toBeNotified = new ArrayBlockingQueue<Long>(1000);
 	private final Object anchors[] = new Object[1009];
-
+	
 	public LockTable() {
 		for (int i = 0; i < anchors.length; ++i) {
 			anchors[i] = new Object();

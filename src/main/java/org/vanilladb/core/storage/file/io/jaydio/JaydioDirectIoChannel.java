@@ -27,7 +27,7 @@ import net.smacke.jaydio.channel.BufferedChannel;
 import net.smacke.jaydio.channel.DirectIoByteChannel;
 
 public class JaydioDirectIoChannel implements IoChannel {
-
+	
 	private BufferedChannel<AlignedDirectByteBuffer> fileChannel;
 	private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 

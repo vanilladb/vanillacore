@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 public class TransactionProfiler {
-
+	
 	private static final String TOTAL_KEY = "Total";
 	public static final boolean ENABLE_CPU_TIMER = true;
 	public static final boolean ENABLE_DISKIO_COUNTER = true;
@@ -141,7 +141,6 @@ public class TransactionProfiler {
 			this.invocationCount += invocationCount;
 		}
 
-		
 		private long getTotalElapsedTime() {
 			return totalElapsedTime;
 		}
