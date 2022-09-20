@@ -11,7 +11,7 @@
 
 	<groupId>org.vanilladb</groupId>
 	<artifactId>core</artifactId>
-	<version>0.6.0</version>
+	<version>0.7.0</version>
 	<packaging>jar</packaging>
 
 	<name>vanillacore</name>
@@ -70,6 +70,10 @@
 		<developer>
 			<name>Yu-Xuan Lin</name>
 			<email>yxlin@datalab.cs.nthu.edu.tw</email>
+		</developer>
+		<developer>
+			<name>Wilbert Harriman</name>
+			<email>>wilbert@datalab.cs.nthu.edu.tw</email>
 		</developer>
 	</developers>
 
@@ -239,6 +243,13 @@
 							<nexusUrl>https://oss.sonatype.org/</nexusUrl>
 							<autoReleaseAfterClose>true</autoReleaseAfterClose>
 						</configuration>
+						<dependencies>
+							<dependency>
+								<groupId>com.thoughtworks.xstream</groupId>
+								<artifactId>xstream</artifactId>
+								<version>1.4.15</version>
+							</dependency>
+						</dependencies>
 					</plugin>
 				</plugins>
 			</build>
