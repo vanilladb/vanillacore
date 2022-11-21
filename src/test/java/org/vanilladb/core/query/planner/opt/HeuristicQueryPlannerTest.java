@@ -15,8 +15,8 @@
  *******************************************************************************/
 package org.vanilladb.core.query.planner.opt;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
 import static org.vanilladb.core.sql.Type.BIGINT;
 import static org.vanilladb.core.sql.Type.INTEGER;
 import static org.vanilladb.core.sql.Type.VARCHAR;
@@ -77,7 +77,51 @@ public class HeuristicQueryPlannerTest {
 	public void finishTx() {
 		tx.commit();
 	}
-	
+
+	@Test
+	public void testImplicitJoin() {
+		CatalogMgr catalog = VanillaDb.catalogMgr();
+
+		Schema tableSchema = new Schema();
+		tableSchema.addField("id", INTEGER);
+
+		catalog.createTable("a", tableSchema, tx);
+		catalog.createTable("b", tableSchema, tx);
+
+		TableInfo aInfo = catalog.getTableInfo("a", tx);
+		assertNotNull(aInfo);
+		TableInfo bInfo = catalog.getTableInfo("b", tx);
+		assertNotNull(bInfo);
+
+		RecordFile aRecordFile = aInfo.open(tx, true);
+		RecordFile bRecordFile = bInfo.open(tx, true);
+
+		aRecordFile.insert();
+		aRecordFile.setVal("id", new IntegerConstant(1));
+		bRecordFile.insert();
+		bRecordFile.setVal("id", new IntegerConstant(2));
+
+		aRecordFile.close();
+		bRecordFile.close();
+
+		String selectQuery = "SELECT id FROM a, b;";
+		Parser parsedQuery = new Parser(selectQuery);
+		QueryData data = parsedQuery.queryCommand();
+
+		Plan p = new HeuristicQueryPlanner().createPlan(data, tx);
+		Scan s = p.open();
+
+		s.beforeFirst();
+
+		int numRecords = 0;
+		while (s.next()) {
+			++numRecords;
+		}
+		assertEquals(1, numRecords);
+
+		s.close();
+	}
+
 	@Test
 	public void testQuery() {
 		String qry = "select sid, sname, majorid from student, dept "
