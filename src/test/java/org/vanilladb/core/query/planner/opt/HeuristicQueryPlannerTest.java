@@ -82,29 +82,32 @@ public class HeuristicQueryPlannerTest {
 	public void testImplicitJoin() {
 		CatalogMgr catalog = VanillaDb.catalogMgr();
 
-		Schema tableSchema = new Schema();
-		tableSchema.addField("id", INTEGER);
+		Schema tableASchema = new Schema();
+		Schema tableBSchema = new Schema();
 
-		catalog.createTable("a", tableSchema, tx);
-		catalog.createTable("b", tableSchema, tx);
+		tableASchema.addField("id_a", INTEGER);
+		tableBSchema.addField("id_b", INTEGER);
 
-		TableInfo aInfo = catalog.getTableInfo("a", tx);
+		catalog.createTable("table_a", tableASchema, tx);
+		catalog.createTable("table_b", tableBSchema, tx);
+
+		TableInfo aInfo = catalog.getTableInfo("table_a", tx);
 		assertNotNull(aInfo);
-		TableInfo bInfo = catalog.getTableInfo("b", tx);
+		TableInfo bInfo = catalog.getTableInfo("table_b", tx);
 		assertNotNull(bInfo);
 
 		RecordFile aRecordFile = aInfo.open(tx, true);
 		RecordFile bRecordFile = bInfo.open(tx, true);
 
 		aRecordFile.insert();
-		aRecordFile.setVal("id", new IntegerConstant(1));
+		aRecordFile.setVal("id_a", new IntegerConstant(1));
 		bRecordFile.insert();
-		bRecordFile.setVal("id", new IntegerConstant(2));
+		bRecordFile.setVal("id_b", new IntegerConstant(2));
 
 		aRecordFile.close();
 		bRecordFile.close();
 
-		String selectQuery = "SELECT id FROM a, b;";
+		String selectQuery = "SELECT id_a, id_b FROM table_a, table_b;";
 		Parser parsedQuery = new Parser(selectQuery);
 		QueryData data = parsedQuery.queryCommand();
 
@@ -115,6 +118,8 @@ public class HeuristicQueryPlannerTest {
 
 		int numRecords = 0;
 		while (s.next()) {
+			assertEquals(new IntegerConstant(1), s.getVal("id_a"));
+			assertEquals(new IntegerConstant(2), s.getVal("id_b"));
 			++numRecords;
 		}
 		assertEquals(1, numRecords);
