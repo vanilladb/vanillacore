@@ -5,8 +5,18 @@
 .recommenders
 .classpath
 .project
+
+### Build artifacts ###
 target/
 
+### IntelliJ ###
+.idea/
+
+### vscode settings directory ###
+.vscode
+
+### macOS specific files  ###
+.DS_Store
 
 ### Others ###
 design

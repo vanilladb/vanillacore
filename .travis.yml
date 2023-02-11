@@ -1,8 +1,0 @@
-language: java
-sudo: required
-branches:
-  only:
-  - master
-before_script:
-  - ulimit -s unlimited
-script: mvn test
