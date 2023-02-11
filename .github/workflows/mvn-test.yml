@@ -24,4 +24,4 @@ jobs:
           java-version: '8'
           distribution: 'temurin'
           cache: maven
-      - run: mvn --batch-mode --update-snapshots build
+      - run: mvn --batch-mode --update-snapshots package
