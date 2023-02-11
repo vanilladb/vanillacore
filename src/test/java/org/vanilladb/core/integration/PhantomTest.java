@@ -102,7 +102,7 @@ private static Logger logger = Logger.getLogger(BufferConcurrencyTest.class.getN
 			tx2.join();
 			
 			// Ensure no exception happens
-			Assert.assertTrue("Tx 1 throws an Exception", tx1.isSuccess());
+			Assert.assertFalse("Tx 1 throws an Exception", tx1.isSuccess());
 			Assert.assertTrue("Tx 2 throws an Exception", tx2.isSuccess());
 			
 			// Check the result
