@@ -15,8 +15,8 @@
  *******************************************************************************/
 package org.vanilladb.core.query.planner.opt;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
 import static org.vanilladb.core.sql.Type.BIGINT;
 import static org.vanilladb.core.sql.Type.INTEGER;
 import static org.vanilladb.core.sql.Type.VARCHAR;
@@ -77,7 +77,56 @@ public class HeuristicQueryPlannerTest {
 	public void finishTx() {
 		tx.commit();
 	}
-	
+
+	@Test
+	public void testImplicitJoin() {
+		CatalogMgr catalog = VanillaDb.catalogMgr();
+
+		Schema tableASchema = new Schema();
+		Schema tableBSchema = new Schema();
+
+		tableASchema.addField("id_a", INTEGER);
+		tableBSchema.addField("id_b", INTEGER);
+
+		catalog.createTable("table_a", tableASchema, tx);
+		catalog.createTable("table_b", tableBSchema, tx);
+
+		TableInfo aInfo = catalog.getTableInfo("table_a", tx);
+		assertNotNull(aInfo);
+		TableInfo bInfo = catalog.getTableInfo("table_b", tx);
+		assertNotNull(bInfo);
+
+		RecordFile aRecordFile = aInfo.open(tx, true);
+		RecordFile bRecordFile = bInfo.open(tx, true);
+
+		aRecordFile.insert();
+		aRecordFile.setVal("id_a", new IntegerConstant(1));
+		bRecordFile.insert();
+		bRecordFile.setVal("id_b", new IntegerConstant(2));
+
+		aRecordFile.close();
+		bRecordFile.close();
+
+		String selectQuery = "SELECT id_a, id_b FROM table_a, table_b;";
+		Parser parsedQuery = new Parser(selectQuery);
+		QueryData data = parsedQuery.queryCommand();
+
+		Plan p = new HeuristicQueryPlanner().createPlan(data, tx);
+		Scan s = p.open();
+
+		s.beforeFirst();
+
+		int numRecords = 0;
+		while (s.next()) {
+			assertEquals(new IntegerConstant(1), s.getVal("id_a"));
+			assertEquals(new IntegerConstant(2), s.getVal("id_b"));
+			++numRecords;
+		}
+		assertEquals(1, numRecords);
+
+		s.close();
+	}
+
 	@Test
 	public void testQuery() {
 		String qry = "select sid, sname, majorid from student, dept "
