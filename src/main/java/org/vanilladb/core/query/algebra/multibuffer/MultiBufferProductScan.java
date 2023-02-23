@@ -59,7 +59,7 @@ public class MultiBufferProductScan implements Scan {
 	 */
 	@Override
 	public void beforeFirst() {
-		nextBlkNum = 0;
+		nextBlkNum = 1; // Record page starts from page 1 since page 0 is reserved for file header
 		useNextChunk();
 	}
 
