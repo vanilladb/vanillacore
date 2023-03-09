@@ -97,7 +97,7 @@ public class Parser {
 
 		Set<String> asStringSet() {
 			if (els.size() == 0)
-				return null;
+				return new HashSet<>();
 			Set<String> ret = new HashSet<String>(els.size());
 			for (ProjectEl el : els) {
 				if (el.fld != null)
@@ -233,7 +233,28 @@ public class Parser {
 			lex.eatKeyword("explain");
 		}
 		lex.eatKeyword("select");
-		ProjectList projs = projectList();
+
+		boolean allFields = false;
+
+		if (lex.matchKeyword("from"))
+			throw new BadSyntaxException("projection field is empty");
+
+		ProjectList projs = new ProjectList();
+		do {
+			if (lex.matchDelim(','))
+				lex.eatDelim(',');
+			if (lex.matchId())
+				projs.addField(id());
+			else if(lex.matchWildcard()) {
+				lex.eatWildcard();
+				allFields = true;
+			}
+			else {
+				AggregationFn aggFn = aggregationFn();
+				projs.addAggFn(aggFn);
+			}
+		} while (lex.matchDelim(','));
+
 		lex.eatKeyword("from");
 		Set<String> tables = idSet();
 		Predicate pred = new Predicate();
@@ -264,27 +285,8 @@ public class Parser {
 			sortFields = sortList.fieldList();
 			sortDirs = sortList.directionList();
 		}
-		return new QueryData(isExplain, projs.asStringSet(), tables, pred,
+		return new QueryData(isExplain, allFields, projs.asStringSet(), tables, pred,
 				groupFields, projs.aggregationFns(), sortFields, sortDirs);
-	}
-
-	/*
-	 * Methods for parsing projection.
-	 */
-
-	private ProjectList projectList() {
-		ProjectList list = new ProjectList();
-		do {
-			if (lex.matchDelim(','))
-				lex.eatDelim(',');
-			if (lex.matchId())
-				list.addField(id());
-			else {
-				AggregationFn aggFn = aggregationFn();
-				list.addAggFn(aggFn);
-			}
-		} while (lex.matchDelim(','));
-		return list;
 	}
 
 	private AggregationFn aggregationFn() {

@@ -19,17 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import org.vanilladb.core.query.parse.CreateIndexData;
-import org.vanilladb.core.query.parse.CreateTableData;
-import org.vanilladb.core.query.parse.CreateViewData;
-import org.vanilladb.core.query.parse.DeleteData;
-import org.vanilladb.core.query.parse.DropIndexData;
-import org.vanilladb.core.query.parse.DropTableData;
-import org.vanilladb.core.query.parse.DropViewData;
-import org.vanilladb.core.query.parse.InsertData;
-import org.vanilladb.core.query.parse.ModifyData;
-import org.vanilladb.core.query.parse.Parser;
-import org.vanilladb.core.query.parse.QueryData;
+import org.vanilladb.core.query.parse.*;
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.Constant;
 import org.vanilladb.core.sql.Schema;
@@ -66,6 +56,12 @@ public class Verifier {
 			}
 		}
 
+		if (data.allFields()) {
+			for (Schema sch : schs) {
+				data.projectFields().addAll(sch.fields());
+			}
+		}
+
 		// examine the projecting field name
 		for (String fldName : data.projectFields()) {
 			boolean isValid = verifyField(schs, views, fldName);
@@ -75,6 +71,7 @@ public class Verifier {
 						isValid = true;
 						break;
 					}
+
 			if (!isValid)
 				throw new BadSemanticException("field " + fldName
 						+ " does not exist");

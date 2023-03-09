@@ -20,6 +20,7 @@ import java.io.StreamTokenizer;
 import java.io.StringReader;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.stream.Stream;
 
 /**
  * The lexical analyzer.
@@ -38,6 +39,7 @@ public class Lexer {
 		initKeywords();
 		tok = new StreamTokenizer(new StringReader(s));
 		tok.wordChars('_', '_');
+		tok.wordChars('*', '*');
 		tok.ordinaryChar('.');
 		/*
 		 * Tokens in TT_WORD type like ids and keywords are converted into lower
@@ -102,6 +104,10 @@ public class Lexer {
 				&& !keywords.contains(tok.sval);
 	}
 
+	public boolean matchWildcard() {
+		return tok.ttype == StreamTokenizer.TT_WORD && tok.sval.equals("*");
+	}
+
 	/*
 	 * Methods to "eat" the current token.
 	 */
@@ -115,6 +121,12 @@ public class Lexer {
 	 */
 	public void eatDelim(char delimiter) {
 		if (!matchDelim(delimiter))
+			throw new BadSyntaxException();
+		nextToken();
+	}
+
+	public void eatWildcard() {
+		if (!matchWildcard())
 			throw new BadSyntaxException();
 		nextToken();
 	}
@@ -188,7 +200,7 @@ public class Lexer {
 	}
 
 	private void initKeywords() {
-		keywords = Arrays.asList("select", "from", "where", "and", "insert",
+		keywords = Arrays.asList("select", "*", "from", "where", "and", "insert",
 				"into", "values", "delete", "drop", "update", "set", "create", "table",
 				"int", "double", "varchar", "view", "as", "index", "on",
 				"long", "order", "by", "asc", "desc", "sum", "count", "avg",

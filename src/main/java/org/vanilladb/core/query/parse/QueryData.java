@@ -36,6 +36,7 @@ public class QueryData {
 	private List<String> sortFields;
 	private List<Integer> sortDirs;
 	private boolean isExplain;
+	private boolean allFields;
 
 	/**
 	 * Saves the information of a SQL query.
@@ -57,9 +58,10 @@ public class QueryData {
 	 * @param sortDirs
 	 *            a list of sort directions
 	 */
-	public QueryData(boolean isExplain, Set<String> projFields, Set<String> tables, Predicate pred,
+	public QueryData(boolean isExplain, boolean allFields, Set<String> projFields, Set<String> tables, Predicate pred,
 			Set<String> groupFields, Set<AggregationFn> aggFn, List<String> sortFields, List<Integer> sortDirs) {
 		this.isExplain = isExplain;
+		this.allFields = true;
 		this.projFields = projFields;
 		this.tables = tables;
 		this.pred = pred;
@@ -141,6 +143,9 @@ public class QueryData {
 	 */
 	public boolean isExplain() {
 		return isExplain;
+	}
+	public boolean allFields() {
+		return allFields;
 	}
 
 	public String toString() {
