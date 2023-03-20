@@ -62,7 +62,7 @@ public class StarTest {
         Scan scan = plan.open();
 
         scan.beforeFirst();
-        while (scan.next()) {
+        if (scan.next()) {
             Assert.assertEquals(scan.getVal("sid").asJavaVal(), 1);
             Assert.assertEquals(scan.getVal("name").asJavaVal(), "Alice");
             Assert.assertEquals(scan.getVal("major").asJavaVal(), "CS");
@@ -81,7 +81,7 @@ public class StarTest {
 
         scan.beforeFirst();
 
-        while (scan.next()) {
+        if (scan.next()) {
             Assert.assertEquals(scan.getVal("sid").asJavaVal(), 1);
             Assert.assertEquals(scan.getVal("syid").asJavaVal(), 1);
             Assert.assertEquals(scan.getVal("name").asJavaVal(), "Alice");

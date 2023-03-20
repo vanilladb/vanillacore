@@ -36,11 +36,10 @@ public class QueryData {
 	private List<String> sortFields;
 	private List<Integer> sortDirs;
 	private boolean isExplain;
-	private boolean allFields;
 
 	/**
 	 * Saves the information of a SQL query.
-	 * 
+	 *
 	 * @param isExplain
 	 *            if the query is an explain statement
 	 * @param projFields
@@ -58,10 +57,9 @@ public class QueryData {
 	 * @param sortDirs
 	 *            a list of sort directions
 	 */
-	public QueryData(boolean isExplain, boolean allFields, Set<String> projFields, Set<String> tables, Predicate pred,
-			Set<String> groupFields, Set<AggregationFn> aggFn, List<String> sortFields, List<Integer> sortDirs) {
+	public QueryData(boolean isExplain, Set<String> projFields, Set<String> tables, Predicate pred,
+					 Set<String> groupFields, Set<AggregationFn> aggFn, List<String> sortFields, List<Integer> sortDirs) {
 		this.isExplain = isExplain;
-		this.allFields = true;
 		this.projFields = projFields;
 		this.tables = tables;
 		this.pred = pred;
@@ -73,7 +71,7 @@ public class QueryData {
 
 	/**
 	 * Returns the fields mentioned in the select clause.
-	 * 
+	 *
 	 * @return a collection of field names
 	 */
 	public Set<String> projectFields() {
@@ -82,7 +80,7 @@ public class QueryData {
 
 	/**
 	 * Returns the tables mentioned in the from clause.
-	 * 
+	 *
 	 * @return a collection of table names
 	 */
 	public Set<String> tables() {
@@ -92,7 +90,7 @@ public class QueryData {
 	/**
 	 * Returns the predicate that describes which records should be in the
 	 * output table.
-	 * 
+	 *
 	 * @return the query predicate
 	 */
 	public Predicate pred() {
@@ -101,7 +99,7 @@ public class QueryData {
 
 	/**
 	 * Returns the fields used to sort the query result.
-	 * 
+	 *
 	 * @return a list of field names for sorting
 	 */
 	public List<String> sortFields() {
@@ -111,7 +109,7 @@ public class QueryData {
 	/**
 	 * Returns a list of sort directions to the sorting fields. The values of
 	 * sort directions are defined in {@link RecordComparator}.
-	 * 
+	 *
 	 * @return a list of sort directions
 	 */
 	public List<Integer> sortDirections() {
@@ -120,7 +118,7 @@ public class QueryData {
 
 	/**
 	 * Returns the field names mentioned in the group by clause.
-	 * 
+	 *
 	 * @return a collection of grouping field names
 	 */
 	public Set<String> groupFields() {
@@ -129,7 +127,7 @@ public class QueryData {
 
 	/**
 	 * Returns the aggregation functions mentioned in the clause.
-	 * 
+	 *
 	 * @return a collection of aggregation functions
 	 */
 	public Set<AggregationFn> aggregationFn() {
@@ -138,14 +136,11 @@ public class QueryData {
 
 	/**
 	 * Returns true if the query is an explain statement.
-	 * 
+	 *
 	 * @return true if the query is an explain statement
 	 */
 	public boolean isExplain() {
 		return isExplain;
-	}
-	public boolean allFields() {
-		return allFields;
 	}
 
 	public String toString() {
