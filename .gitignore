@@ -13,6 +13,7 @@ target/
 
 ### IntelliJ ###
 .idea/
+*.iml
 
 ### vscode settings directory ###
 .vscode
