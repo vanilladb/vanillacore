@@ -19,9 +19,10 @@ package org.vanilladb.core.util;
  * Provides utility methods for converting numeric values to/from bytes.
  */
 public class ByteHelper {
-	public static final int INT_SIZE = Integer.SIZE / Byte.SIZE;
-	public static final int LONG_SIZE = Long.SIZE / Byte.SIZE;
-	public static final int DOUBLE_SIZE = Double.SIZE / Byte.SIZE;
+	public static final int INT_SIZE = Integer.BYTES;
+	public static final int LONG_SIZE = Long.BYTES;
+	public static final int FLOAT_SIZE = Float.BYTES;
+	public static final int DOUBLE_SIZE = Double.BYTES;
 
 	public static byte[] toBytes(int val) {
 		byte[] result = new byte[INT_SIZE];
@@ -36,6 +37,8 @@ public class ByteHelper {
 			result[i] = (byte) (val >> (LONG_SIZE - 1 - i) * 8);
 		return result;
 	}
+
+	public static byte[] toBytes(float val) { return toBytes( Float.floatToIntBits(val)); }
 
 	public static byte[] toBytes(double val) {
 		return toBytes(Double.doubleToRawLongBits(val));
@@ -57,6 +60,11 @@ public class ByteHelper {
 			ret |= (long) b[i] & 0xFF;
 		}
 		return ret;
+	}
+
+	public static float toFloat(byte[] b) {
+		int f = toInteger(b);
+		return Float.intBitsToFloat(f);
 	}
 
 	public static double toDouble(byte[] b) {

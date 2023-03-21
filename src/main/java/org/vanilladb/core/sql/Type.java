@@ -23,8 +23,9 @@ public abstract class Type {
 	public static final Type BIGINT = new BigIntType();
 	public static final Type DOUBLE = new DoubleType();
 	public static final Type VARCHAR = new VarcharType();
+    public static final Type VECTOR = new VectorType();
 
-	public static Type VARCHAR(int arg) {
+    public static Type VARCHAR(int arg) {
 		return new VarcharType(arg);
 	};
 
