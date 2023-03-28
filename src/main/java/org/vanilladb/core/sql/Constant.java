@@ -19,6 +19,7 @@ import static java.sql.Types.BIGINT;
 import static java.sql.Types.DOUBLE;
 import static java.sql.Types.INTEGER;
 import static java.sql.Types.VARCHAR;
+import static java.sql.Types.ARRAY;
 
 /**
  * An abstract class that denotes a value of a supported {@link Type type}.
@@ -51,6 +52,8 @@ public abstract class Constant implements Comparable<Constant> {
 			return new DoubleConstant(val);
 		case (VARCHAR):
 			return new VarcharConstant(val, type);
+		case (ARRAY):
+			return new VectorConstant(val);
 		}
 		throw new UnsupportedOperationException("Unspported SQL type: " + type.getSqlType());
 	}

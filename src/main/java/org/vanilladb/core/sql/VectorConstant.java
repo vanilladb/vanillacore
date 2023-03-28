@@ -8,7 +8,7 @@ import java.util.*;
  * Vector constant stores multiple fp32 values as a constant
  * This would enable vector processing in VanillaCore
  */
-public class VectorConstant extends Constant{
+public class VectorConstant extends Constant {
     private List<Float> vec;
 
     public VectorConstant(int size) {
@@ -68,6 +68,10 @@ public class VectorConstant extends Constant{
     @Override
     public int size() {
         return Float.BYTES * vec.size();
+    }
+
+    public int length() {
+        return vec.size();
     }
 
     @Override
@@ -135,6 +139,17 @@ public class VectorConstant extends Constant{
 
     @Override
     public int compareTo(Constant o) {
-        throw new UnsupportedOperationException("Vector doesn't support comparison");
+        throw new UnsupportedOperationException("Vector does not support comparison");
+    }
+
+    public boolean equals(VectorConstant o) {
+        if (o.size() != this.size())
+            return false;
+
+        for (int i = 0; i < this.length(); i++) {
+            if (vec.get(i) != o.get(i))
+                return false;
+        }
+        return true;
     }
 }

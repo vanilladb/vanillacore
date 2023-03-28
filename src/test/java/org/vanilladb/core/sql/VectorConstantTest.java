@@ -13,8 +13,8 @@ public class VectorConstantTest {
         byte[] vecAsBytes = v1.asBytes();
         VectorConstant v1_reconstructed = new VectorConstant(vecAsBytes);
 
-        for (int i = 0; i < vecSize; i++) {
-            Assert.assertTrue("Reconstructed vector does not match", v1.get(i) == v1_reconstructed.get(i));
-        }
+        Assert.assertTrue(v1.equals(v1_reconstructed));
+        Assert.assertFalse(v1.equals(new VectorConstant(vecSize)));
+        Assert.assertFalse(v1.equals(new VectorConstant(256)));
     }
 }

@@ -1,15 +1,17 @@
 package org.vanilladb.core.sql;
 
+import java.sql.Types;
+
 public class VectorType extends Type {
 
     @Override
     public int getSqlType() {
-        return 0;
+        return Types.ARRAY;
     }
 
     @Override
     public int getArgument() {
-        return 0;
+        return -1;
     }
 
     @Override
