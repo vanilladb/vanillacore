@@ -79,6 +79,7 @@ public class Verifier {
 		}
 
 		if (allFields) {
+			data.projectFields().remove("*");
 			for (Schema sch : schs) {
 				data.projectFields().addAll(sch.fields());
 			}

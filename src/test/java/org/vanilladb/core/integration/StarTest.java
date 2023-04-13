@@ -36,17 +36,7 @@ public class StarTest {
     }
 
     private static void loadTestbed() {
-        // TODO: multi-table test
-        Transaction tx = VanillaDb.txMgr().newTransaction(
-                Connection.TRANSACTION_SERIALIZABLE, false);
-        Planner planner = VanillaDb.newPlanner();
-
-        planner.executeUpdate("CREATE table students (sid INT, name VARCHAR(20), major VARCHAR(2))", tx);
-        planner.executeUpdate("CREATE table years (syid INT, year INT)", tx);
-        planner.executeUpdate("INSERT INTO students (sid, name, major) VALUES (1, 'Alice', 'CS')", tx);
-        planner.executeUpdate("INSERT INTO years (syid, year) VALUES (1, 3)", tx);
-
-        tx.commit();
+        ServerInit.loadTestbed();
         if (logger.isLoggable(Level.INFO))
             logger.info("TESTING DATA CREATED");
     }
@@ -57,15 +47,15 @@ public class StarTest {
                 Connection.TRANSACTION_SERIALIZABLE, false);
         Planner planner = VanillaDb.newPlanner();
 
-        String query = "SELECT * FROM students";
+        String query = "SELECT * FROM course";
         Plan plan = planner.createQueryPlan(query, tx);
         Scan scan = plan.open();
 
         scan.beforeFirst();
         if (scan.next()) {
-            Assert.assertEquals(scan.getVal("sid").asJavaVal(), 1);
-            Assert.assertEquals(scan.getVal("name").asJavaVal(), "Alice");
-            Assert.assertEquals(scan.getVal("major").asJavaVal(), "CS");
+            Assert.assertEquals(scan.getVal("cid").asJavaVal(), 0);
+            Assert.assertEquals(scan.getVal("title").asJavaVal(), "course0");
+            Assert.assertEquals(scan.getVal("deptid").asJavaVal(), 0);
         }
     }
 
@@ -75,18 +65,18 @@ public class StarTest {
                 Connection.TRANSACTION_SERIALIZABLE, false);
         Planner planner = VanillaDb.newPlanner();
 
-        String query = "SELECT * FROM students, years WHERE sid=syid";
+        String query = "SELECT * FROM course, dept WHERE deptid=did";
         Plan plan = planner.createQueryPlan(query, tx);
         Scan scan = plan.open();
 
         scan.beforeFirst();
 
         if (scan.next()) {
-            Assert.assertEquals(scan.getVal("sid").asJavaVal(), 1);
-            Assert.assertEquals(scan.getVal("syid").asJavaVal(), 1);
-            Assert.assertEquals(scan.getVal("name").asJavaVal(), "Alice");
-            Assert.assertEquals(scan.getVal("major").asJavaVal(), "CS");
-            Assert.assertEquals(scan.getVal("year").asJavaVal(), 3);
+            Assert.assertEquals(scan.getVal("cid").asJavaVal(), 0);
+            Assert.assertEquals(scan.getVal("title").asJavaVal(), "course0");
+            Assert.assertEquals(scan.getVal("deptid").asJavaVal(), 0);
+            Assert.assertEquals(scan.getVal("did").asJavaVal(), 0);
+            Assert.assertEquals(scan.getVal("dname").asJavaVal(), "dept0");
         }
     }
 }

@@ -25,7 +25,7 @@ import java.util.Collection;
  * The lexical analyzer.
  */
 public class Lexer {
-	private String WILDCARD = "*";
+	private char WILDCARD = '*';
 	private Collection<String> keywords;
 	private StreamTokenizer tok;
 
@@ -39,7 +39,7 @@ public class Lexer {
 		initKeywords();
 		tok = new StreamTokenizer(new StringReader(s));
 		tok.wordChars('_', '_');
-		tok.wordChars('*', '*');
+		tok.wordChars(WILDCARD, WILDCARD);
 		tok.ordinaryChar('.');
 		/*
 		 * Tokens in TT_WORD type like ids and keywords are converted into lower
