@@ -186,6 +186,10 @@ public class Parser {
 		return lex.eatId();
 	}
 
+	private String wildcard() {
+		return lex.eatWildcard();
+	}
+
 	private Constant constant() {
 		if (lex.matchStringConstant())
 			return new VarcharConstant(lex.eatStringConstant());
@@ -283,6 +287,8 @@ public class Parser {
 				lex.eatDelim(',');
 			if (lex.matchId())
 				list.addField(id());
+			else if (lex.matchWildcard())
+				list.addField(wildcard());
 			else {
 				AggregationFn aggFn = aggregationFn();
 				list.addAggFn(aggFn);
