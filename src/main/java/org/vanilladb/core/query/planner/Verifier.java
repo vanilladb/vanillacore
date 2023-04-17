@@ -30,6 +30,8 @@ import org.vanilladb.core.storage.metadata.TableInfo;
 import org.vanilladb.core.storage.metadata.TableMgr;
 import org.vanilladb.core.storage.tx.Transaction;
 
+import static org.vanilladb.core.query.parse.Lexer.WILDCARD;
+
 /**
  * The verifier which examines the semantic of input query and update
  * statements.
@@ -60,7 +62,7 @@ public class Verifier {
 
 		// examine the projecting field name
 		for (String fldName : data.projectFields()) {
-			if (fldName.equals("*")) {
+			if (fldName.equals(WILDCARD)) {
 				allFields = true;
 				continue;
 			}
@@ -79,7 +81,7 @@ public class Verifier {
 		}
 
 		if (allFields) {
-			data.projectFields().remove("*");
+			data.projectFields().remove(WILDCARD);
 			for (Schema sch : schs) {
 				data.projectFields().addAll(sch.fields());
 			}
@@ -276,9 +278,6 @@ public class Verifier {
 
 	private static boolean verifyField(List<Schema> schs,
 									   List<QueryData> views, String fld) {
-		if (fld.equals("*")) // wildcard ID
-			return true;
-
 		for (Schema s : schs) {
 			if (s.hasField(fld)) {
 				return true;
