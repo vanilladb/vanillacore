@@ -97,7 +97,7 @@ public class Parser {
 
 		Set<String> asStringSet() {
 			if (els.size() == 0)
-				return null;
+				return new HashSet<>();
 			Set<String> ret = new HashSet<String>(els.size());
 			for (ProjectEl el : els) {
 				if (el.fld != null)
@@ -186,6 +186,10 @@ public class Parser {
 		return lex.eatId();
 	}
 
+	private String wildcard() {
+		return lex.eatWildcard();
+	}
+
 	private Constant constant() {
 		if (lex.matchStringConstant())
 			return new VarcharConstant(lex.eatStringConstant());
@@ -233,7 +237,12 @@ public class Parser {
 			lex.eatKeyword("explain");
 		}
 		lex.eatKeyword("select");
+
+		if (lex.matchKeyword("from"))
+			throw new BadSyntaxException("projection field is empty");
+
 		ProjectList projs = projectList();
+
 		lex.eatKeyword("from");
 		Set<String> tables = idSet();
 		Predicate pred = new Predicate();
@@ -269,9 +278,8 @@ public class Parser {
 	}
 
 	/*
-	 * Methods for parsing projection.
+	 * Methods for parsing projection
 	 */
-
 	private ProjectList projectList() {
 		ProjectList list = new ProjectList();
 		do {
@@ -279,6 +287,8 @@ public class Parser {
 				lex.eatDelim(',');
 			if (lex.matchId())
 				list.addField(id());
+			else if (lex.matchWildcard())
+				list.addField(wildcard());
 			else {
 				AggregationFn aggFn = aggregationFn();
 				list.addAggFn(aggFn);
@@ -583,12 +593,12 @@ public class Parser {
 		lex.eatDelim('(');
 		List<String> fldNames = idList();
 		lex.eatDelim(')');
-		
+
 		// Index type
 		IndexType idxType = DEFAULT_INDEX_TYPE;
 		if (lex.matchKeyword("using")) {
 			lex.eatKeyword("using");
-			
+
 			if (lex.matchKeyword("hash")) {
 				lex.eatKeyword("hash");
 				idxType = IndexType.HASH;
@@ -598,7 +608,7 @@ public class Parser {
 			} else
 				throw new UnsupportedOperationException();
 		}
-		
+
 		return new CreateIndexData(idxName, tblName, fldNames, idxType);
 	}
 

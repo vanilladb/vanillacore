@@ -22,6 +22,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite.SuiteClasses;
 import org.vanilladb.core.IsolatedClassLoaderSuite.IsolationRoot;
 import org.vanilladb.core.integration.PhantomTest;
+import org.vanilladb.core.integration.StarTest;
 import org.vanilladb.core.server.ServerInit;
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.storage.file.FileMgr;
@@ -33,7 +34,8 @@ import org.vanilladb.core.storage.file.FileMgr;
 	QueryTestSuite.class,
 	
 	// Integration Tests
-	PhantomTest.class
+	PhantomTest.class,
+	StarTest.class
 })
 @IsolationRoot(VanillaDb.class)
 public class FullTestSuite {

@@ -25,12 +25,13 @@ import java.util.Collection;
  * The lexical analyzer.
  */
 public class Lexer {
+	public static final String WILDCARD = "*";
 	private Collection<String> keywords;
 	private StreamTokenizer tok;
 
 	/**
 	 * Creates a new lexical analyzer for the specified SQL statement.
-	 * 
+	 *
 	 * @param s
 	 *            the SQL statement
 	 */
@@ -38,6 +39,8 @@ public class Lexer {
 		initKeywords();
 		tok = new StreamTokenizer(new StringReader(s));
 		tok.wordChars('_', '_');
+		// assert WILDCARD.length() == 1
+		tok.wordChars(WILDCARD.charAt(0), WILDCARD.charAt(0));
 		tok.ordinaryChar('.');
 		/*
 		 * Tokens in TT_WORD type like ids and keywords are converted into lower
@@ -53,7 +56,7 @@ public class Lexer {
 
 	/**
 	 * Returns true if the current token is the specified delimiter character.
-	 * 
+	 *
 	 * @param delimiter
 	 *            a character denoting the delimiter
 	 * @return true if the delimiter is the current token
@@ -64,7 +67,7 @@ public class Lexer {
 
 	/**
 	 * Returns true if the current token is a numeric value.
-	 * 
+	 *
 	 * @return true if the current token is a numeric value
 	 */
 	public boolean matchNumericConstant() {
@@ -73,7 +76,7 @@ public class Lexer {
 
 	/**
 	 * Returns true if the current token is a string.
-	 * 
+	 *
 	 * @return true if the current token is a string
 	 */
 	public boolean matchStringConstant() {
@@ -82,7 +85,7 @@ public class Lexer {
 
 	/**
 	 * Returns true if the current token is the specified keyword.
-	 * 
+	 *
 	 * @param keyword
 	 *            the keyword string
 	 * @return true if that keyword is the current token
@@ -94,12 +97,16 @@ public class Lexer {
 
 	/**
 	 * Returns true if the current token is a legal identifier.
-	 * 
+	 *
 	 * @return true if the current token is an identifier
 	 */
 	public boolean matchId() {
-		return tok.ttype == StreamTokenizer.TT_WORD
-				&& !keywords.contains(tok.sval);
+		return (tok.ttype == StreamTokenizer.TT_WORD
+				&& !keywords.contains(tok.sval));
+	}
+
+	public boolean matchWildcard() {
+		return tok.sval.equals(WILDCARD);
 	}
 
 	/*
@@ -109,7 +116,7 @@ public class Lexer {
 	/**
 	 * Throws an exception if the current token is not the specified delimiter.
 	 * Otherwise, moves to the next token.
-	 * 
+	 *
 	 * @param delimiter
 	 *            a character denoting the delimiter
 	 */
@@ -122,7 +129,7 @@ public class Lexer {
 	/**
 	 * Throws an exception if the current token is not an integer. Otherwise,
 	 * returns that integer and moves to the next token.
-	 * 
+	 *
 	 * @return the integer value of the current token
 	 */
 	public double eatNumericConstant() {
@@ -136,7 +143,7 @@ public class Lexer {
 	/**
 	 * Throws an exception if the current token is not a string. Otherwise,
 	 * returns that string and moves to the next token.
-	 * 
+	 *
 	 * @return the string value of the current token
 	 */
 	public String eatStringConstant() {
@@ -155,7 +162,7 @@ public class Lexer {
 	/**
 	 * Throws an exception if the current token is not the specified keyword.
 	 * Otherwise, moves to the next token.
-	 * 
+	 *
 	 * @param keyword
 	 *            the keyword string
 	 */
@@ -168,11 +175,19 @@ public class Lexer {
 	/**
 	 * Throws an exception if the current token is not an identifier. Otherwise,
 	 * returns the identifier string and moves to the next token.
-	 * 
+	 *
 	 * @return the string value of the current token
 	 */
 	public String eatId() {
 		if (!matchId())
+			throw new BadSyntaxException();
+		String s = tok.sval;
+		nextToken();
+		return s;
+	}
+
+	public String eatWildcard() {
+		if (!matchWildcard())
 			throw new BadSyntaxException();
 		String s = tok.sval;
 		nextToken();
