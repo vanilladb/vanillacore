@@ -23,11 +23,15 @@ public abstract class Type {
 	public static final Type BIGINT = new BigIntType();
 	public static final Type DOUBLE = new DoubleType();
 	public static final Type VARCHAR = new VarcharType();
-    public static final Type VECTOR = new VectorType();
+    public static final Type VECTOR = new VectorType(128);
 
     public static Type VARCHAR(int arg) {
 		return new VarcharType(arg);
 	};
+
+	public static Type VECTOR(int size) {
+		return new VectorType(size);
+	}
 
 	/**
 	 * Constructs a new instance corresponding to the specified SQL type and
@@ -50,6 +54,8 @@ public abstract class Type {
 			return DOUBLE;
 		case (java.sql.Types.VARCHAR):
 			return VARCHAR(arg);
+		case (java.sql.Types.ARRAY):
+			return VECTOR;
 		}
 		throw new UnsupportedOperationException("Unspported SQL type: "
 				+ sqlType);

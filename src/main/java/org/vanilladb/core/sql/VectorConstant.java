@@ -9,6 +9,7 @@ import java.util.*;
  * This would enable vector processing in VanillaCore
  */
 public class VectorConstant extends Constant {
+    // TODO: Use primitive type
     private List<Float> vec;
 
     public VectorConstant(int size) {
@@ -76,7 +77,9 @@ public class VectorConstant extends Constant {
 
     @Override
     public Constant castTo(Type type) {
-        throw new UnsupportedOperationException("Cannot cast vector");
+        if (getType().equals(type))
+            return this;
+        throw new IllegalArgumentException("Cannot cast vector to other types");
     }
 
     public float get(int idx) {
@@ -138,8 +141,11 @@ public class VectorConstant extends Constant {
     }
 
     @Override
-    public int compareTo(Constant o) {
-        throw new UnsupportedOperationException("Vector does not support comparison");
+    public int compareTo(Constant c) {
+//        if (c instanceof VectorConstant) {
+//            return 1;
+//        }
+        throw new UnsupportedOperationException("Vector does not support comparison with other types");
     }
 
     public boolean equals(VectorConstant o) {

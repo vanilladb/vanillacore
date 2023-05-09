@@ -16,17 +16,8 @@
 package org.vanilladb.core.query.planner;
 
 import org.vanilladb.core.query.algebra.Plan;
-import org.vanilladb.core.query.parse.CreateIndexData;
-import org.vanilladb.core.query.parse.CreateTableData;
-import org.vanilladb.core.query.parse.CreateViewData;
-import org.vanilladb.core.query.parse.DropTableData;
-import org.vanilladb.core.query.parse.DropViewData;
-import org.vanilladb.core.query.parse.DropIndexData;
-import org.vanilladb.core.query.parse.DeleteData;
-import org.vanilladb.core.query.parse.InsertData;
-import org.vanilladb.core.query.parse.ModifyData;
-import org.vanilladb.core.query.parse.Parser;
-import org.vanilladb.core.query.parse.QueryData;
+import org.vanilladb.core.query.parse.*;
+import org.vanilladb.core.query.planner.vector.VectorQueryPlanner;
 import org.vanilladb.core.storage.tx.Transaction;
 
 /**
@@ -36,10 +27,12 @@ import org.vanilladb.core.storage.tx.Transaction;
  */
 public class Planner {
 	private QueryPlanner qPlanner;
+	private VectorQueryPlanner vPlanner;
 	private UpdatePlanner uPlanner;
 
-	public Planner(QueryPlanner qPlanner, UpdatePlanner uPlanner) {
+	public Planner(QueryPlanner qPlanner, VectorQueryPlanner vPlanner, UpdatePlanner uPlanner) {
 		this.qPlanner = qPlanner;
+		this.vPlanner = vPlanner;
 		this.uPlanner = uPlanner;
 	}
 
@@ -57,6 +50,10 @@ public class Planner {
 		QueryData data = parser.queryCommand();
 		Verifier.verifyQueryData(data, tx);
 		return qPlanner.createPlan(data, tx);
+	}
+
+	public Plan createVectorSearchPlan(VectorQueryData data, Transaction tx) {
+		return vPlanner.createPlan(data, tx);
 	}
 
 	/**
@@ -105,4 +102,5 @@ public class Planner {
 		} else
 			throw new UnsupportedOperationException();
 	}
+
 }

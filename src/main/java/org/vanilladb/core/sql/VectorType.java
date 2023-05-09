@@ -3,7 +3,12 @@ package org.vanilladb.core.sql;
 import java.sql.Types;
 
 public class VectorType extends Type {
+    private int size = -1;
 
+    VectorType() {}
+    VectorType(int size) {
+        this.size = size;
+    }
     @Override
     public int getSqlType() {
         return Types.ARRAY;
@@ -11,12 +16,12 @@ public class VectorType extends Type {
 
     @Override
     public int getArgument() {
-        return -1;
+        return size;
     }
 
     @Override
     public boolean isFixedSize() {
-        return false;
+        return true;
     }
 
     @Override
@@ -26,7 +31,7 @@ public class VectorType extends Type {
 
     @Override
     public int maxSize() {
-        return 0;
+        return size * Float.BYTES;
     }
 
     @Override

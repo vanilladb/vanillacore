@@ -7,7 +7,7 @@ public class VectorConstantTest {
 
     @Test
     public void testAsBytes() {
-        int vecSize = 512;
+        int vecSize = 8;
         VectorConstant v1 = new VectorConstant(vecSize);
 
         byte[] vecAsBytes = v1.asBytes();
