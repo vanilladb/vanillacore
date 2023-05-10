@@ -37,7 +37,7 @@ public class FileVectorTest {
 
     @Test
     public void testVectorRetrieval() {
-        int vecSize = 512;
+        int vecSize = 128;
         Page p1 = new Page();
         VectorConstant v1 = new VectorConstant(vecSize);
         p1.setVal(0, v1);

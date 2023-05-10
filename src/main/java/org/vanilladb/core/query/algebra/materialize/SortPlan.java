@@ -19,6 +19,7 @@ import static org.vanilladb.core.sql.RecordComparator.DIR_ASC;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Comparator;
 
 import org.vanilladb.core.query.algebra.Plan;
 import org.vanilladb.core.query.algebra.Scan;
@@ -27,6 +28,7 @@ import org.vanilladb.core.query.algebra.UpdateScan;
 import org.vanilladb.core.query.algebra.multibuffer.BufferNeeds;
 import org.vanilladb.core.sql.RecordComparator;
 import org.vanilladb.core.sql.Schema;
+import org.vanilladb.core.sql.Record;
 import org.vanilladb.core.storage.buffer.Buffer;
 import org.vanilladb.core.storage.metadata.TableInfo;
 import org.vanilladb.core.storage.metadata.statistics.Histogram;
@@ -38,7 +40,7 @@ import org.vanilladb.core.storage.tx.Transaction;
  */
 public class SortPlan implements Plan {
 	private Plan p;
-	private RecordComparator comp;
+	private Comparator<Record> comp;
 	private Transaction tx;
 	private Schema schema;
 
@@ -60,11 +62,11 @@ public class SortPlan implements Plan {
 	public SortPlan(Plan p, List<String> sortFields, List<Integer> sortDirs,
 			Transaction tx) {
 		this.p = p;
-		comp = new RecordComparator(sortFields, sortDirs);
+		this.comp = new RecordComparator(sortFields, sortDirs);
 		this.sortFlds = sortFields;
 		this.sortDirs = sortDirs;
 		this.tx = tx;
-		schema = p.schema();
+		this.schema = p.schema();
 	}
 
 	public SortPlan(Plan p, List<String> sortFlds, Transaction tx) {
@@ -74,9 +76,22 @@ public class SortPlan implements Plan {
 		for (int i = 0; i < sortFlds.size(); i++)
 			sortDirs.add(DIR_ASC);
 		this.sortDirs = sortDirs;
-		comp = new RecordComparator(sortFlds, sortDirs);
+		this.comp = new RecordComparator(sortFlds, sortDirs);
 		this.tx = tx;
-		schema = p.schema();
+		this.schema = p.schema();
+	}
+
+	public SortPlan(Plan p, List<String> sortFlds, Comparator<Record> comp, Transaction tx) {
+		this.p = p;
+		this.sortFlds = sortFlds;
+		List<Integer> sortDirs = new ArrayList<Integer>(sortFlds.size());
+		for (int i = 0; i < sortFlds.size(); i++) {
+			sortDirs.add(DIR_ASC);
+		}
+		this.sortDirs = sortDirs;
+		this.comp = comp;
+		this.tx = tx;
+		this.schema = p.schema();
 	}
 
 	/**

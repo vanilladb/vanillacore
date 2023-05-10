@@ -17,11 +17,12 @@ package org.vanilladb.core.query.algebra.materialize;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Comparator;
 
 import org.vanilladb.core.query.algebra.Scan;
 import org.vanilladb.core.query.algebra.UpdateScan;
 import org.vanilladb.core.sql.Constant;
-import org.vanilladb.core.sql.RecordComparator;
+import org.vanilladb.core.sql.Record;
 import org.vanilladb.core.storage.record.RecordId;
 
 /**
@@ -30,7 +31,7 @@ import org.vanilladb.core.storage.record.RecordId;
  */
 public class SortScan implements Scan {
 	private UpdateScan s1, s2 = null, currentScan = null;
-	private RecordComparator comp;
+	private Comparator<Record> comp;
 	private boolean hasMore1, hasMore2 = false;
 	private List<RecordId> savedPosition;
 
@@ -43,7 +44,7 @@ public class SortScan implements Scan {
 	 * @param comp
 	 *            the record comparator
 	 */
-	public SortScan(List<TempTable> runs, RecordComparator comp) {
+	public SortScan(List<TempTable> runs, Comparator<Record> comp) {
 		this.comp = comp;
 		s1 = (UpdateScan) runs.get(0).open();
 		if (runs.size() > 1)
