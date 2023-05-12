@@ -2,13 +2,16 @@ package org.vanilladb.core.sql;
 
 import java.sql.Types;
 
+/**
+ * The type of a vector constant.
+ */
 public class VectorType extends Type {
-    private int size = -1;
+    private int size;
 
-    VectorType() {}
     VectorType(int size) {
         this.size = size;
     }
+
     @Override
     public int getSqlType() {
         return Types.ARRAY;
@@ -36,11 +39,11 @@ public class VectorType extends Type {
 
     @Override
     public Constant maxValue() {
-        return null;
+        throw new UnsupportedOperationException("VectorType does not support maxValue()");
     }
 
     @Override
     public Constant minValue() {
-        return null;
+        throw new UnsupportedOperationException("VectorType does not support minValue()");
     }
 }

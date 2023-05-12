@@ -21,6 +21,7 @@ import static org.vanilladb.core.sql.Type.BIGINT;
 import static org.vanilladb.core.sql.Type.DOUBLE;
 import static org.vanilladb.core.sql.Type.INTEGER;
 import static org.vanilladb.core.sql.Type.VARCHAR;
+import static org.vanilladb.core.sql.Type.VECTOR;
 import static org.vanilladb.core.sql.predicate.BinaryArithmeticExpression.OP_ADD;
 import static org.vanilladb.core.sql.predicate.BinaryArithmeticExpression.OP_DIV;
 import static org.vanilladb.core.sql.predicate.BinaryArithmeticExpression.OP_MUL;
@@ -557,6 +558,12 @@ public class Parser {
 		} else if (lex.matchKeyword("double")) {
 			lex.eatKeyword("double");
 			schema.addField(fldName, DOUBLE);
+		} else if (lex.matchKeyword("vec")) {
+			lex.eatKeyword("vector");
+			lex.eatDelim('(');
+			double arg = lex.eatNumericConstant();
+			lex.eatDelim('(');
+			schema.addField(fldName, VECTOR((int) arg));
 		} else {
 			lex.eatKeyword("varchar");
 			lex.eatDelim('(');

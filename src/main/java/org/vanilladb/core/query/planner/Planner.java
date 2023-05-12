@@ -103,4 +103,10 @@ public class Planner {
 			throw new UnsupportedOperationException();
 	}
 
+	public int executeInsert(InsertData cmd, Transaction tx) {
+		if (tx.isReadOnly())
+			throw new UnsupportedOperationException();
+		Verifier.verifyInsertData(cmd, tx);
+		return uPlanner.executeInsert(cmd, tx);
+	}
 }

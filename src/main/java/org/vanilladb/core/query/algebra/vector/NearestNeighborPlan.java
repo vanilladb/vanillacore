@@ -17,13 +17,12 @@ public class NearestNeighborPlan implements Plan {
 
     public NearestNeighborPlan(Plan p, VectorConstant query, Transaction tx) {
         List<String> sortFields = new ArrayList<String>();
-        sortFields.add("emb");
+        sortFields.add("emb"); // sort using the embedding field
         this.child = new SortPlan(p, sortFields, new VectorComparator(query), tx);
     }
 
     @Override
     public Scan open() {
-        // limitplan
         Scan s = child.open();
         return new NearestNeighborScan(s);
     }
@@ -45,7 +44,6 @@ public class NearestNeighborPlan implements Plan {
 
     @Override
     public long recordsOutput() {
-        // TODO: return k
         return child.recordsOutput();
     }
 }
