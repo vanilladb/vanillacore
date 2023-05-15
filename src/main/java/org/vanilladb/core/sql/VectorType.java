@@ -46,4 +46,15 @@ public class VectorType extends Type {
     public Constant minValue() {
         throw new UnsupportedOperationException("VectorType does not support minValue()");
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this)
+            return true;
+        if (obj == null || !(obj instanceof VectorType))
+            return false;
+        VectorType t = (VectorType) obj;
+        return getSqlType() == t.getSqlType()
+                && getArgument() == t.getArgument();
+    }
 }

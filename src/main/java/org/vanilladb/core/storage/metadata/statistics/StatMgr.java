@@ -138,10 +138,8 @@ public class StatMgr {
         tcatfile.close();
     }
 
-    private synchronized TableStatInfo calcTableStats(TableInfo ti,
-                                                      Transaction tx) {
+    private synchronized TableStatInfo calcTableStats(TableInfo ti, Transaction tx) {
 
-        // XXX: Why were these code used in experiments?
 //		long numblocks = 0;
 //		Schema schema = ti.schema();
 //		SampledHistogramBuilder hb = new SampledHistogramBuilder(schema);
@@ -152,13 +150,14 @@ public class StatMgr {
         Schema schema = ti.schema();
         SampledHistogramBuilder hb = new SampledHistogramBuilder(schema);
 
-        RecordFile rf = ti.open(tx, true);
-        rf.beforeFirst();
-        while (rf.next()) {
-            numblocks = rf.currentRecordId().block().number() + 1;
-            hb.sample(rf);
-        }
-        rf.close();
+        // TODO: Figure out a way to build histogram
+        // RecordFile rf = ti.open(tx, true);
+        // rf.beforeFirst();
+        // while (rf.next()) {
+        //     numblocks = rf.currentRecordId().block().number() + 1;
+        //     hb.sample(rf);
+        // }
+        // rf.close();
 
         Histogram h = hb.newMaxDiffHistogram(NUM_BUCKETS, NUM_PERCENTILES);
         return new TableStatInfo(numblocks, h);

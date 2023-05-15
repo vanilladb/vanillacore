@@ -558,11 +558,11 @@ public class Parser {
 		} else if (lex.matchKeyword("double")) {
 			lex.eatKeyword("double");
 			schema.addField(fldName, DOUBLE);
-		} else if (lex.matchKeyword("vec")) {
+		} else if (lex.matchKeyword("vector")) {
 			lex.eatKeyword("vector");
 			lex.eatDelim('(');
 			double arg = lex.eatNumericConstant();
-			lex.eatDelim('(');
+			lex.eatDelim(')');
 			schema.addField(fldName, VECTOR((int) arg));
 		} else {
 			lex.eatKeyword("varchar");

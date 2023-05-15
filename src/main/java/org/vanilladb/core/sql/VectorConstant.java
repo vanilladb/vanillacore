@@ -11,12 +11,14 @@ import java.util.*;
 public class VectorConstant extends Constant {
     // TODO: Use primitive type
     private List<Float> vec;
+    private Type type;
 
     /**
      * Return a vector constant with random values
      * @param size size of the vector
      */
     public VectorConstant(int size) {
+        type = new VectorType(size);
         Random random = new Random();
         vec = new ArrayList<>();
         for (int i = 0; i < size; i++) {
@@ -29,6 +31,7 @@ public class VectorConstant extends Constant {
      * @param vector values of the vector
      */
     public VectorConstant(List<Float> vector) {
+        type = new VectorType(vector.size());
         vec = new ArrayList<>(vector.size());
         for (Float element : vector) {
             vec.add(element);
@@ -41,6 +44,7 @@ public class VectorConstant extends Constant {
      */
     public VectorConstant(byte[] bytes) {
         int size = bytes.length / Float.BYTES;
+        type = new VectorType(size);
         vec = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
             byte[] floatAsBytes = new byte[Float.BYTES];
@@ -55,7 +59,7 @@ public class VectorConstant extends Constant {
      */
     @Override
     public Type getType() {
-        return Type.VECTOR;
+        return type;
     }
 
     /**
@@ -111,7 +115,7 @@ public class VectorConstant extends Constant {
     public Constant castTo(Type type) {
         if (getType().equals(type))
             return this;
-        throw new IllegalArgumentException("Cannot cast vector to other types");
+        throw new IllegalArgumentException("Cannot cast vector to " + type);
     }
 
     public float get(int idx) {
@@ -174,7 +178,10 @@ public class VectorConstant extends Constant {
 
     @Override
     public int compareTo(Constant c) {
-        throw new UnsupportedOperationException("Vector does not support comparison with other types");
+        // if (!(c instanceof VectorConstant))
+        //     throw new IllegalArgumentException("Vector does not support comparison with other types");
+        // VectorConstant o = (VectorConstant) c;
+        throw new IllegalArgumentException("Vector does not support comparison with other types");
     }
 
     public boolean equals(VectorConstant o) {
