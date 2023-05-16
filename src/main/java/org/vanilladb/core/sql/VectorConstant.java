@@ -11,14 +11,13 @@ import java.util.*;
  * This would enable vector processing in VanillaCore
  */
 public class VectorConstant extends Constant {
-    // TODO: Use primitive type
-    private List<Float> vec;
+    private float[] vec;
     private Type type;
 
     public static VectorConstant zeros(int length) {
-        List<Float> vec = new ArrayList<>(length);
+        float[] vec = new float[length];
         for (int i = 0; i < length; i++) {
-            vec.add(0.0f);
+            vec[i] = 0.0f;
         }
         return new VectorConstant(vec);
     }
@@ -30,23 +29,33 @@ public class VectorConstant extends Constant {
     public VectorConstant(int length) {
         type = new VectorType(length);
         Random random = new Random();
-        vec = new ArrayList<>();
+        vec = new float[length];
         for (int i = 0; i < length; i++) {
-            vec.add(random.nextFloat());
+            vec[i] = random.nextFloat();
         }
     }
 
-    /**
-     * Return a vector constant with given values
-     * @param vector values of the vector
-     */
-    public VectorConstant(List<Float> vector) {
-        type = new VectorType(vector.size());
-        vec = new ArrayList<>(vector.size());
-        for (Float element : vector) {
-            vec.add(element);
+    public VectorConstant(float[] vector) {
+        type = new VectorType(vector.length);
+        vec = new float[vector.length];
+        
+        for (int i = 0; i < vector.length; i++) {
+            vec[i] = vector[i];
         }
     }
+
+    // /**
+    //  * Return a vector constant with given values
+    //  * @param vector values of the vector
+    //  */
+    // public VectorConstant(List<Float> vector) {
+    //     type = new VectorType(vector.size());
+    //     vec = new float[vector.size()];
+        
+    //     for (int i = 0; i < vector.size(); i++) {
+    //         vec[i] = vector.get(i);
+    //     }
+    // }
 
     /**
      * Reconstruct a vector constant from bytes
@@ -55,12 +64,13 @@ public class VectorConstant extends Constant {
     public VectorConstant(byte[] bytes) {
         int length = bytes.length / Float.BYTES;
         type = new VectorType(length);
-        vec = new ArrayList<>(length);
+        // vec = new ArrayList<>(length);
+        vec = new float[length];
         for (int i = 0; i < length; i++) {
             byte[] floatAsBytes = new byte[Float.BYTES];
             int offset = i * Float.BYTES;
             System.arraycopy(bytes, offset, floatAsBytes, 0, Float.BYTES);
-            vec.add(ByteHelper.toFloat(floatAsBytes));
+            vec[i] = ByteHelper.toFloat(floatAsBytes);
         }
     }
 
@@ -84,8 +94,8 @@ public class VectorConstant extends Constant {
      * Return a copy of the vector
      * @return
      */
-    public List<Float> copy() {
-        return new ArrayList<>(vec);
+    public float[] copy() {
+        return Arrays.copyOf(vec, vec.length);
     }
 
 
@@ -97,8 +107,8 @@ public class VectorConstant extends Constant {
         int bufferSize = this.size();
         byte[] buf = new byte[bufferSize];
 
-        for (int i = 0; i < vec.size(); i++) {
-            byte[] floatAsBytes = ByteHelper.toBytes(vec.get(i));
+        for (int i = 0; i < vec.length; i++) {
+            byte[] floatAsBytes = ByteHelper.toBytes(vec[i]);
             int offset = i * Float.BYTES;
             System.arraycopy(floatAsBytes, 0, buf, offset, Float.BYTES);
         }
@@ -110,7 +120,7 @@ public class VectorConstant extends Constant {
      */
     @Override
     public int size() {
-        return Float.BYTES * vec.size();
+        return Float.BYTES * vec.length;
     }
 
     /**
@@ -118,7 +128,7 @@ public class VectorConstant extends Constant {
      * @return size of the vector
      */
     public int length() {
-        return vec.size();
+        return vec.length;
     }
 
     @Override
@@ -133,7 +143,7 @@ public class VectorConstant extends Constant {
     }
 
     public float get(int idx) {
-        return vec.get(idx);
+        return vec[idx];
     }
 
     @Override
@@ -144,10 +154,10 @@ public class VectorConstant extends Constant {
         if (this.size() != c.size())
             throw new ArithmeticException("Vectors are not the same size");
 
-        List<Float> result = ((VectorConstant) c).copy();
+        float[] result = ((VectorConstant) c).copy();
 
-        for (int i = 0; i < vec.size(); i++) {
-            result.set(i, vec.get(i) + result.get(i));
+        for (int i = 0; i < vec.length; i++) {
+            result[i] = vec[i] + result[i];
         }
 
         return new VectorConstant(result);
@@ -161,9 +171,9 @@ public class VectorConstant extends Constant {
         if (this.size() != c.size())
             throw new ArithmeticException("Vectors are not the same size");
 
-        List<Float> result = ((VectorConstant) c).copy();
-        for (int i = 0; i < vec.size(); i++) {
-            result.set(i, vec.get(i) - result.get(i));
+        float[] result = ((VectorConstant) c).copy();
+        for (int i = 0; i < vec.length; i++) {
+            result[i] = vec[i] - result[i];
         }
 
         return new VectorConstant(result);
@@ -177,9 +187,9 @@ public class VectorConstant extends Constant {
         if (this.size() != c.size())
             throw new ArithmeticException("Vectors are not the same size");
 
-        List<Float> result = ((VectorConstant) c).copy();
-        for (int i = 0; i < vec.size(); i++) {
-            result.set(i, vec.get(i) * result.get(i));
+        float[] result = ((VectorConstant) c).copy();
+        for (int i = 0; i < vec.length; i++) {
+            result[i] = vec[i] * result[i];
         }
 
         return new VectorConstant(result);
@@ -195,9 +205,7 @@ public class VectorConstant extends Constant {
         // if (!(c instanceof VectorConstant))
         //     throw new IllegalArgumentException("Vector does not support comparison with other types");
         // VectorConstant o = (VectorConstant) c;
-        // throw new IllegalArgumentException("Vector does not support comparison with other types");
-        // XXX: This is a hack
-        return 1;
+        throw new IllegalArgumentException("VectorConstant does not support comparison");
     }
 
     public boolean equals(VectorConstant o) {
@@ -205,7 +213,7 @@ public class VectorConstant extends Constant {
             return false;
 
         for (int i = 0; i < this.length(); i++) {
-            if (vec.get(i) != o.get(i))
+            if (vec[i] != o.get(i))
                 return false;
         }
         return true;
