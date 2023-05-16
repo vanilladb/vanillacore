@@ -17,6 +17,7 @@ package org.vanilladb.core.query.algebra.materialize;
 
 import static org.vanilladb.core.sql.RecordComparator.DIR_ASC;
 
+import java.util.Comparator;
 import java.util.List;
 
 import org.vanilladb.core.query.algebra.Scan;
@@ -24,6 +25,9 @@ import org.vanilladb.core.query.algebra.UpdateScan;
 import org.vanilladb.core.sql.Constant;
 import org.vanilladb.core.sql.RecordComparator;
 import org.vanilladb.core.sql.Schema;
+import org.vanilladb.core.sql.VectorComparator;
+import org.vanilladb.core.sql.Record;
+import org.vanilladb.core.sql.VectorConstant;
 import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.metadata.TableInfo;
 import org.vanilladb.core.storage.record.RecordPage;
@@ -89,11 +93,11 @@ public class TempRecordPage extends RecordPage {
 	 * @param sortDirs
 	 *            the list of sorting directions
 	 */
-	public void sortbyselection(List<String> sortFlds, List<Integer> sortDirs) {
+	public void sortbyselection(List<String> sortFlds, List<Integer> sortDirs, Comparator<Record> comp) {
 		moveToId(-1);
 		int i = 0;
 		while (super.next()) {
-			int minId = findSmallestFrom(i, sortFlds, sortDirs);
+			int minId = findSmallestFrom(i, sortFlds, sortDirs, comp);
 			if (minId != i) {
 				swapRecords(i, minId);
 			}
@@ -110,12 +114,12 @@ public class TempRecordPage extends RecordPage {
 	 * @param sortDirs
 	 * @return the id of smallest record
 	 */
-	private int findSmallestFrom(int startId, List<String> sortFlds, List<Integer> sortDirs) {
+	private int findSmallestFrom(int startId, List<String> sortFlds, List<Integer> sortDirs, Comparator<Record> comp) {
 		int minId = startId;
 		moveToId(startId);
 		while (super.next()) {
 			int id = currentId();
-			if (minId < 0 || compareRecords(minId, id, sortFlds, sortDirs) > 0)
+			if (minId < 0 || compareRecords(minId, id, sortFlds, sortDirs, comp) > 0)
 				minId = id;
 			moveToId(id);
 		}
@@ -134,7 +138,7 @@ public class TempRecordPage extends RecordPage {
 		}
 	}
 
-	private int compareRecords(int id1, int id2, List<String> sortFlds, List<Integer> sortDirs) {
+	private int compareRecords(int id1, int id2, List<String> sortFlds, List<Integer> sortDirs, Comparator<Record> comp) {
 		for (int i = 0; i < sortFlds.size(); i++) {
 			int dir = sortDirs.get(i);
 			String fldName = sortFlds.get(i);
@@ -142,6 +146,15 @@ public class TempRecordPage extends RecordPage {
 			Constant val1 = getVal(fldName);
 			moveToId(id2);
 			Constant val2 = getVal(fldName);
+			if (val1 instanceof VectorConstant && val2 instanceof VectorConstant) {
+				VectorConstant v1 = (VectorConstant) val1;
+				VectorConstant v2 = (VectorConstant) val2;
+				VectorComparator vcomp = (VectorComparator) comp;
+				int result = vcomp.compare(v1, v2);
+
+				if (result != 0)
+					return dir == DIR_ASC ? result : -result;
+			}
 			int result = val1.compareTo(val2);
 			if (result != 0)
 				return dir == DIR_ASC ? result : -result;

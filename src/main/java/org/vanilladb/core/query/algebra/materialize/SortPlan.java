@@ -187,7 +187,7 @@ public class SortPlan implements Plan {
 		while (true) {
 			while ((flag = trp.insertFromScan(src)) > 0)
 				;
-			trp.sortbyselection(this.sortFlds, this.sortDirs);
+			trp.sortbyselection(this.sortFlds, this.sortDirs, this.comp);
 			trp.moveToPageHead();
 			while (trp.copyToScan(currentscan))
 				;

@@ -33,5 +33,14 @@ public class VectorComparator implements Comparator<Record> {
 
         return Double.compare(dist1, dist2);
     }
+
+    public int compare(VectorConstant v1, VectorConstant v2) {
+        // Does not support multi attribute sort for now
+
+        double dist1 = euclideanDistance(v1);
+        double dist2 = euclideanDistance(v2);
+
+        return Double.compare(dist1, dist2);
+    }
     
 }
