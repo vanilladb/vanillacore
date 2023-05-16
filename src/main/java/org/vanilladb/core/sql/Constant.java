@@ -30,7 +30,7 @@ public abstract class Constant implements Comparable<Constant> {
 	private static final Constant defaultBigInt = new BigIntConstant(0);
 	private static final Constant defaultDouble = new DoubleConstant(0);
 	private static final Constant defaultVarchar = new VarcharConstant("");
-	private static final Constant defaultVector = new VectorConstant(128);
+	private static final Constant defaultVector = VectorConstant.zeros(1);
 
 	/**
 	 * Constructs a new instance of the specified type with value converted from

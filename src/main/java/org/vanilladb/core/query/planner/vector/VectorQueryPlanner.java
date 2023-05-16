@@ -20,7 +20,7 @@ public class VectorQueryPlanner implements QueryPlanner {
         if (query.isApproximate())
             p = new ApproximateNearestNeighborPlan(p);
         else
-            p = new NearestNeighborPlan(p, query.getVector(), tx);
+            p = new NearestNeighborPlan(p, query.getVector(), query.getEmbeddingField(), tx);
 
         if (query.isExplain()) {
             p = new ExplainPlan(p);

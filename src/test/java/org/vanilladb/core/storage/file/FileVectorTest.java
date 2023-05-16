@@ -7,11 +7,9 @@ import static org.vanilladb.core.sql.Type.VECTOR;
 import java.util.logging.Level;
 
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.vanilladb.core.server.ServerInit;
-import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.VectorConstant;
 
 import java.util.logging.Logger;
@@ -19,12 +17,12 @@ import java.util.logging.Logger;
 public class FileVectorTest {
     private static Logger logger = Logger.getLogger(FileVectorTest.class.getName());
 
-    private static FileMgr fm;
+    // private static FileMgr fm;
 
     @BeforeClass
     public static void init() {
         ServerInit.init(FileVectorTest.class);
-        fm = VanillaDb.fileMgr();
+        // fm = VanillaDb.fileMgr();
         if (logger.isLoggable(Level.INFO))
             logger.info("BEGIN VECTOR FILE TEST");
     }
@@ -37,11 +35,11 @@ public class FileVectorTest {
 
     @Test
     public void testVectorRetrieval() {
-        int vecSize = 128;
+        int vecSize = 32;
         Page p1 = new Page();
         VectorConstant v1 = new VectorConstant(vecSize);
         p1.setVal(0, v1);
-        VectorConstant v1_retrieved = (VectorConstant) p1.getVal(0, VECTOR);
+        VectorConstant v1_retrieved = (VectorConstant) p1.getVal(0, VECTOR(vecSize));
         assertTrue(v1.equals(v1_retrieved));
         assertFalse(v1.equals(new VectorConstant(vecSize)));
     }

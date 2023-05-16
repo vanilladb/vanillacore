@@ -1,5 +1,7 @@
 package org.vanilladb.core.sql;
 
+import static java.sql.Types.VARCHAR;
+
 import org.vanilladb.core.util.ByteHelper;
 
 import java.util.*;
@@ -13,15 +15,23 @@ public class VectorConstant extends Constant {
     private List<Float> vec;
     private Type type;
 
+    public static VectorConstant zeros(int length) {
+        List<Float> vec = new ArrayList<>(length);
+        for (int i = 0; i < length; i++) {
+            vec.add(0.0f);
+        }
+        return new VectorConstant(vec);
+    }
+
     /**
      * Return a vector constant with random values
-     * @param size size of the vector
+     * @param length size of the vector
      */
-    public VectorConstant(int size) {
-        type = new VectorType(size);
+    public VectorConstant(int length) {
+        type = new VectorType(length);
         Random random = new Random();
         vec = new ArrayList<>();
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < length; i++) {
             vec.add(random.nextFloat());
         }
     }
@@ -43,10 +53,10 @@ public class VectorConstant extends Constant {
      * @param bytes bytes to reconstruct
      */
     public VectorConstant(byte[] bytes) {
-        int size = bytes.length / Float.BYTES;
-        type = new VectorType(size);
-        vec = new ArrayList<>(size);
-        for (int i = 0; i < size; i++) {
+        int length = bytes.length / Float.BYTES;
+        type = new VectorType(length);
+        vec = new ArrayList<>(length);
+        for (int i = 0; i < length; i++) {
             byte[] floatAsBytes = new byte[Float.BYTES];
             int offset = i * Float.BYTES;
             System.arraycopy(bytes, offset, floatAsBytes, 0, Float.BYTES);
@@ -115,6 +125,10 @@ public class VectorConstant extends Constant {
     public Constant castTo(Type type) {
         if (getType().equals(type))
             return this;
+        switch (type.getSqlType()) {
+            case VARCHAR:
+                return new VarcharConstant(vec.toString(), type);
+            }
         throw new IllegalArgumentException("Cannot cast vector to " + type);
     }
 
@@ -181,7 +195,9 @@ public class VectorConstant extends Constant {
         // if (!(c instanceof VectorConstant))
         //     throw new IllegalArgumentException("Vector does not support comparison with other types");
         // VectorConstant o = (VectorConstant) c;
-        throw new IllegalArgumentException("Vector does not support comparison with other types");
+        // throw new IllegalArgumentException("Vector does not support comparison with other types");
+        // XXX: This is a hack
+        return 1;
     }
 
     public boolean equals(VectorConstant o) {

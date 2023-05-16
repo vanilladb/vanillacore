@@ -3,18 +3,19 @@ package org.vanilladb.core.sql;
 import java.util.Comparator;
 
 public class VectorComparator implements Comparator<Record> {
-    private String fld = "emb";
+    private String embFld;
     private VectorConstant query;
 
-    public VectorComparator(VectorConstant query) {
+    public VectorComparator(VectorConstant query, String embFld) {
         this.query = query;
+        this.embFld = embFld;
     }
 
     private double euclideanDistance(VectorConstant vec) {
         // TODO: SIMD
-        assert vec.size() == query.size();
+        assert vec.length() == query.length();
         double sum = 0.0;
-        for (int i = 0; i < vec.size(); i++) {
+        for (int i = 0; i < vec.length(); i++) {
             double diff = vec.get(i) - query.get(i);
             sum += diff * diff;
         }
@@ -24,8 +25,8 @@ public class VectorComparator implements Comparator<Record> {
     @Override
     public int compare(Record rec1, Record rec2) {
         // Does not support multi attribute sort for now
-        VectorConstant vec1 = (VectorConstant) rec1.getVal(fld);
-        VectorConstant vec2 = (VectorConstant) rec2.getVal(fld);
+        VectorConstant vec1 = (VectorConstant) rec1.getVal(embFld);
+        VectorConstant vec2 = (VectorConstant) rec2.getVal(embFld);
 
         double dist1 = euclideanDistance(vec1);
         double dist2 = euclideanDistance(vec2);
