@@ -7,7 +7,7 @@ import org.vanilladb.core.util.ByteHelper;
 import java.util.*;
 
 /**
- * Vector constant stores multiple fp32 values as a constant
+ * Vector constant stores multiple float32 values as a constant
  * This would enable vector processing in VanillaCore
  */
 public class VectorConstant extends Constant {
@@ -44,19 +44,6 @@ public class VectorConstant extends Constant {
         }
     }
 
-    // /**
-    //  * Return a vector constant with given values
-    //  * @param vector values of the vector
-    //  */
-    // public VectorConstant(List<Float> vector) {
-    //     type = new VectorType(vector.size());
-    //     vec = new float[vector.size()];
-        
-    //     for (int i = 0; i < vector.size(); i++) {
-    //         vec[i] = vector.get(i);
-    //     }
-    // }
-
     /**
      * Reconstruct a vector constant from bytes
      * @param bytes bytes to reconstruct
@@ -86,7 +73,7 @@ public class VectorConstant extends Constant {
      * Return the value of the constant
      */
     @Override
-    public Object asJavaVal() {
+    public float[] asJavaVal() {
         return vec;
     }
 
@@ -137,7 +124,7 @@ public class VectorConstant extends Constant {
             return this;
         switch (type.getSqlType()) {
             case VARCHAR:
-                return new VarcharConstant(vec.toString(), type);
+                return new VarcharConstant(toString(), type);
             }
         throw new IllegalArgumentException("Cannot cast vector to " + type);
     }
@@ -217,5 +204,10 @@ public class VectorConstant extends Constant {
                 return false;
         }
         return true;
+    }
+
+    @Override
+    public String toString() {
+        return Arrays.toString(vec);
     }
 }

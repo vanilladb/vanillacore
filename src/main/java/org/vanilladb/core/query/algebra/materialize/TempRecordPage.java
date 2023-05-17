@@ -154,10 +154,11 @@ public class TempRecordPage extends RecordPage {
 
 				if (result != 0)
 					return dir == DIR_ASC ? result : -result;
+			} else {
+				int result = val1.compareTo(val2);
+				if (result != 0)
+					return dir == DIR_ASC ? result : -result;
 			}
-			int result = val1.compareTo(val2);
-			if (result != 0)
-				return dir == DIR_ASC ? result : -result;
 		}
 		return 0;
 	}
