@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.vanilladb.core.query.algebra.ExplainPlan;
+import org.vanilladb.core.query.algebra.LimitPlan;
 import org.vanilladb.core.query.algebra.Plan;
 import org.vanilladb.core.query.algebra.ProjectPlan;
 import org.vanilladb.core.query.algebra.materialize.GroupByPlan;
@@ -71,6 +72,11 @@ public class SelingerLikeQueryPlanner implements QueryPlanner{
 		if (data.sortFields() != null)
 			trunk = new SortPlan(trunk, data.sortFields(),
 					data.sortDirections(), tx);
+
+		// Step 7: Add a limit plan if specified
+		if (data.limit() != -1)
+			trunk = new LimitPlan(trunk, data.limit());
+			
 		// Step 6: Add a explain plan if the query is explain statement
 		if (data.isExplain())
 			trunk = new ExplainPlan(trunk);

@@ -36,6 +36,7 @@ public class QueryData {
 	private List<String> sortFields;
 	private List<Integer> sortDirs;
 	private boolean isExplain;
+	private int limit;
 
 	/**
 	 * Saves the information of a SQL query.
@@ -58,7 +59,7 @@ public class QueryData {
 	 *            a list of sort directions
 	 */
 	public QueryData(boolean isExplain, Set<String> projFields, Set<String> tables, Predicate pred,
-			Set<String> groupFields, Set<AggregationFn> aggFn, List<String> sortFields, List<Integer> sortDirs) {
+			Set<String> groupFields, Set<AggregationFn> aggFn, List<String> sortFields, List<Integer> sortDirs, int limit) {
 		this.isExplain = isExplain;
 		this.projFields = projFields;
 		this.tables = tables;
@@ -67,6 +68,7 @@ public class QueryData {
 		this.aggFn = aggFn;
 		this.sortFields = sortFields;
 		this.sortDirs = sortDirs;
+		this.limit = limit;
 	}
 
 	/**
@@ -134,6 +136,10 @@ public class QueryData {
 		return aggFn;
 	}
 
+	public int limit() {
+		return limit;
+	}
+
 	/**
 	 * Returns true if the query is an explain statement.
 	 * 
@@ -177,6 +183,11 @@ public class QueryData {
 			}
 			result.delete(result.length() - 2, result.length());
 		}
+
+		if (limit != -1) {
+			result.append(" limit " + limit);
+		}
+
 		return result.toString();
 	}
 }

@@ -265,8 +265,15 @@ public class Parser {
 			sortFields = sortList.fieldList();
 			sortDirs = sortList.directionList();
 		}
+
+		int limit = -1;
+		if (lex.matchKeyword("limit")) {
+			lex.eatKeyword("limit");
+			limit = (int) lex.eatNumericConstant();
+		}
+
 		return new QueryData(isExplain, projs.asStringSet(), tables, pred,
-				groupFields, projs.aggregationFns(), sortFields, sortDirs);
+				groupFields, projs.aggregationFns(), sortFields, sortDirs, limit);
 	}
 
 	/*
