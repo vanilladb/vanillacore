@@ -16,7 +16,7 @@ public class VectorComparator implements Comparator<Record> {
     }
 
     private double euclideanDistance(VectorConstant vec) {
-        // TODO: SIMD
+        // TODO: Test this
         assert vec.length() == query.length();
         double sum = 0.0;
         

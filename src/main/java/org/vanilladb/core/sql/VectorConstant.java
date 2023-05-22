@@ -210,4 +210,19 @@ public class VectorConstant extends Constant {
     public String toString() {
         return Arrays.toString(vec);
     }
+
+    public int[] hashCode(int bands, int buckets) {
+        assert length() % bands == 0;
+
+        int chunkSize = length() / bands;
+
+        int[] hashCodes = new int[bands];
+        for (int i = 0; i < bands; i++) {
+            int hashCode = (Arrays.hashCode(Arrays.copyOfRange(vec, i * chunkSize, (i + 1) * chunkSize))) % buckets;
+            if (hashCode < 0)
+                hashCode += buckets;
+            hashCodes[i] = hashCode;
+        }
+        return hashCodes;
+    }
 }

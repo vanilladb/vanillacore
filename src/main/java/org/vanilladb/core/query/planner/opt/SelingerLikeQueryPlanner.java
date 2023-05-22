@@ -91,28 +91,26 @@ public class SelingerLikeQueryPlanner implements QueryPlanner{
 	private Plan getAllCombination(Plan viewTrunk) {
 		int finalKey = 0;
 
-		// construct all combination layer by layer
-		for (int layer = 1; layer <= tablePlanners.size(); layer++) {
-			// when layer = 1, use select down strategy to construct layer 1
-			if (layer == 1) {
-				for (TablePlanner tp: tablePlanners) {
-					Plan bestPlan = null;
-					if (viewTrunk != null) {
-						bestPlan = tp.makeJoinPlan(viewTrunk);
-						if (bestPlan == null)
-							bestPlan = tp.makeProductPlan(viewTrunk);
-					}
-					else
-						bestPlan = tp.makeSelectPlan();
-					
-					AccessPath ap = new AccessPath(tp, bestPlan);
-					lookupTbl.put(ap.hashCode(), ap);
-					
-					// compute final hash key
-					finalKey += tp.hashCode();
-				}
-				continue;
+		// STEP 1: choose the best access path for each table
+		for (TablePlanner tp : tablePlanners) {
+			Plan bestPlan = null;
+			if (viewTrunk != null) {
+				bestPlan = tp.makeJoinPlan(viewTrunk);
+				if (bestPlan == null)
+					bestPlan = tp.makeProductPlan(viewTrunk);
 			}
+			else {
+				bestPlan = tp.makeSelectPlan();
+			}
+			AccessPath ap = new AccessPath(tp, bestPlan);
+			lookupTbl.put(ap.hashCode(), ap);
+
+			// compute the final hash key
+			finalKey += tp.hashCode();
+		}
+
+		// construct all combination layer by layer
+		for (int layer = 2; layer <= tablePlanners.size(); layer++) {
 
 			Set<Integer> keySet = new HashSet<Integer>(lookupTbl.keySet());
 			

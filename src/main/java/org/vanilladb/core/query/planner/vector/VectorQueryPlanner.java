@@ -18,7 +18,8 @@ public class VectorQueryPlanner implements QueryPlanner {
         Plan p = new TablePlan(tblName, tx);
 
         if (query.isApproximate())
-            p = new ApproximateNearestNeighborPlan(p);
+            // Implement approximate nearest neighbor search here
+            p = new ApproximateNearestNeighborPlan(p, query.getVector(), tblName, query.getEmbeddingField(), tx);
         else
             p = new NearestNeighborPlan(p, query.getVector(), query.getEmbeddingField(), tx);
 
