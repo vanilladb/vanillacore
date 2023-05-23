@@ -23,7 +23,8 @@ public class CosineFn implements DistanceFn {
         double sum = 0;
         double querySum = 0;
         double vecSum = 0;
-        for (int i = 0; i < vec.size(); i++) {
+        // WARNING: Don't use vec.size() here, it will return the number of bytes
+        for (int i = 0; i < vec.dimension(); i++) { 
             sum += query.get(i) * vec.get(i);
             querySum += query.get(i) * query.get(i);
             vecSum += vec.get(i) * vec.get(i);

@@ -21,7 +21,7 @@ public class EuclideanFn implements DistanceFn {
         DistanceFn.checkVectorLength(vec, query);
 
         double sum = 0;
-        for (int i = 0; i < vec.size(); i++) {
+        for (int i = 0; i < vec.dimension(); i++) {
             double diff = query.get(i) - vec.get(i);
             sum += diff * diff;
         }

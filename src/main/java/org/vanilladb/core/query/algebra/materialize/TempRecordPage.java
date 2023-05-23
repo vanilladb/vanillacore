@@ -25,7 +25,6 @@ import org.vanilladb.core.query.algebra.UpdateScan;
 import org.vanilladb.core.sql.Constant;
 import org.vanilladb.core.sql.RecordComparator;
 import org.vanilladb.core.sql.Schema;
-import org.vanilladb.core.sql.VectorComparator;
 import org.vanilladb.core.sql.Record;
 import org.vanilladb.core.sql.VectorConstant;
 import org.vanilladb.core.storage.file.BlockId;
@@ -146,19 +145,25 @@ public class TempRecordPage extends RecordPage {
 			Constant val1 = getVal(fldName);
 			moveToId(id2);
 			Constant val2 = getVal(fldName);
-			if (val1 instanceof VectorConstant && val2 instanceof VectorConstant) {
-				VectorConstant v1 = (VectorConstant) val1;
-				VectorConstant v2 = (VectorConstant) val2;
-				VectorComparator vcomp = (VectorComparator) comp;
-				int result = vcomp.compare(v1, v2);
 
-				if (result != 0)
-					return dir == DIR_ASC ? result : -result;
-			} else {
-				int result = val1.compareTo(val2);
-				if (result != 0)
-					return dir == DIR_ASC ? result : -result;
-			}
+			RecordComparator recordComp = (RecordComparator) comp;
+			int result = recordComp.compare(val1, val2);
+
+			if (result != 0)
+				return dir == DIR_ASC ? result : -result;
+			// if (val1 instanceof VectorConstant && val2 instanceof VectorConstant) {
+			// 	VectorConstant v1 = (VectorConstant) val1;
+			// 	VectorConstant v2 = (VectorConstant) val2;
+
+			// 	int result = comp.compare(v1, v2);
+
+			// 	if (result != 0)
+			// 		return dir == DIR_ASC ? result : -result;
+			// } else {
+			// 	int result = val1.compareTo(val2);
+			// 	if (result != 0)
+			// 		return dir == DIR_ASC ? result : -result;
+			// }
 		}
 		return 0;
 	}

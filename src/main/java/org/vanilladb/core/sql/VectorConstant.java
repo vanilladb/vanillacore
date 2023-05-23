@@ -125,7 +125,7 @@ public class VectorConstant extends Constant {
      * Return the size of the vector
      * @return size of the vector
      */
-    public int length() {
+    public int dimension() {
         return vec.length;
     }
 
@@ -210,7 +210,7 @@ public class VectorConstant extends Constant {
         if (o.size() != this.size())
             return false;
 
-        for (int i = 0; i < this.length(); i++) {
+        for (int i = 0; i < dimension(); i++) {
             if (vec[i] != o.get(i))
                 return false;
         }
@@ -223,9 +223,9 @@ public class VectorConstant extends Constant {
     }
 
     public int[] hashCode(int bands, int buckets) {
-        assert length() % bands == 0;
+        assert dimension() % bands == 0;
 
-        int chunkSize = length() / bands;
+        int chunkSize = dimension() / bands;
 
         int[] hashCodes = new int[bands];
         for (int i = 0; i < bands; i++) {

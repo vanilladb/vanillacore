@@ -71,6 +71,7 @@ public class RecordComparator implements Comparator<Record> {
 	 */
 	@Override
 	public int compare(Record rec1, Record rec2) {
+
 		for (int i = 0; i < sortFlds.size(); i++) {
 			String fld = sortFlds.get(i);
 			int dir = sortDirs.get(i);
@@ -93,4 +94,17 @@ public class RecordComparator implements Comparator<Record> {
 		}
 		return 0;
 	}
+
+	public int compare(Constant val1, Constant val2) {
+
+		if (distFn != null) {
+			// Compare by distance
+			double dist1 = distFn.distance((VectorConstant) val1);
+			double dist2 = distFn.distance((VectorConstant) val2);
+			return Double.compare(dist1, dist2);
+		}
+		
+		return val1.compareTo(val2);
+	}
+
 }
