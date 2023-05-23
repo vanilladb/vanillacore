@@ -26,6 +26,7 @@ import org.vanilladb.core.query.algebra.SelectPlan;
 import org.vanilladb.core.query.algebra.TablePlan;
 import org.vanilladb.core.query.algebra.index.IndexJoinPlan;
 import org.vanilladb.core.query.algebra.multibuffer.MultiBufferProductPlan;
+import org.vanilladb.core.query.algebra.vector.NearestNeighborPlan;
 import org.vanilladb.core.query.planner.index.IndexSelector;
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.Schema;
@@ -116,7 +117,11 @@ class TablePlanner {
 		Plan p = makeIndexSelectPlan();
 		if (p == null)
 			p = tp;
-		return addSelectPredicate(p);
+		p =  addSelectPredicate(p);
+		if (embField != null) {
+			p = new NearestNeighborPlan(p, embField, tx);
+		}
+		return p;
 	}
 
 	/**

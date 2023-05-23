@@ -1,13 +1,9 @@
 package org.vanilladb.core.query.algebra.vector;
 
-import java.util.List;
-import java.util.ArrayList;
-
 import org.vanilladb.core.query.algebra.Plan;
 import org.vanilladb.core.query.algebra.materialize.SortPlan;
 import org.vanilladb.core.query.algebra.Scan;
-import org.vanilladb.core.sql.VectorComparator;
-import org.vanilladb.core.sql.VectorConstant;
+import org.vanilladb.core.sql.distfn.DistanceFn;
 import org.vanilladb.core.sql.Schema;
 import org.vanilladb.core.storage.metadata.statistics.Histogram;
 import org.vanilladb.core.storage.tx.Transaction;
@@ -15,10 +11,8 @@ import org.vanilladb.core.storage.tx.Transaction;
 public class NearestNeighborPlan implements Plan {
     private Plan child;
 
-    public NearestNeighborPlan(Plan p, VectorConstant query, String embField, Transaction tx) {
-        List<String> sortFields = new ArrayList<String>();
-        sortFields.add(embField); // sort using the embedding field
-        this.child = new SortPlan(p, sortFields, new VectorComparator(query, embField), tx);
+    public NearestNeighborPlan(Plan p, DistanceFn distFn, Transaction tx) {
+        this.child = new SortPlan(p, distFn, tx);
     }
 
     @Override

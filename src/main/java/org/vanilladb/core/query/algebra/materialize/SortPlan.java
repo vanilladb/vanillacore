@@ -28,6 +28,7 @@ import org.vanilladb.core.query.algebra.UpdateScan;
 import org.vanilladb.core.query.algebra.multibuffer.BufferNeeds;
 import org.vanilladb.core.sql.RecordComparator;
 import org.vanilladb.core.sql.Schema;
+import org.vanilladb.core.sql.distfn.DistanceFn;
 import org.vanilladb.core.sql.Record;
 import org.vanilladb.core.storage.buffer.Buffer;
 import org.vanilladb.core.storage.metadata.TableInfo;
@@ -81,15 +82,15 @@ public class SortPlan implements Plan {
 		this.schema = p.schema();
 	}
 
-	public SortPlan(Plan p, List<String> sortFlds, Comparator<Record> comp, Transaction tx) {
+	public SortPlan(Plan p, DistanceFn distFn, Transaction tx) {
 		this.p = p;
-		this.sortFlds = sortFlds;
-		List<Integer> sortDirs = new ArrayList<Integer>(sortFlds.size());
-		for (int i = 0; i < sortFlds.size(); i++) {
-			sortDirs.add(DIR_ASC);
-		}
-		this.sortDirs = sortDirs;
-		this.comp = comp;
+		this.sortFlds = new ArrayList<String>();
+		this.sortFlds.add(distFn.fieldName());
+
+		this.sortDirs = new ArrayList<Integer>();
+		this.sortDirs.add(DIR_ASC);
+
+		this.comp = new RecordComparator(sortFlds, sortDirs, distFn);
 		this.tx = tx;
 		this.schema = p.schema();
 	}

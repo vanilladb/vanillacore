@@ -28,7 +28,6 @@ import org.vanilladb.core.query.planner.QueryPlanner;
 import org.vanilladb.core.query.planner.UpdatePlanner;
 import org.vanilladb.core.query.planner.index.IndexUpdatePlanner;
 import org.vanilladb.core.query.planner.opt.HeuristicQueryPlanner;
-import org.vanilladb.core.query.planner.vector.VectorQueryPlanner;
 import org.vanilladb.core.server.task.TaskMgr;
 import org.vanilladb.core.sql.storedprocedure.SampleStoredProcedureFactory;
 import org.vanilladb.core.sql.storedprocedure.StoredProcedureFactory;
@@ -271,7 +270,6 @@ public class VanillaDb {
 	 */
 	public static Planner newPlanner() {
 		QueryPlanner qplanner;
-		VectorQueryPlanner vplanner = new VectorQueryPlanner();
 		UpdatePlanner uplanner;
 
 		try {
@@ -282,7 +280,7 @@ public class VanillaDb {
 			return null;
 		}
 
-		return new Planner(qplanner, vplanner, uplanner);
+		return new Planner(qplanner, uplanner);
 	}
 
 	/**

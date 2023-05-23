@@ -18,8 +18,10 @@ package org.vanilladb.core.query.parse;
 import java.io.IOException;
 import java.io.StreamTokenizer;
 import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * The lexical analyzer.
@@ -78,6 +80,10 @@ public class Lexer {
 	 */
 	public boolean matchStringConstant() {
 		return '\'' == (char) tok.ttype;
+	}
+
+	public boolean matchVectorConstant() {
+		return '[' == (char) tok.ttype;
 	}
 
 	/**
@@ -150,6 +156,21 @@ public class Lexer {
 		String s = tok.sval;
 		nextToken();
 		return s;
+	}
+
+	public List<Float> eatVectorConstant() {
+		if (!matchVectorConstant())
+			throw new BadSyntaxException();
+		List<Float> vector = new ArrayList<Float>();
+		nextToken();
+		while (tok.ttype != ']') {
+			vector.add((float) tok.nval);
+			nextToken();
+			if (matchDelim(','))
+				eatDelim(',');
+		}
+		nextToken();
+		return vector; 
 	}
 
 	/**

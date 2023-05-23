@@ -207,6 +207,8 @@ public class Parser {
 	private Constant constant() {
 		if (lex.matchStringConstant())
 			return new VarcharConstant(lex.eatStringConstant());
+		else if (lex.matchVectorConstant())
+			return new VectorConstant(lex.eatVectorConstant());
 		else
 			return new DoubleConstant(lex.eatNumericConstant());
 	}
@@ -422,11 +424,8 @@ public class Parser {
 					}
 					lex.eatDelim('>');
 
-					VectorConstant queryVec = parseVector();
+					VectorConstant queryVec = new VectorConstant(lex.eatVectorConstant());
 					distFn.setQueryVector(queryVec);
-
-					int dir = sortDirection();
-
 					embFields.add(distFn);
 				} else {
 					int dir = sortDirection();
@@ -441,22 +440,22 @@ public class Parser {
 		return list;
 	}
 
-	private VectorConstant parseVector() {
-		List<Float> rawVector = new ArrayList<>();
+	// private VectorConstant parseVector() {
+	// 	List<Float> rawVector = new ArrayList<>();
 
-		lex.eatDelim('[');
+	// 	lex.eatDelim('[');
 
-		while (lex.matchNumericConstant()) {
-			rawVector.add((float) lex.eatNumericConstant());
-			if (lex.matchDelim(',')) {
-				lex.eatDelim(',');
-			}
-		}
+	// 	while (lex.matchNumericConstant()) {
+	// 		rawVector.add((float) lex.eatNumericConstant());
+	// 		if (lex.matchDelim(',')) {
+	// 			lex.eatDelim(',');
+	// 		}
+	// 	}
 
-		lex.eatDelim(']');
+	// 	lex.eatDelim(']');
 
-		return new VectorConstant(rawVector);
-	}
+	// 	return new VectorConstant(rawVector);
+	// }
 
 	private int sortDirection() {
 		int dir = DIR_ASC;

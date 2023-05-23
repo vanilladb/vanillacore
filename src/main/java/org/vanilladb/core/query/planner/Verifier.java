@@ -35,6 +35,7 @@ import org.vanilladb.core.sql.Constant;
 import org.vanilladb.core.sql.Schema;
 import org.vanilladb.core.sql.Type;
 import org.vanilladb.core.sql.VarcharConstant;
+import org.vanilladb.core.sql.VectorConstant;
 import org.vanilladb.core.sql.aggfn.AggregationFn;
 import org.vanilladb.core.storage.metadata.TableInfo;
 import org.vanilladb.core.storage.metadata.TableMgr;
@@ -263,7 +264,7 @@ public class Verifier {
 		Type type = sch.type(field);
 		if (type.isNumeric() && val instanceof VarcharConstant)
 			return false;
-		else if (!type.isNumeric() && !(val instanceof VarcharConstant))
+		else if (!type.isNumeric() && !(val instanceof VarcharConstant || val instanceof VectorConstant))
 			return false;
 		else
 			return true;

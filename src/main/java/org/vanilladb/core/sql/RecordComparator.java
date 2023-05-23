@@ -18,6 +18,8 @@ package org.vanilladb.core.sql;
 import java.util.Comparator;
 import java.util.List;
 
+import org.vanilladb.core.sql.distfn.DistanceFn;
+
 /**
  * A comparator for records.
  */
@@ -26,6 +28,7 @@ public class RecordComparator implements Comparator<Record> {
 
 	private List<String> sortFlds;
 	private List<Integer> sortDirs;
+	private DistanceFn distFn;
 
 	/**
 	 * Creates a comparator using the specified fields, using the ordering
@@ -39,6 +42,12 @@ public class RecordComparator implements Comparator<Record> {
 	public RecordComparator(List<String> sortFlds, List<Integer> sortDirs) {
 		this.sortFlds = sortFlds;
 		this.sortDirs = sortDirs;
+	}
+	
+	public RecordComparator(List<String> sortFlds, List<Integer> sortDirs, DistanceFn distFn) {
+		this.sortFlds = sortFlds;
+		this.sortDirs = sortDirs;
+		this.distFn = distFn;
 	}
 
 	/**
@@ -65,6 +74,17 @@ public class RecordComparator implements Comparator<Record> {
 		for (int i = 0; i < sortFlds.size(); i++) {
 			String fld = sortFlds.get(i);
 			int dir = sortDirs.get(i);
+
+			if (distFn != null && fld.equals(distFn.fieldName())) {
+				// Compare by distance
+				double dist1 = distFn.distance((VectorConstant) rec1.getVal(fld));
+				double dist2 = distFn.distance((VectorConstant) rec2.getVal(fld));
+				int result = Double.compare(dist1, dist2);
+				if (result != 0)
+					return dir == DIR_ASC ? result : -result;
+				continue;
+			}
+			
 			Constant val1 = rec1.getVal(fld);
 			Constant val2 = rec2.getVal(fld);
 			int result = val1.compareTo(val2);
