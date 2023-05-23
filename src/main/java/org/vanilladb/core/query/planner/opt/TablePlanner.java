@@ -29,6 +29,7 @@ import org.vanilladb.core.query.algebra.multibuffer.MultiBufferProductPlan;
 import org.vanilladb.core.query.planner.index.IndexSelector;
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.Schema;
+import org.vanilladb.core.sql.distfn.DistanceFn;
 import org.vanilladb.core.sql.predicate.Predicate;
 import org.vanilladb.core.storage.metadata.index.IndexInfo;
 import org.vanilladb.core.storage.tx.Transaction;
@@ -44,6 +45,8 @@ class TablePlanner {
 	private Transaction tx;
 	private int id;
 	private int hashCode;
+
+	private DistanceFn embField;
 
 	/**
 	 * Creates a new table planner. The specified predicate applies to the
@@ -66,6 +69,24 @@ class TablePlanner {
 		this.hashCode = (int) Math.pow(2, id);
 		tp = new TablePlan(tblName, tx);
 		sch = tp.schema();
+	}
+
+	public TablePlanner(String tblName, Predicate pred, List<DistanceFn> embFields, Transaction tx, int id) {
+		this.tblName = tblName;
+		this.pred = pred;
+		this.tx = tx;
+		this.id = id;
+		this.hashCode = (int) Math.pow(2, id);
+		tp = new TablePlan(tblName, tx);
+		sch = tp.schema();
+
+		// Two tables cannot have the same embedding field names
+		for (DistanceFn embField : embFields) {
+			if (sch.hasField(embField.fieldName())) {
+				this.embField = embField;
+				break;
+			}
+		}
 	}
 	
 	/**

@@ -21,7 +21,9 @@ import java.util.List;
 import java.util.Set;
 
 import org.vanilladb.core.sql.RecordComparator;
+import org.vanilladb.core.sql.VectorConstant;
 import org.vanilladb.core.sql.aggfn.AggregationFn;
+import org.vanilladb.core.sql.distfn.DistanceFn;
 import org.vanilladb.core.sql.predicate.Predicate;
 
 /**
@@ -35,6 +37,7 @@ public class QueryData {
 	private Set<AggregationFn> aggFn;
 	private List<String> sortFields;
 	private List<Integer> sortDirs;
+	private List<DistanceFn> embFields;
 	private boolean isExplain;
 	private int limit;
 
@@ -59,7 +62,7 @@ public class QueryData {
 	 *            a list of sort directions
 	 */
 	public QueryData(boolean isExplain, Set<String> projFields, Set<String> tables, Predicate pred,
-			Set<String> groupFields, Set<AggregationFn> aggFn, List<String> sortFields, List<Integer> sortDirs, int limit) {
+			Set<String> groupFields, Set<AggregationFn> aggFn, List<String> sortFields, List<Integer> sortDirs, List<DistanceFn> embFields, int limit) {
 		this.isExplain = isExplain;
 		this.projFields = projFields;
 		this.tables = tables;
@@ -68,6 +71,7 @@ public class QueryData {
 		this.aggFn = aggFn;
 		this.sortFields = sortFields;
 		this.sortDirs = sortDirs;
+		this.embFields = embFields;
 		this.limit = limit;
 	}
 
@@ -136,10 +140,14 @@ public class QueryData {
 		return aggFn;
 	}
 
+	public List<DistanceFn> embeddingFields() {
+		return embFields;
+	}
+
 	public int limit() {
 		return limit;
 	}
-
+	
 	/**
 	 * Returns true if the query is an explain statement.
 	 * 

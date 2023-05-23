@@ -62,12 +62,14 @@ public class BasicQueryPlanner implements QueryPlanner {
 		if (data.groupFields() != null) {
 			p = new GroupByPlan(p, data.groupFields(), data.aggregationFn(), tx);
 		}
-		// Step 5: Project onto the specified fields
-		p = new ProjectPlan(p, data.projectFields());
-		// Step 6: Add a sort plan if specified
+
+		// Step 5: Add a sort plan if specified
 		if (data.sortFields() != null)
 			p = new SortPlan(p, data.sortFields(), data.sortDirections(), tx);
 
+		// Step 6: Project onto the specified fields
+		p = new ProjectPlan(p, data.projectFields());
+		
 		// Step 7: Add a limit plan if specified
 		if (data.limit() != -1)
 			p = new LimitPlan(p, data.limit());

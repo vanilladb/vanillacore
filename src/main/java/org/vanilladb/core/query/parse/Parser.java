@@ -43,6 +43,7 @@ import org.vanilladb.core.sql.Constant;
 import org.vanilladb.core.sql.DoubleConstant;
 import org.vanilladb.core.sql.Schema;
 import org.vanilladb.core.sql.VarcharConstant;
+import org.vanilladb.core.sql.VectorConstant;
 import org.vanilladb.core.sql.aggfn.AggregationFn;
 import org.vanilladb.core.sql.aggfn.AvgFn;
 import org.vanilladb.core.sql.aggfn.CountFn;
@@ -50,6 +51,9 @@ import org.vanilladb.core.sql.aggfn.DistinctCountFn;
 import org.vanilladb.core.sql.aggfn.MaxFn;
 import org.vanilladb.core.sql.aggfn.MinFn;
 import org.vanilladb.core.sql.aggfn.SumFn;
+import org.vanilladb.core.sql.distfn.CosineFn;
+import org.vanilladb.core.sql.distfn.DistanceFn;
+import org.vanilladb.core.sql.distfn.EuclideanFn;
 import org.vanilladb.core.sql.predicate.BinaryArithmeticExpression;
 import org.vanilladb.core.sql.predicate.ConstantExpression;
 import org.vanilladb.core.sql.predicate.Expression;
@@ -75,6 +79,7 @@ public class Parser {
 	private static class ProjectEl {
 		String fld;
 		AggregationFn aggFn;
+		DistanceFn distFn;
 
 		ProjectEl(String fld) {
 			this.fld = fld;
@@ -82,6 +87,10 @@ public class Parser {
 
 		ProjectEl(AggregationFn aggFn) {
 			this.aggFn = aggFn;
+		}
+
+		ProjectEl(DistanceFn distFn) {
+			this.distFn = distFn;
 		}
 	}
 
@@ -133,6 +142,12 @@ public class Parser {
 			super(aggFn);
 			this.dir = dir;
 		}
+
+		// For vector queries
+		SortEl(DistanceFn distFn, int dir) {
+			super(distFn);
+			this.dir = dir;
+		}
 	}
 
 	private static class SortList {
@@ -151,10 +166,12 @@ public class Parser {
 				return null;
 			List<String> ret = new ArrayList<String>(els.size());
 			for (SortEl el : els) {
-				if (el.fld != null)
-					ret.add(el.fld);
-				else
+				if (el.aggFn != null) {
 					ret.add(el.aggFn.fieldName());
+				} else if (el.distFn != null) {
+					ret.add(el.distFn.fieldName());
+				} else
+					ret.add(el.fld);
 			}
 			return ret;
 		}
@@ -224,6 +241,8 @@ public class Parser {
 		return list;
 	}
 
+	private List<DistanceFn> embFields = new ArrayList<>();
+
 	/*
 	 * Methods for parsing queries.
 	 */
@@ -271,9 +290,9 @@ public class Parser {
 			lex.eatKeyword("limit");
 			limit = (int) lex.eatNumericConstant();
 		}
-
+		
 		return new QueryData(isExplain, projs.asStringSet(), tables, pred,
-				groupFields, projs.aggregationFns(), sortFields, sortDirs, limit);
+				groupFields, projs.aggregationFns(), sortFields, sortDirs, embFields, limit);
 	}
 
 	/*
@@ -375,6 +394,8 @@ public class Parser {
 				: new ConstantExpression(constant());
 	}
 
+	
+
 	/*
 	 * Methods for parsing sort.
 	 */
@@ -386,8 +407,31 @@ public class Parser {
 				lex.eatDelim(',');
 			if (lex.matchId()) {
 				String fld = id();
-				int dir = sortDirection();
-				list.addField(fld, dir);
+
+				if (lex.matchDelim('<')) {
+					lex.eatDelim('<');
+					DistanceFn distFn;;
+					if (lex.matchKeyword("cos")) {
+						lex.eatKeyword("cos");
+						distFn = new CosineFn();
+					} else if (lex.matchKeyword("euc")) {
+						lex.eatKeyword("euc");
+						distFn = new EuclideanFn();
+					} else {
+						throw new UnsupportedOperationException("Invalid distance function");
+					}
+					lex.eatDelim('>');
+
+					VectorConstant queryVec = parseVector();
+					distFn.setQueryVector(queryVec);
+
+					int dir = sortDirection();
+
+					embFields.add(distFn);
+				} else {
+					int dir = sortDirection();
+					list.addField(fld, dir);
+				}
 			} else {
 				AggregationFn aggFn = aggregationFn();
 				int dir = sortDirection();
@@ -395,6 +439,23 @@ public class Parser {
 			}
 		} while (lex.matchDelim(','));
 		return list;
+	}
+
+	private VectorConstant parseVector() {
+		List<Float> rawVector = new ArrayList<>();
+
+		lex.eatDelim('[');
+
+		while (lex.matchNumericConstant()) {
+			rawVector.add((float) lex.eatNumericConstant());
+			if (lex.matchDelim(',')) {
+				lex.eatDelim(',');
+			}
+		}
+
+		lex.eatDelim(']');
+
+		return new VectorConstant(rawVector);
 	}
 
 	private int sortDirection() {

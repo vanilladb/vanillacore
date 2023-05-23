@@ -66,18 +66,20 @@ public class SelingerLikeQueryPlanner implements QueryPlanner{
 		if (data.groupFields() != null)
 			trunk = new GroupByPlan(trunk, data.groupFields(),
 					data.aggregationFn(), tx);
-		// Step 4. Project on the field names
-		trunk = new ProjectPlan(trunk, data.projectFields());
-		// Step 5: Add a sort plan if specified
+
+		// Step 4: Add a sort plan if specified
 		if (data.sortFields() != null)
 			trunk = new SortPlan(trunk, data.sortFields(),
 					data.sortDirections(), tx);
 
-		// Step 7: Add a limit plan if specified
+		// Step 5. Project on the field names
+		trunk = new ProjectPlan(trunk, data.projectFields());
+
+		// Step 6: Add a limit plan if specified
 		if (data.limit() != -1)
 			trunk = new LimitPlan(trunk, data.limit());
 			
-		// Step 6: Add a explain plan if the query is explain statement
+		// Step 7: Add a explain plan if the query is explain statement
 		if (data.isExplain())
 			trunk = new ExplainPlan(trunk);
 		return trunk;

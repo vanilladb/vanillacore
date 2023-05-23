@@ -44,6 +44,17 @@ public class VectorConstant extends Constant {
         }
     }
 
+    public VectorConstant(List<Float> vector) {
+        int length = vector.size();
+        
+        type = new VectorType(length);
+        vec = new float[length];
+        
+        for (int i = 0; i < length; i++) {
+            vec[i] = vector.get(i);
+        }
+    }
+
     /**
      * Reconstruct a vector constant from bytes
      * @param bytes bytes to reconstruct
