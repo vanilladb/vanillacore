@@ -415,10 +415,10 @@ public class Parser {
 					DistanceFn distFn;;
 					if (lex.matchKeyword("cos")) {
 						lex.eatKeyword("cos");
-						distFn = new CosineFn();
+						distFn = new CosineFn(fld);
 					} else if (lex.matchKeyword("euc")) {
 						lex.eatKeyword("euc");
-						distFn = new EuclideanFn();
+						distFn = new EuclideanFn(fld);
 					} else {
 						throw new UnsupportedOperationException("Invalid distance function");
 					}

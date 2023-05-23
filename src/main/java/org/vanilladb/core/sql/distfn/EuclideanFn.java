@@ -4,22 +4,33 @@ import org.vanilladb.core.sql.VectorConstant;
 
 public class EuclideanFn implements DistanceFn {
 
+    private VectorConstant query;
+    private String fieldName;
+
+    public EuclideanFn(String fld) {
+        this.fieldName = fld;
+    }
+
     @Override
     public void setQueryVector(VectorConstant query) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'setQueryVector'");
+        this.query = query;
     }
 
     @Override
     public double distance(VectorConstant vec) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'distance'");
+        DistanceFn.checkVectorLength(vec, query);
+
+        double sum = 0;
+        for (int i = 0; i < vec.size(); i++) {
+            double diff = query.get(i) - vec.get(i);
+            sum += diff * diff;
+        }
+        return Math.sqrt(sum);
     }
 
     @Override
     public String fieldName() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'fieldName'");
+        return this.fieldName;
     }
     
 }
