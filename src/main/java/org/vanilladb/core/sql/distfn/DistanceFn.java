@@ -16,7 +16,7 @@ public abstract class DistanceFn {
     }
     
     public double distance(VectorConstant vec) {
-        // check vector length
+        // check vector dimension
         if (query.dimension() != vec.dimension()) {
             throw new IllegalArgumentException("Vector length does not match");
         }

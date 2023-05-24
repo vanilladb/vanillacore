@@ -440,23 +440,6 @@ public class Parser {
 		return list;
 	}
 
-	// private VectorConstant parseVector() {
-	// 	List<Float> rawVector = new ArrayList<>();
-
-	// 	lex.eatDelim('[');
-
-	// 	while (lex.matchNumericConstant()) {
-	// 		rawVector.add((float) lex.eatNumericConstant());
-	// 		if (lex.matchDelim(',')) {
-	// 			lex.eatDelim(',');
-	// 		}
-	// 	}
-
-	// 	lex.eatDelim(']');
-
-	// 	return new VectorConstant(rawVector);
-	// }
-
 	private int sortDirection() {
 		int dir = DIR_ASC;
 		if (lex.matchKeyword("asc")) {
