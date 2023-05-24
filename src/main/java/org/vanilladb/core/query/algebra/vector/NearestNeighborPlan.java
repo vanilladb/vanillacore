@@ -40,4 +40,4 @@ public class NearestNeighborPlan implements Plan {
     public long recordsOutput() {
         return child.recordsOutput();
     }
-}
+}       

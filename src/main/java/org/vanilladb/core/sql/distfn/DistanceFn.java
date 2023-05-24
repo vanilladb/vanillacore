@@ -2,16 +2,30 @@ package org.vanilladb.core.sql.distfn;
 
 import org.vanilladb.core.sql.VectorConstant;
 
-public interface DistanceFn {
+public abstract class DistanceFn {
 
-    static void checkVectorLength(VectorConstant vec1, VectorConstant vec2) {
-        if (vec1.dimension() != vec2.dimension())
-            throw new IllegalArgumentException("Vector length does not match");
+    protected VectorConstant query;
+    private String fieldName;
+
+    public DistanceFn(String fieldName) {
+        this.fieldName = fieldName;
+    }
+
+    public void setQueryVector(VectorConstant query) {
+        this.query = query;
     }
     
-    void setQueryVector(VectorConstant query);
-    
-    double distance(VectorConstant vec);
+    public double distance(VectorConstant vec) {
+        // check vector length
+        if (query.dimension() != vec.dimension()) {
+            throw new IllegalArgumentException("Vector length does not match");
+        }
+        return calculateDistance(vec);
+    }
 
-    String fieldName();
+    protected abstract double calculateDistance(VectorConstant vec);
+
+    public String fieldName() {
+        return fieldName;
+    }
 }

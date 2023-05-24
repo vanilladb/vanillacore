@@ -2,23 +2,14 @@ package org.vanilladb.core.sql.distfn;
 
 import org.vanilladb.core.sql.VectorConstant;
 
-public class CosineFn implements DistanceFn {
-
-    private VectorConstant query;
-    private String fieldName;
+public class CosineFn extends DistanceFn {
 
     public CosineFn(String fld) {
-        this.fieldName = fld;
+        super(fld);
     }
 
     @Override
-    public void setQueryVector(VectorConstant query) {
-        this.query = query;
-    }
-
-    @Override
-    public double distance(VectorConstant vec) {
-        DistanceFn.checkVectorLength(vec, query);
+    protected double calculateDistance(VectorConstant vec) {
 
         double sum = 0;
         double querySum = 0;
@@ -31,10 +22,4 @@ public class CosineFn implements DistanceFn {
         }
         return sum / (Math.sqrt(querySum) * Math.sqrt(vecSum));
     }
-
-    @Override
-    public String fieldName() {
-        return fieldName;
-    }
-    
 }
