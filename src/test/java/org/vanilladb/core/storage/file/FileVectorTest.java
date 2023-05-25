@@ -22,7 +22,6 @@ public class FileVectorTest {
     @BeforeClass
     public static void init() {
         ServerInit.init(FileVectorTest.class);
-        // fm = VanillaDb.fileMgr();
         if (logger.isLoggable(Level.INFO))
             logger.info("BEGIN VECTOR FILE TEST");
     }

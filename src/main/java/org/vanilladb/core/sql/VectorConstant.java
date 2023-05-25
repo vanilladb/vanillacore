@@ -7,17 +7,17 @@ import org.vanilladb.core.util.ByteHelper;
 import java.util.*;
 
 /**
- * Vector constant stores multiple float32 values as a constant
+ * Vector constant stores multiple int32 values as a constant
  * This would enable vector processing in VanillaCore
  */
 public class VectorConstant extends Constant {
-    private float[] vec;
+    private int[] vec;
     private Type type;
 
-    public static VectorConstant zeros(int length) {
-        float[] vec = new float[length];
-        for (int i = 0; i < length; i++) {
-            vec[i] = 0.0f;
+    public static VectorConstant zeros(int dimension) {
+        int[] vec = new int[dimension];
+        for (int i = 0; i < dimension; i++) {
+            vec[i] = 0;
         }
         return new VectorConstant(vec);
     }
@@ -29,26 +29,26 @@ public class VectorConstant extends Constant {
     public VectorConstant(int length) {
         type = new VectorType(length);
         Random random = new Random();
-        vec = new float[length];
+        vec = new int[length];
         for (int i = 0; i < length; i++) {
-            vec[i] = random.nextFloat();
+            vec[i] = random.nextInt(9999);
         }
     }
 
-    public VectorConstant(float[] vector) {
+    public VectorConstant(int[] vector) {
         type = new VectorType(vector.length);
-        vec = new float[vector.length];
+        vec = new int[vector.length];
         
         for (int i = 0; i < vector.length; i++) {
             vec[i] = vector[i];
         }
     }
 
-    public VectorConstant(List<Float> vector) {
+    public VectorConstant(List<Integer> vector) {
         int length = vector.size();
         
         type = new VectorType(length);
-        vec = new float[length];
+        vec = new int[length];
         
         for (int i = 0; i < length; i++) {
             vec[i] = vector.get(i);
@@ -60,15 +60,15 @@ public class VectorConstant extends Constant {
      * @param bytes bytes to reconstruct
      */
     public VectorConstant(byte[] bytes) {
-        int length = bytes.length / Float.BYTES;
+        int length = bytes.length / Integer.BYTES;
         type = new VectorType(length);
         // vec = new ArrayList<>(length);
-        vec = new float[length];
+        vec = new int[length];
         for (int i = 0; i < length; i++) {
-            byte[] floatAsBytes = new byte[Float.BYTES];
-            int offset = i * Float.BYTES;
-            System.arraycopy(bytes, offset, floatAsBytes, 0, Float.BYTES);
-            vec[i] = ByteHelper.toFloat(floatAsBytes);
+            byte[] intAsBytes = new byte[Integer.BYTES];
+            int offset = i * Integer.BYTES;
+            System.arraycopy(bytes, offset, intAsBytes, 0, Integer.BYTES);
+            vec[i] = ByteHelper.toInteger(intAsBytes);
         }
     }
 
@@ -84,7 +84,7 @@ public class VectorConstant extends Constant {
      * Return the value of the constant
      */
     @Override
-    public float[] asJavaVal() {
+    public int[] asJavaVal() {
         return vec;
     }
 
@@ -92,7 +92,7 @@ public class VectorConstant extends Constant {
      * Return a copy of the vector
      * @return
      */
-    public float[] copy() {
+    public int[] copy() {
         return Arrays.copyOf(vec, vec.length);
     }
 
@@ -106,9 +106,9 @@ public class VectorConstant extends Constant {
         byte[] buf = new byte[bufferSize];
 
         for (int i = 0; i < vec.length; i++) {
-            byte[] floatAsBytes = ByteHelper.toBytes(vec[i]);
-            int offset = i * Float.BYTES;
-            System.arraycopy(floatAsBytes, 0, buf, offset, Float.BYTES);
+            byte[] intAsBytes = ByteHelper.toBytes(vec[i]);
+            int offset = i * Integer.BYTES;
+            System.arraycopy(intAsBytes, 0, buf, offset, Integer.BYTES);
         }
         return buf;
     }
@@ -118,7 +118,7 @@ public class VectorConstant extends Constant {
      */
     @Override
     public int size() {
-        return Float.BYTES * vec.length;
+        return Integer.BYTES * vec.length;
     }
 
     /**
@@ -140,57 +140,23 @@ public class VectorConstant extends Constant {
         throw new IllegalArgumentException("Cannot cast vector to " + type);
     }
 
-    public float get(int idx) {
+    public int get(int idx) {
         return vec[idx];
     }
 
     @Override
     public Constant add(Constant c) {
-        if (!(c instanceof VectorConstant))
-            throw new UnsupportedOperationException("Vector doesn't support single value addition");
-
-        if (this.size() != c.size())
-            throw new ArithmeticException("Vectors are not the same size");
-
-        float[] result = ((VectorConstant) c).copy();
-
-        for (int i = 0; i < vec.length; i++) {
-            result[i] = vec[i] + result[i];
-        }
-
-        return new VectorConstant(result);
+        throw new UnsupportedOperationException("Vector doesn't support addition");
     }
 
     @Override
     public Constant sub(Constant c) {
-        if (!(c instanceof VectorConstant))
-            throw new UnsupportedOperationException("Vector doesn't support single value subtraction");
-
-        if (this.size() != c.size())
-            throw new ArithmeticException("Vectors are not the same size");
-
-        float[] result = ((VectorConstant) c).copy();
-        for (int i = 0; i < vec.length; i++) {
-            result[i] = vec[i] - result[i];
-        }
-
-        return new VectorConstant(result);
+        throw new UnsupportedOperationException("Vector doesn't support subtraction");
     }
 
     @Override
     public Constant mul(Constant c) {
-        if (!(c instanceof VectorConstant))
-            throw new UnsupportedOperationException("Vector doesn't support single value multiplication");
-
-        if (this.size() != c.size())
-            throw new ArithmeticException("Vectors are not the same size");
-
-        float[] result = ((VectorConstant) c).copy();
-        for (int i = 0; i < vec.length; i++) {
-            result[i] = vec[i] * result[i];
-        }
-
-        return new VectorConstant(result);
+        throw new UnsupportedOperationException("Vector doesn't support multiplication");
     }
 
     @Override
