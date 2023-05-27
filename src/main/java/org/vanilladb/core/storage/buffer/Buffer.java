@@ -345,7 +345,7 @@ public class Buffer {
 		return contents;
 	}
 	
-	int getPinCount() {
+	public int getPinCount() {
 		return pins.get();
 	}
 }

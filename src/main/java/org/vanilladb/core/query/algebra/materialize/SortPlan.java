@@ -48,6 +48,9 @@ public class SortPlan implements Plan {
 	private List<String> sortFlds;
 	private List<Integer> sortDirs;
 
+	List<TempTable> toBeFreed = new ArrayList<>();
+	// List<TempRecordPage> toBeFreed = new ArrayList<>();
+
 	/**
 	 * Creates a sort plan for the specified query.
 	 * 
@@ -114,7 +117,7 @@ public class SortPlan implements Plan {
 		src.close();
 		while (runs.size() > 2)
 			runs = doAMergeIteration(runs);
-		return new SortScan(runs, comp);
+		return new SortScan(runs, comp, toBeFreed);
 	}
 
 	/**
@@ -159,6 +162,8 @@ public class SortPlan implements Plan {
 	}
 
 	private List<TempTable> splitIntoRuns(Scan src) {
+		// List<TempRecordPage> toBeFreed = new ArrayList<TempRecordPage>();
+
 		List<TempTable> temps = new ArrayList<TempTable>();
 
 		src.beforeFirst();
@@ -168,6 +173,7 @@ public class SortPlan implements Plan {
 
 		TempTable currenttemp = new TempTable(schema, tx);
 		temps.add(currenttemp);
+		toBeFreed.add(currenttemp);
 		TableScan currentscan = (TableScan) currenttemp.open();
 
 		int tblcount = 0;
@@ -177,9 +183,9 @@ public class SortPlan implements Plan {
 				schema);
 
 		RecordFormatter fmtr = new RecordFormatter(ti);
-		Buffer buff = tx.bufferMgr().pinNew(
-				tblName + "-" + txnum + "-" + tblcount, fmtr);
+		Buffer buff = tx.bufferMgr().pinNew(ti.fileName(), fmtr);
 		TempRecordPage trp = new TempRecordPage(buff.block(), ti, tx);
+		
 		// trp.runAllSlot();
 
 		trp.moveToPageHead();
@@ -194,37 +200,29 @@ public class SortPlan implements Plan {
 				;
 			// trp.runAllSlot();
 			trp.close();
+			trp.delete();
+			
 			if (flag == -1)
 				break;
 
 			tblcount++;
 			ti = new TableInfo(tblName + "-" + txnum + "-" + tblcount, schema);
 			fmtr = new RecordFormatter(ti);
-			buff = tx.bufferMgr().pinNew(
-					tblName + "-" + txnum + "-" + tblcount, fmtr);
+			buff = tx.bufferMgr().pinNew(ti.fileName(), fmtr);
 			trp = new TempRecordPage(buff.block(), ti, tx);
+			// toBeFreed.add(trp);
 			trp.moveToPageHead();
 
 			currentscan.close();
 			currenttemp = new TempTable(schema, tx);
 			temps.add(currenttemp);
+			toBeFreed.add(currenttemp);
 			currentscan = (TableScan) currenttemp.open();
 		}
 		currentscan.close();
+
 		return temps;
 	}
-
-	// private List<TempTable> doAMergeIteration(List<TempTable> runs) {
-	// List<TempTable> result = new ArrayList<TempTable>();
-	// while (runs.size() > 1) {
-	// TempTable p1 = runs.remove(0);
-	// TempTable p2 = runs.remove(0);
-	// result.add(mergeTwoRuns(p1, p2));
-	// }
-	// if (runs.size() == 1)
-	// result.add(runs.get(0));
-	// return result;
-	// }
 
 	private List<TempTable> doAMergeIteration(List<TempTable> runs) {
 		List<TempTable> result = new ArrayList<TempTable>();
@@ -254,6 +252,8 @@ public class SortPlan implements Plan {
 			srcs[i].beforeFirst();
 		}
 		TempTable result = new TempTable(schema, tx);
+		toBeFreed.add(result);
+		
 		UpdateScan dest = result.open();
 		boolean hasmores[] = new boolean[num];
 		int count = 0;
@@ -276,33 +276,6 @@ public class SortPlan implements Plan {
 		}
 		for (int i = 0; i < num; i++)
 			srcs[i].close();
-		dest.close();
-		return result;
-	}
-	
-	private TempTable mergeTwoRuns(TempTable p1, TempTable p2) {
-		Scan src1 = p1.open();
-		Scan src2 = p2.open();
-		TempTable result = new TempTable(schema, tx);
-		UpdateScan dest = result.open();
-		src1.beforeFirst();
-		src2.beforeFirst();
-		boolean hasmore1 = src1.next();
-		boolean hasmore2 = src2.next();
-		while (hasmore1 && hasmore2) {
-			if (comp.compare(src1, src2) < 0)
-				hasmore1 = copy(src1, dest);
-			else
-				hasmore2 = copy(src2, dest);
-		}
-		if (hasmore1)
-			while (hasmore1)
-				hasmore1 = copy(src1, dest);
-		else
-			while (hasmore2)
-				hasmore2 = copy(src2, dest);
-		src1.close();
-		src2.close();
 		dest.close();
 		return result;
 	}

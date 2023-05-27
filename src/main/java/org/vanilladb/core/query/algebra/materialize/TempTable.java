@@ -17,6 +17,7 @@ package org.vanilladb.core.query.algebra.materialize;
 
 import org.vanilladb.core.query.algebra.TableScan;
 import org.vanilladb.core.query.algebra.UpdateScan;
+import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.Schema;
 import org.vanilladb.core.storage.buffer.Buffer;
 import org.vanilladb.core.storage.metadata.TableInfo;
@@ -74,4 +75,9 @@ public class TempTable {
 		return "_temp" + nextTableNum;
 	}
 
+	public void delete() {
+		// DEBUG
+		// System.out.println("delete temp table: " + ti.fileName());
+		VanillaDb.fileMgr().delete(ti.fileName());
+	}
 }

@@ -29,7 +29,6 @@ import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.storage.file.io.IoAllocator;
 import org.vanilladb.core.storage.file.io.IoBuffer;
 import org.vanilladb.core.storage.file.io.IoChannel;
-import org.vanilladb.core.storage.file.io.VirtualChannel;
 import org.vanilladb.core.util.CoreProperties;
 import org.vanilladb.core.util.TransactionProfiler;
 
@@ -56,8 +55,7 @@ public class FileMgr {
 	private File dbDirectory, logDirectory;
 	private boolean isNew;
 	private Map<String, IoChannel> openFiles = new ConcurrentHashMap<String, IoChannel>();
-	
-	// Optimization: if files are not empty, cache them
+	// Optimization: if files art not empty, cache them
 	private ConcurrentHashMap<String, Boolean> fileNotEmptyCache;
 
 	static {
@@ -186,10 +184,7 @@ public class FileMgr {
 	}
 
 	/**
-	 * Gets the block id of the new block appended in the specified file.
-	 * 
-	 * <b>Warning:</b><br>
-	 * Append will not write to file, call write to write buffer to file.
+	 * Appends the contents of a byte buffer to the end of the specified file.
 	 * 
 	 * @param fileName
 	 *            the name of the file
@@ -200,12 +195,16 @@ public class FileMgr {
 	BlockId append(String fileName, IoBuffer buffer) {
 		try {
 			IoChannel fileChannel = getFileChannel(fileName);
-			
-			// Optimization: Doesn't actually append to file
-			long blkNum = fileChannel.append(buffer);
-			
+
+			// Rewind the buffer for writing
+			buffer.rewind();
+
+			// Append the block to the file
+			long newSize = fileChannel.append(buffer);
+
 			// Return the new block id
-			return new BlockId(fileName, blkNum);
+			return new BlockId(fileName, newSize / BLOCK_SIZE - 1);
+
 		} catch (IOException e) {
 			e.printStackTrace();
 			return null;
@@ -280,8 +279,8 @@ public class FileMgr {
 			if (fileChannel == null) {
 				File dbFile = fileName.equals(DEFAULT_LOG_FILE) ? new File(logDirectory, fileName)
 						: new File(dbDirectory, fileName);
-				fileChannel = new VirtualChannel(IoAllocator.newIoChannel(dbFile));
-				
+				fileChannel = IoAllocator.newIoChannel(dbFile);
+
 				openFiles.put(fileName, fileChannel);
 			}
 

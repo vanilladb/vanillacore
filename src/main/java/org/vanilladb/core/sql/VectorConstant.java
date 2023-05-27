@@ -2,6 +2,8 @@ package org.vanilladb.core.sql;
 
 import static java.sql.Types.VARCHAR;
 
+import java.io.Serializable;
+
 import org.vanilladb.core.util.ByteHelper;
 
 import java.util.*;
@@ -10,7 +12,7 @@ import java.util.*;
  * Vector constant stores multiple int32 values as a constant
  * This would enable vector processing in VanillaCore
  */
-public class VectorConstant extends Constant {
+public class VectorConstant extends Constant implements Serializable {
     private int[] vec;
     private Type type;
 

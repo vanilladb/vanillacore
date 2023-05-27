@@ -50,10 +50,10 @@ public class RecordPage implements Record {
 
 	private Transaction tx;
 	private BlockId blk;
-	private TableInfo ti;
+	protected TableInfo ti;
 	private boolean doLog;
 
-	private Buffer currentBuff;
+	public Buffer currentBuff;
 	private int slotSize;
 	private int currentSlot = -1;
 	private Map<String, Integer> myOffsetMap;

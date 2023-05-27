@@ -34,6 +34,7 @@ public class SortScan implements Scan {
 	private Comparator<Record> comp;
 	private boolean hasMore1, hasMore2 = false;
 	private List<RecordId> savedPosition;
+	private List<TempTable> toBeFreed;
 
 	/**
 	 * Creates a sort scan, given a list of 1 or 2 runs. If there is only 1 run,
@@ -44,7 +45,8 @@ public class SortScan implements Scan {
 	 * @param comp
 	 *            the record comparator
 	 */
-	public SortScan(List<TempTable> runs, Comparator<Record> comp) {
+	public SortScan(List<TempTable> runs, Comparator<Record> comp, List<TempTable> toBeFreed) {
+		this.toBeFreed = toBeFreed;
 		this.comp = comp;
 		s1 = (UpdateScan) runs.get(0).open();
 		if (runs.size() > 1)
@@ -104,6 +106,10 @@ public class SortScan implements Scan {
 	 */
 	@Override
 	public void close() {
+		// Free temp files
+		for (TempTable tt : toBeFreed)
+			tt.delete();
+
 		s1.close();
 		if (s2 != null)
 			s2.close();

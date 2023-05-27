@@ -22,11 +22,11 @@ import java.util.List;
 
 import org.vanilladb.core.query.algebra.Scan;
 import org.vanilladb.core.query.algebra.UpdateScan;
+import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.Constant;
 import org.vanilladb.core.sql.RecordComparator;
 import org.vanilladb.core.sql.Schema;
 import org.vanilladb.core.sql.Record;
-import org.vanilladb.core.sql.VectorConstant;
 import org.vanilladb.core.storage.file.BlockId;
 import org.vanilladb.core.storage.metadata.TableInfo;
 import org.vanilladb.core.storage.record.RecordPage;
@@ -166,6 +166,10 @@ public class TempRecordPage extends RecordPage {
 			// }
 		}
 		return 0;
+	}
+
+	public void delete() {
+		VanillaDb.fileMgr().delete(ti.fileName());
 	}
 
 }
