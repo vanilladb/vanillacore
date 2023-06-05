@@ -48,7 +48,6 @@ public class SortPlan implements Plan {
 	private List<String> sortFlds;
 	private List<Integer> sortDirs;
 
-	List<TempTable> toBeFreed = new ArrayList<>();
 	// List<TempRecordPage> toBeFreed = new ArrayList<>();
 
 	/**
@@ -117,7 +116,7 @@ public class SortPlan implements Plan {
 		src.close();
 		while (runs.size() > 2)
 			runs = doAMergeIteration(runs);
-		return new SortScan(runs, comp, toBeFreed);
+		return new SortScan(runs, comp);
 	}
 
 	/**
@@ -173,7 +172,6 @@ public class SortPlan implements Plan {
 
 		TempTable currenttemp = new TempTable(schema, tx);
 		temps.add(currenttemp);
-		toBeFreed.add(currenttemp);
 		TableScan currentscan = (TableScan) currenttemp.open();
 
 		int tblcount = 0;
@@ -200,7 +198,6 @@ public class SortPlan implements Plan {
 				;
 			// trp.runAllSlot();
 			trp.close();
-			trp.delete();
 			
 			if (flag == -1)
 				break;
@@ -216,7 +213,6 @@ public class SortPlan implements Plan {
 			currentscan.close();
 			currenttemp = new TempTable(schema, tx);
 			temps.add(currenttemp);
-			toBeFreed.add(currenttemp);
 			currentscan = (TableScan) currenttemp.open();
 		}
 		currentscan.close();
@@ -252,7 +248,6 @@ public class SortPlan implements Plan {
 			srcs[i].beforeFirst();
 		}
 		TempTable result = new TempTable(schema, tx);
-		toBeFreed.add(result);
 		
 		UpdateScan dest = result.open();
 		boolean hasmores[] = new boolean[num];
