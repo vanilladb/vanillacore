@@ -27,6 +27,7 @@ import org.vanilladb.core.query.algebra.TablePlan;
 import org.vanilladb.core.query.algebra.index.IndexJoinPlan;
 import org.vanilladb.core.query.algebra.multibuffer.MultiBufferProductPlan;
 import org.vanilladb.core.query.algebra.vector.NearestNeighborPlan;
+import org.vanilladb.core.query.parse.QueryData;
 import org.vanilladb.core.query.planner.index.IndexSelector;
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.Schema;
@@ -46,6 +47,7 @@ class TablePlanner {
 	private Transaction tx;
 	private int id;
 	private int hashCode;
+	private int limit;
 
 	private DistanceFn embField;
 
@@ -72,9 +74,9 @@ class TablePlanner {
 		sch = tp.schema();
 	}
 
-	public TablePlanner(String tblName, Predicate pred, List<DistanceFn> embFields, Transaction tx, int id) {
+	public TablePlanner(String tblName, QueryData data, Transaction tx, int id) {
 		this.tblName = tblName;
-		this.pred = pred;
+		this.pred = data.pred();
 		this.tx = tx;
 		this.id = id;
 		this.hashCode = (int) Math.pow(2, id);
@@ -82,12 +84,13 @@ class TablePlanner {
 		sch = tp.schema();
 
 		// Two tables cannot have the same embedding field names
-		for (DistanceFn embField : embFields) {
+		for (DistanceFn embField : data.embeddingFields()) {
 			if (sch.hasField(embField.fieldName())) {
 				this.embField = embField;
 				break;
 			}
 		}
+		this.limit = data.limit();
 	}
 	
 	/**
@@ -119,7 +122,7 @@ class TablePlanner {
 			p = tp;
 		p =  addSelectPredicate(p);
 		if (embField != null) {
-			p = new NearestNeighborPlan(p, embField, tx);
+			p = new NearestNeighborPlan(p, embField, limit, tx);
 		}
 		return p;
 	}

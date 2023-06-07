@@ -28,7 +28,6 @@ import org.vanilladb.core.query.planner.QueryPlanner;
 import org.vanilladb.core.query.planner.UpdatePlanner;
 import org.vanilladb.core.query.planner.index.IndexUpdatePlanner;
 import org.vanilladb.core.query.planner.opt.HeuristicQueryPlanner;
-import org.vanilladb.core.query.planner.opt.TrueKNNQueryPlanner;
 import org.vanilladb.core.server.task.TaskMgr;
 import org.vanilladb.core.sql.storedprocedure.SampleStoredProcedureFactory;
 import org.vanilladb.core.sql.storedprocedure.StoredProcedureFactory;
@@ -282,10 +281,6 @@ public class VanillaDb {
 		}
 
 		return new Planner(qplanner, uplanner);
-	}
-
-	public static Planner newTrueKNNPlanner() {
-		return new Planner(new TrueKNNQueryPlanner(), null);
 	}
 
 	/**
