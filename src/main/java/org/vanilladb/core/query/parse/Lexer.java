@@ -214,6 +214,6 @@ public class Lexer {
 				"int", "double", "vector", "varchar", "view", "as", "index", "on",
 				"long", "order", "by", "asc", "desc", "limit", "sum", "count", "avg",
 				"min", "max", "distinct", "group", "add", "sub", "mul", "div",
-				"explain", "using", "hash", "btree", "lsh", "cos", "euc");
+				"explain", "using", "hash", "btree", "ivf", "cos", "euc");
 	}
 }

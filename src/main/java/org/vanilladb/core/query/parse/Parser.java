@@ -144,10 +144,10 @@ public class Parser {
 		}
 
 		// For vector queries
-		SortEl(DistanceFn distFn, int dir) {
-			super(distFn);
-			this.dir = dir;
-		}
+		// SortEl(DistanceFn distFn, int dir) {
+		// 	super(distFn);
+		// 	this.dir = dir;
+		// }
 	}
 
 	private static class SortList {
@@ -168,8 +168,8 @@ public class Parser {
 			for (SortEl el : els) {
 				if (el.aggFn != null) {
 					ret.add(el.aggFn.fieldName());
-				} else if (el.distFn != null) {
-					ret.add(el.distFn.fieldName());
+				// } else if (el.distFn != null) {
+				// 	ret.add(el.distFn.fieldName());
 				} else
 					ret.add(el.fld);
 			}
@@ -243,7 +243,7 @@ public class Parser {
 		return list;
 	}
 
-	private List<DistanceFn> embFields = new ArrayList<>();
+	private List<VectorEmbeddingData> queryVectors = new ArrayList<>();
 
 	/*
 	 * Methods for parsing queries.
@@ -294,7 +294,7 @@ public class Parser {
 		}
 		
 		return new QueryData(isExplain, projs.asStringSet(), tables, pred,
-				groupFields, projs.aggregationFns(), sortFields, sortDirs, embFields, limit);
+				groupFields, projs.aggregationFns(), sortFields, sortDirs, queryVectors, limit);
 	}
 
 	/*
@@ -412,21 +412,22 @@ public class Parser {
 
 				if (lex.matchDelim('<')) {
 					lex.eatDelim('<');
-					DistanceFn distFn;;
+					DistanceFn distFn;
 					if (lex.matchKeyword("cos")) {
 						lex.eatKeyword("cos");
-						distFn = new CosineFn(fld);
+						distFn = new CosineFn();
 					} else if (lex.matchKeyword("euc")) {
 						lex.eatKeyword("euc");
-						distFn = new EuclideanFn(fld);
+						distFn = new EuclideanFn();
 					} else {
 						throw new UnsupportedOperationException("Invalid distance function");
 					}
 					lex.eatDelim('>');
 
 					VectorConstant queryVec = new VectorConstant(lex.eatVectorConstant());
-					distFn.setQueryVector(queryVec);
-					embFields.add(distFn);
+					// distFn.setQueryVector(queryVec);
+					VectorEmbeddingData embData = new VectorEmbeddingData(queryVec, fld, distFn);
+					queryVectors.add(embData);
 				} else {
 					int dir = sortDirection();
 					list.addField(fld, dir);
@@ -652,9 +653,9 @@ public class Parser {
 			} else if (lex.matchKeyword("btree")) {
 				lex.eatKeyword("btree");
 				idxType = IndexType.BTREE;
-			} else if (lex.matchKeyword("lsh")) {
-				lex.eatKeyword("lsh");
-				idxType = IndexType.LSH;
+			} else if (lex.matchKeyword("ivf")) {
+				lex.eatKeyword("ivf");
+				idxType = IndexType.IVF;
 			} else
 				throw new UnsupportedOperationException();
 		}

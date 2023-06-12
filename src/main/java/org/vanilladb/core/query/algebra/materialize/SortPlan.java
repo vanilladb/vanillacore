@@ -26,6 +26,7 @@ import org.vanilladb.core.query.algebra.Scan;
 import org.vanilladb.core.query.algebra.TableScan;
 import org.vanilladb.core.query.algebra.UpdateScan;
 import org.vanilladb.core.query.algebra.multibuffer.BufferNeeds;
+import org.vanilladb.core.query.parse.VectorEmbeddingData;
 import org.vanilladb.core.sql.RecordComparator;
 import org.vanilladb.core.sql.Schema;
 import org.vanilladb.core.sql.distfn.DistanceFn;
@@ -84,15 +85,15 @@ public class SortPlan implements Plan {
 		this.schema = p.schema();
 	}
 
-	public SortPlan(Plan p, DistanceFn distFn, Transaction tx) {
+	public SortPlan(Plan p, VectorEmbeddingData queryVector, Transaction tx) {
 		this.p = p;
 		this.sortFlds = new ArrayList<String>();
-		this.sortFlds.add(distFn.fieldName());
+		this.sortFlds.add(queryVector.getEmbeddingField());
 
 		this.sortDirs = new ArrayList<Integer>();
 		this.sortDirs.add(DIR_ASC);
 
-		this.comp = new RecordComparator(sortFlds, sortDirs, distFn);
+		this.comp = new RecordComparator(sortFlds, sortDirs, queryVector);
 		this.tx = tx;
 		this.schema = p.schema();
 	}

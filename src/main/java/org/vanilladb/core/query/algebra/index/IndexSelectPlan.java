@@ -22,11 +22,13 @@ import org.vanilladb.core.query.algebra.Scan;
 import org.vanilladb.core.query.algebra.SelectPlan;
 import org.vanilladb.core.query.algebra.TablePlan;
 import org.vanilladb.core.query.algebra.TableScan;
+import org.vanilladb.core.query.parse.VectorEmbeddingData;
 import org.vanilladb.core.sql.ConstantRange;
 import org.vanilladb.core.sql.Schema;
 import org.vanilladb.core.storage.index.Index;
 import org.vanilladb.core.storage.index.SearchKeyType;
 import org.vanilladb.core.storage.index.SearchRange;
+import org.vanilladb.core.storage.index.ivf.IVFIndex;
 import org.vanilladb.core.storage.metadata.index.IndexInfo;
 import org.vanilladb.core.storage.metadata.statistics.Histogram;
 import org.vanilladb.core.storage.tx.Transaction;
@@ -41,6 +43,7 @@ public class IndexSelectPlan implements Plan {
 	private Map<String, ConstantRange> searchRanges;
 	private Transaction tx;
 	private Histogram hist;
+	private VectorEmbeddingData queryVec;
 
 	/**
 	 * Creates a new index-select node in the query tree for the specified index
@@ -64,6 +67,10 @@ public class IndexSelectPlan implements Plan {
 		hist = SelectPlan.constantRangeHistogram(tp.histogram(), searchRanges);
 	}
 
+	public void setEmbeddingField(VectorEmbeddingData queryVec) {
+		this.queryVec = queryVec;
+	}
+
 	/**
 	 * Creates a new index-select scan for this query
 	 * 
@@ -74,6 +81,11 @@ public class IndexSelectPlan implements Plan {
 		// throws an exception if p is not a tableplan.
 		TableScan ts = (TableScan) tp.open();
 		Index idx = ii.open(tx);
+
+		if (idx instanceof IVFIndex) {
+			((IVFIndex) idx).train(tp, queryVec);
+		}
+
 		return new IndexSelectScan(idx, 
 				new SearchRange(ii.fieldNames(), schema(), searchRanges), ts);
 	}

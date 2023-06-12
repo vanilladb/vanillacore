@@ -28,10 +28,10 @@ import org.vanilladb.core.query.algebra.index.IndexJoinPlan;
 import org.vanilladb.core.query.algebra.multibuffer.MultiBufferProductPlan;
 import org.vanilladb.core.query.algebra.vector.NearestNeighborPlan;
 import org.vanilladb.core.query.parse.QueryData;
+import org.vanilladb.core.query.parse.VectorEmbeddingData;
 import org.vanilladb.core.query.planner.index.IndexSelector;
 import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.sql.Schema;
-import org.vanilladb.core.sql.distfn.DistanceFn;
 import org.vanilladb.core.sql.predicate.Predicate;
 import org.vanilladb.core.storage.metadata.index.IndexInfo;
 import org.vanilladb.core.storage.tx.Transaction;
@@ -49,7 +49,7 @@ class TablePlanner {
 	private int hashCode;
 	private int limit;
 
-	private DistanceFn embField;
+	private VectorEmbeddingData embField;
 
 	/**
 	 * Creates a new table planner. The specified predicate applies to the
@@ -83,9 +83,8 @@ class TablePlanner {
 		tp = new TablePlan(tblName, tx);
 		sch = tp.schema();
 
-		// Two tables cannot have the same embedding field names
-		for (DistanceFn embField : data.embeddingFields()) {
-			if (sch.hasField(embField.fieldName())) {
+		for (VectorEmbeddingData embField : data.embeddingFields()) {
+			if (sch.hasField(embField.getEmbeddingField())) {
 				this.embField = embField;
 				break;
 			}
@@ -117,13 +116,15 @@ class TablePlanner {
 	 * @return a select plan for the table.
 	 */
 	public Plan makeSelectPlan() {
-		Plan p = makeIndexSelectPlan();
-		if (p == null)
-			p = tp;
-		p =  addSelectPredicate(p);
-		if (embField != null) {
-			p = new NearestNeighborPlan(p, embField, limit, tx);
+		Plan p;
+		if (embField == null) {
+			p = makeIndexSelectPlan();
+			if (p == null)
+				p = tp;
+		} else {
+			p = new NearestNeighborPlan(tp, tblName, embField, limit, tx);
 		}
+		p = addSelectPredicate(p);
 		return p;
 	}
 

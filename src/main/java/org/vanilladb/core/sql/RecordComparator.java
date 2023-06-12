@@ -18,6 +18,7 @@ package org.vanilladb.core.sql;
 import java.util.Comparator;
 import java.util.List;
 
+import org.vanilladb.core.query.parse.VectorEmbeddingData;
 import org.vanilladb.core.sql.distfn.DistanceFn;
 
 /**
@@ -28,7 +29,7 @@ public class RecordComparator implements Comparator<Record> {
 
 	private List<String> sortFlds;
 	private List<Integer> sortDirs;
-	private DistanceFn distFn;
+	private VectorEmbeddingData queryVector;
 
 	/**
 	 * Creates a comparator using the specified fields, using the ordering
@@ -44,10 +45,10 @@ public class RecordComparator implements Comparator<Record> {
 		this.sortDirs = sortDirs;
 	}
 	
-	public RecordComparator(List<String> sortFlds, List<Integer> sortDirs, DistanceFn distFn) {
+	public RecordComparator(List<String> sortFlds, List<Integer> sortDirs, VectorEmbeddingData queryVector) {
 		this.sortFlds = sortFlds;
 		this.sortDirs = sortDirs;
-		this.distFn = distFn;
+		this.queryVector = queryVector;
 	}
 
 	/**
@@ -76,10 +77,10 @@ public class RecordComparator implements Comparator<Record> {
 			String fld = sortFlds.get(i);
 			int dir = sortDirs.get(i);
 
-			if (distFn != null && fld.equals(distFn.fieldName())) {
+			if (queryVector != null && fld.equals(queryVector.getEmbeddingField())) {
 				// Compare by distance
-				double dist1 = distFn.distance((VectorConstant) rec1.getVal(fld));
-				double dist2 = distFn.distance((VectorConstant) rec2.getVal(fld));
+				double dist1 = queryVector.distance((VectorConstant) rec1.getVal(fld));
+				double dist2 = queryVector.distance((VectorConstant) rec2.getVal(fld));
 				int result = Double.compare(dist1, dist2);
 				if (result != 0)
 					return dir == DIR_ASC ? result : -result;
@@ -97,10 +98,10 @@ public class RecordComparator implements Comparator<Record> {
 
 	public int compare(Constant val1, Constant val2) {
 
-		if (distFn != null) {
+		if (queryVector != null) {
 			// Compare by distance
-			double dist1 = distFn.distance((VectorConstant) val1);
-			double dist2 = distFn.distance((VectorConstant) val2);
+			double dist1 = queryVector.distance((VectorConstant) val1);
+			double dist2 = queryVector.distance((VectorConstant) val2);
 			return Double.compare(dist1, dist2);
 		}
 		

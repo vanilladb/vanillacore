@@ -4,28 +4,18 @@ import org.vanilladb.core.sql.VectorConstant;
 
 public abstract class DistanceFn {
 
-    protected VectorConstant query;
-    private String fieldName;
+    public DistanceFn() {}
 
-    public DistanceFn(String fieldName) {
-        this.fieldName = fieldName;
-    }
-
-    public void setQueryVector(VectorConstant query) {
-        this.query = query;
-    }
-    
-    public double distance(VectorConstant vec) {
+    public double distance(VectorConstant v1, VectorConstant v2) {
         // check vector dimension
-        if (query.dimension() != vec.dimension()) {
+        if (v1.dimension() != v2.dimension()) {
             throw new IllegalArgumentException("Vector length does not match");
         }
-        return calculateDistance(vec);
+        return calculateDistance(v1, v2);
     }
 
-    protected abstract double calculateDistance(VectorConstant vec);
+    protected abstract double calculateDistance(VectorConstant v1, VectorConstant v2);
 
-    public String fieldName() {
-        return fieldName;
-    }
+    @Override
+    public abstract String toString();
 }
