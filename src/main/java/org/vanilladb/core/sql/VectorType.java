@@ -8,6 +8,10 @@ import java.sql.Types;
 public class VectorType extends Type {
     private int size;
 
+    VectorType() {
+    }
+
+
     VectorType(int size) {
         this.size = size;
     }

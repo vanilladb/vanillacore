@@ -82,10 +82,6 @@ public class IndexSelectPlan implements Plan {
 		TableScan ts = (TableScan) tp.open();
 		Index idx = ii.open(tx);
 
-		if (idx instanceof IVFIndex) {
-			((IVFIndex) idx).train(tp, queryVec);
-		}
-
 		return new IndexSelectScan(idx, 
 				new SearchRange(ii.fieldNames(), schema(), searchRanges), ts);
 	}

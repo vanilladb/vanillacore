@@ -57,6 +57,7 @@ public class NearestNeighborPlan implements Plan {
         //     assert ii.size() == 1; // Assume only one index is created for the embedding field
         //     IndexInfo idxInfo = ii.get(0);
         // }
+        Plan p = tp;
         List<IndexInfo> idxInfos = VanillaDb.catalogMgr().getIndexInfo(tblName, queryVector.getEmbeddingField(), tx);
         if (idxInfos.size() > 0) {
             assert idxInfos.size() == 1;
@@ -65,69 +66,30 @@ public class NearestNeighborPlan implements Plan {
             Map<String, ConstantRange> searchRange = new HashMap<>();
             searchRange.put(queryVector.getEmbeddingField(), ConstantRange.newInstance(queryVector.getQueryVector()));
 
-            this.child = new IndexSelectPlan(tp, ii, searchRange, tx);
-            ((IndexSelectPlan) this.child).setEmbeddingField(queryVector);
-        } else {
-            this.child = new SortPlan(tp, queryVector, tx);
-        }
-    }
+            p = new IndexSelectPlan(tp, ii, searchRange, tx);
+            ((IndexSelectPlan) p).setEmbeddingField(queryVector);
+        } 
 
-    class PriorityQueueScan implements Scan {
-        private PriorityQueue<Map<String, Constant>> pq;
-        private boolean isBeforeFirsted = false;
-
-        public PriorityQueueScan(PriorityQueue<Map<String, Constant>> pq) {
-            this.pq = pq;
-        }
-
-        @Override
-        public Constant getVal(String fldName) {
-            return pq.peek().get(fldName);
-        }
-
-        @Override
-        public void beforeFirst() {
-            this.isBeforeFirsted = true;
-        }
-
-        @Override
-        public boolean next() {
-            if (isBeforeFirsted) {
-                isBeforeFirsted = false;
-                return true;
-            }
-            pq.poll();
-            return pq.size() > 0;
-        }
-
-        @Override
-        public void close() {
-            return;
-        }
-
-        @Override
-        public boolean hasField(String fldName) {
-            return pq.peek().containsKey(fldName);
-        }
+        this.child = new SortPlan(p, queryVector, tx);
     }
 
     @Override
     public Scan open() {
         Scan s = child.open();
-        if (limit > 0) { // if limit is provided
-            s.beforeFirst();
-            while (s.next()) {
-                Map<String, Constant> fldVals = new HashMap<>();
-                for (String fldName : child.schema().fields()) {
-                    fldVals.put(fldName, s.getVal(fldName));
-                }
-                pq.add(fldVals);
-                if (pq.size() > limit)
-                    pq.poll();
-            }
-            s.close();
-            return new NearestNeighborScan(new PriorityQueueScan(pq));
-        }
+        // if (limit > 0) { // if limit is provided
+        //     s.beforeFirst();
+        //     while (s.next()) {
+        //         Map<String, Constant> fldVals = new HashMap<>();
+        //         for (String fldName : child.schema().fields()) {
+        //             fldVals.put(fldName, s.getVal(fldName));
+        //         }
+        //         pq.add(fldVals);
+        //         if (pq.size() > limit)
+        //             pq.poll();
+        //     }
+        //     s.close();
+        //     return new NearestNeighborScan(new PriorityQueueScan(pq));
+        // }
         return new NearestNeighborScan(s);
     }
 

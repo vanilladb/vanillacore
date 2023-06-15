@@ -122,6 +122,7 @@ class TablePlanner {
 			if (p == null)
 				p = tp;
 		} else {
+			// This table has an embedding field that is going to be used for search
 			p = new NearestNeighborPlan(tp, tblName, embField, limit, tx);
 		}
 		p = addSelectPredicate(p);

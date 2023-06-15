@@ -17,6 +17,7 @@ package org.vanilladb.core.sql;
 
 import static org.vanilladb.core.sql.Type.DOUBLE;
 import static org.vanilladb.core.sql.Type.VARCHAR;
+import static org.vanilladb.core.sql.Type.VECTOR;
 
 /**
  * A range of {@link Constant constants}. Instance are immutable.
@@ -64,6 +65,9 @@ public abstract class ConstantRange {
 					: null;
 			return new VarcharConstantRange(lowVarchar, lowIncl,
 					(VarcharConstant) highVarchar, highIncl);
+		} else if (type.getSqlType() == VECTOR.getSqlType()) {
+			assert low == high;
+			return new VectorConstantRange((VectorConstant) low);
 		}
 
 		throw new UnsupportedOperationException();
