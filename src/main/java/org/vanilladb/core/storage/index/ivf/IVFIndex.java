@@ -3,7 +3,10 @@ package org.vanilladb.core.storage.index.ivf;
 import static org.vanilladb.core.sql.Type.BIGINT;
 import static org.vanilladb.core.sql.Type.INTEGER;
 
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.PriorityQueue;
 import java.util.Random;
 import java.util.Set;
 
@@ -44,11 +47,12 @@ public class IVFIndex extends Index {
         NUM_ITER = CoreProperties.getLoader().getPropertyAsInteger(
             IVFIndex.class.getName() + ".NUM_ITER", 10);
         NUM_PROBE = CoreProperties.getLoader().getPropertyAsInteger(
-            IVFIndex.class.getName() + ".NUM_PROBE", 2);
+            IVFIndex.class.getName() + ".NUM_PROBE", 1);
     }
 
-    private RecordFile curBucket;
-    private boolean isBeforeFirsted;
+    private List<RecordFile> curBuckets = new ArrayList<>();
+    private int bucketIdx;
+    private boolean isBeforeFirsted = false;
 
     public IVFIndex(IndexInfo ii, SearchKeyType keyType, Transaction tx) {
         super(ii, keyType, tx);
@@ -123,8 +127,6 @@ public class IVFIndex extends Index {
     }
     
     public static void train(IndexInfo ii, TablePlan tp, String embFldName, DistanceFn distFn, Transaction tx) {
-        // int[] buckets = new int[NUM_CELLS];
-
         TableScan s = (TableScan) tp.open();
 
         int numElements = getNumRecords(s);
@@ -133,15 +135,11 @@ public class IVFIndex extends Index {
         // Optimize centroids
         for (int i = 0; i < NUM_ITER; i++) {
             centroids = updateCentroids(s, centroids, distFn, embFldName);
+            // System.out.println(centroids[0]);
         }
 
         centroidToFile(centroids, ii, tx);
         dataToFile(s, ii, embFldName, centroids, distFn, tx);
-
-        // // DEBUG
-        // for (int a = 0; a < NUM_CELLS; a++) {
-        //     System.out.println(buckets[a]);
-        // }
     }
 
     private static void centroidToFile(VectorConstant[] centroids, IndexInfo ii, Transaction tx) {
@@ -168,6 +166,8 @@ public class IVFIndex extends Index {
         dataPageSchema.addField(SCHEMA_RID_BLOCK, BIGINT);
         dataPageSchema.addField(SCHEMA_RID_ID, INTEGER);
 
+        // int[] buckets = new int[NUM_CELLS];
+
         ts.beforeFirst();
         while (ts.next()) {
             // Choose the closest centroid
@@ -184,6 +184,8 @@ public class IVFIndex extends Index {
                 }
             }
 
+            // buckets[nearestCentroid]++;
+
             String tblName = ii.indexName() + nearestCentroid;
             TableInfo dataTableInfo = new TableInfo(tblName, dataPageSchema);
             RecordFile dataRecordFile = dataTableInfo.open(tx, false);
@@ -199,6 +201,9 @@ public class IVFIndex extends Index {
 
             dataRecordFile.close();
         }
+        // for (int a = 0; a < NUM_CELLS; a++) {
+        //     System.out.println(buckets[a]);
+        // }
     }
 
     @Override
@@ -215,17 +220,39 @@ public class IVFIndex extends Index {
         RecordFile centroidFile = centroidTableInfo.open(tx, false);
 
         centroidFile.beforeFirst();
-        double minDistance = Double.MAX_VALUE;
-        int nearestCentroid = -1;
+        // double minDistance = Double.MAX_VALUE;
+        // int nearestCentroid = -1;
+
+        class CentroidDistance {
+            public Integer id;
+            public Double distance;
+            public CentroidDistance(int id, double distance) {
+                this.id = id; 
+                this.distance = distance;
+            }
+
+            static int compare(CentroidDistance a, CentroidDistance b) {
+                return Double.compare(a.distance, b.distance);
+            }
+        }
+
+        PriorityQueue<CentroidDistance> pq = new PriorityQueue<>(NUM_PROBE+1, 
+        (CentroidDistance a, CentroidDistance b) -> -CentroidDistance.compare(a, b));
 
         int idx = 0;
         while (centroidFile.next()) {
             VectorConstant c = (VectorConstant) centroidFile.getVal(SCHEMA_CENTROID);
             double dist = new EuclideanFn().distance(c, query);
-            if (dist < minDistance) {
-                minDistance = dist;
-                nearestCentroid = idx;
+
+            pq.add(new CentroidDistance(idx, dist));
+            if (pq.size() > NUM_PROBE) {
+                pq.poll();
             }
+
+            // if (dist < minDistance) {
+            //     minDistance = dist;
+            //     nearestCentroid = idx;
+            // }
             idx++;
         }
 
@@ -233,16 +260,29 @@ public class IVFIndex extends Index {
 
         dataPageSchema.addField(SCHEMA_RID_BLOCK, BIGINT);
         dataPageSchema.addField(SCHEMA_RID_ID, INTEGER);
-        String tblName = ii.indexName() + nearestCentroid;
-        TableInfo dataTableInfo = new TableInfo(tblName, dataPageSchema);
-        curBucket = dataTableInfo.open(tx, false);
 
-        if (curBucket.fileSize() == 0) {
-            RecordFile.formatFileHeader(dataTableInfo.fileName(), tx);
+        for (CentroidDistance cd : pq) {
+            String tblName = ii.indexName() + cd.id;
+            TableInfo dataTableInfo = new TableInfo(tblName, dataPageSchema);
+            RecordFile bucket = dataTableInfo.open(tx, false);
+            if (bucket.fileSize() == 0) {
+                RecordFile.formatFileHeader(dataTableInfo.fileName(), tx);
+            }
+            bucket.beforeFirst();
+            curBuckets.add(bucket);
         }
-        curBucket.beforeFirst();
+
+        // String tblName = ii.indexName() + nearestCentroid;
+        // TableInfo dataTableInfo = new TableInfo(tblName, dataPageSchema);
+        // curBucket = dataTableInfo.open(tx, false);
+
+        // if (curBucket.fileSize() == 0) {
+        //     RecordFile.formatFileHeader(dataTableInfo.fileName(), tx);
+        // }
+        // curBucket.beforeFirst();
 
         isBeforeFirsted = true;
+        bucketIdx = 0;
     }
 
     @Override
@@ -250,30 +290,36 @@ public class IVFIndex extends Index {
         if (!isBeforeFirsted)
             throw new IllegalStateException("You must call beforeFirst() before iterating index '" + ii.indexName() + "'");
 
-        while (curBucket.next()) {
-            return true;
+        while (bucketIdx < curBuckets.size()) {
+            while(curBuckets.get(bucketIdx).next()) {
+                return true;
+            }
+            bucketIdx++;
         }
+
         return false;
     }
 
     @Override
     public RecordId getDataRecordId() {
-        long blkNum = (Long) curBucket.getVal(SCHEMA_RID_BLOCK).asJavaVal();
-        int id = (Integer) curBucket.getVal(SCHEMA_RID_ID).asJavaVal();
+        long blkNum = (Long) curBuckets.get(bucketIdx).getVal(SCHEMA_RID_BLOCK).asJavaVal();
+        int id = (Integer) curBuckets.get(bucketIdx).getVal(SCHEMA_RID_ID).asJavaVal();
         return new RecordId(new BlockId(dataFileName, blkNum), id);
     }
 
     @Override
     public void insert(SearchKey key, RecordId dataRecordId, boolean doLogicalLogging) {
-        beforeFirst(new SearchRange(key));
+        // Do nothing for now
+
+        // beforeFirst(new SearchRange(key));
 
         // if (doLogicalLogging) {
         //     tx.recoveryMgr().logLogicalStart();
         // }
 
-        curBucket.insert();
-        curBucket.setVal(SCHEMA_RID_BLOCK, new BigIntConstant(dataRecordId.block().number()));
-        curBucket.setVal(SCHEMA_RID_ID, new IntegerConstant(dataRecordId.id()));
+        // curBuckets.get(bucketIdx).insert();
+        // curBuckets.get(bucketIdx).setVal(SCHEMA_RID_BLOCK, new BigIntConstant(dataRecordId.block().number()));
+        // curBuckets.get(bucketIdx).setVal(SCHEMA_RID_ID, new IntegerConstant(dataRecordId.id()));
 
         // if (doLogicalLogging) {
         //     tx.recoveryMgr().logIndexInsertionEnd(ii.indexName(), key, dataRecordId.block().number(), dataRecordId.id());
@@ -287,7 +333,7 @@ public class IVFIndex extends Index {
         //     tx.recoveryMgr().logLogicalStart();
         while (next()) {
             if (getDataRecordId().equals(dataRecordId)) {
-                curBucket.delete();
+                curBuckets.get(bucketIdx).delete();
                 return;
             }
         }
@@ -298,8 +344,11 @@ public class IVFIndex extends Index {
     @Override
     public void close() {
         // TODO: Close the centroid list
-        if (curBucket != null)
-            curBucket.close();
+        // if (curBucket != null)
+        //     curBucket.close();
+        for (RecordFile bucket : curBuckets) {
+            bucket.close();
+        }
     }
 
     private long fileSize(String fileName) {
