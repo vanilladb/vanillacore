@@ -57,6 +57,15 @@ public class VectorConstant extends Constant implements Serializable {
         }
     }
 
+    public VectorConstant(VectorConstant v) {
+        vec = new int[v.dimension()];
+        int i = 0;
+        for (int e : v.asJavaVal()) {
+            vec[i++] = e;
+        }
+        type = new VectorType(v.dimension());
+    }
+
     /**
      * Reconstruct a vector constant from bytes
      * @param bytes bytes to reconstruct
@@ -148,12 +157,32 @@ public class VectorConstant extends Constant implements Serializable {
 
     @Override
     public Constant add(Constant c) {
-        throw new UnsupportedOperationException("Vector doesn't support addition");
+        if (!(c instanceof VectorConstant)) {
+            throw new UnsupportedOperationException("Vector doesn't support addition with other constants");
+        }
+
+        assert dimension() == ((VectorConstant) c).dimension();
+
+        int[] res = new int[dimension()];
+        for (int i = 0; i < dimension(); i++) {
+            res[i] = this.get(i) + ((VectorConstant) c).get(i);
+        }
+        return new VectorConstant(res);
     }
 
     @Override
     public Constant sub(Constant c) {
-        throw new UnsupportedOperationException("Vector doesn't support subtraction");
+        if (!(c instanceof VectorConstant)) {
+            throw new UnsupportedOperationException("Vector doesn't support subtraction with other constants");
+        }
+
+        assert dimension() == ((VectorConstant) c).dimension();
+
+        int[] res = new int[dimension()];
+        for (int i = 0; i < dimension(); i++) {
+            res[i] = this.get(i) - ((VectorConstant) c).get(i);
+        }
+        return new VectorConstant(res);
     }
 
     @Override
@@ -163,7 +192,14 @@ public class VectorConstant extends Constant implements Serializable {
 
     @Override
     public Constant div(Constant c) {
-        throw new UnsupportedOperationException("Vector doesn't support division");
+        if (!(c instanceof IntegerConstant)) {
+            throw new UnsupportedOperationException("Vector doesn't support subtraction with other constants");
+        }
+        int[] res = new int[dimension()];
+        for (int i = 0; i < dimension(); i++) {
+            res[i] = this.get(i) / (Integer) c.asJavaVal();
+        }
+        return new VectorConstant(res);
     }
 
     @Override

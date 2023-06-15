@@ -36,11 +36,15 @@ public class IVFIndex extends Index {
 
     private static final int NUM_CELLS;
     private static final int NUM_ITER;
+    private static final int NUM_PROBE;
 
     static {
         NUM_CELLS = CoreProperties.getLoader().getPropertyAsInteger(
             IVFIndex.class.getName() + ".NUM_CELLS", 100);
-        NUM_ITER = CoreProperties.getLoader().getPropertyAsInteger(IVFIndex.class.getName() + ".NUM_ITER", 10);
+        NUM_ITER = CoreProperties.getLoader().getPropertyAsInteger(
+            IVFIndex.class.getName() + ".NUM_ITER", 10);
+        NUM_PROBE = CoreProperties.getLoader().getPropertyAsInteger(
+            IVFIndex.class.getName() + ".NUM_PROBE", 2);
     }
 
     private RecordFile curBucket;
@@ -83,12 +87,40 @@ public class IVFIndex extends Index {
         return centroids;
     }
 
-    // private static VectorConstant[] calculateNewCentroids(TableScan ts, VectorConstant[] centroids) {
-    //     ts.beforeFirst();
-    //     while (ts.next()) {
+    private static VectorConstant[] updateCentroids(TableScan ts, VectorConstant[] centroids, DistanceFn distFn, String embField) {
+        VectorConstant[] newCentroids = new VectorConstant[centroids.length];
+        for (int i = 0; i < centroids.length; i++) {
+            newCentroids[i] = VectorConstant.zeros(centroids[0].dimension());
+        }
 
-    //     }
-    // }
+        int[] states = new int[centroids.length];
+
+        ts.beforeFirst();
+
+        while (ts.next()) {
+            // Choose the closest centroid
+            VectorConstant v = (VectorConstant) ts.getVal(embField);
+
+            double min = Double.MAX_VALUE;
+            int nearestCentroid = -1;
+
+            for (int centroid = 0; centroid < centroids.length; centroid++) {
+                double dist = distFn.distance(centroids[centroid], v);
+                if (dist < min) {
+                    min = dist;
+                    nearestCentroid = centroid;
+                }
+            }
+            states[nearestCentroid]++;
+
+            // n++
+            // avg = avg + (new_value - avg) / n
+            VectorConstant tmp = (VectorConstant) v.sub(newCentroids[nearestCentroid]);
+            tmp = (VectorConstant) tmp.div(new IntegerConstant(states[nearestCentroid]));
+            newCentroids[nearestCentroid] = (VectorConstant) newCentroids[nearestCentroid].add(tmp);
+        }
+        return newCentroids;
+    }
     
     public static void train(IndexInfo ii, TablePlan tp, String embFldName, DistanceFn distFn, Transaction tx) {
         // int[] buckets = new int[NUM_CELLS];
@@ -98,10 +130,10 @@ public class IVFIndex extends Index {
         int numElements = getNumRecords(s);
         VectorConstant[] centroids = initCentroids(s, numElements, embFldName);
 
-        // for (int i = 0; i < NUM_ITER; i++) {
-        //     VectorConstant[] newCentroids = calculateNewCentroids(s, centroids);
-        //     centroids = newCentroids;
-        // }
+        // Optimize centroids
+        for (int i = 0; i < NUM_ITER; i++) {
+            centroids = updateCentroids(s, centroids, distFn, embFldName);
+        }
 
         centroidToFile(centroids, ii, tx);
         dataToFile(s, ii, embFldName, centroids, distFn, tx);
