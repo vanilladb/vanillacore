@@ -9,7 +9,7 @@ public abstract class DistanceFn {
     public double distance(VectorConstant v1, VectorConstant v2) {
         // check vector dimension
         if (v1.dimension() != v2.dimension()) {
-            throw new IllegalArgumentException("Vector length does not match");
+            throw new IllegalArgumentException("Vector dimension does not match: " + v1.dimension() + " != " + v2.dimension());
         }
         return calculateDistance(v1, v2);
     }

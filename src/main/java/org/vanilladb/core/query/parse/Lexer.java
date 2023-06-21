@@ -158,13 +158,13 @@ public class Lexer {
 		return s;
 	}
 
-	public List<Integer> eatVectorConstant() {
+	public List<Float> eatVectorConstant() {
 		if (!matchVectorConstant())
 			throw new BadSyntaxException();
-		List<Integer> vector = new ArrayList<Integer>();
+		List<Float> vector = new ArrayList<Float>();
 		nextToken();
 		while (tok.ttype != ']') {
-			vector.add((int) tok.nval);
+			vector.add((float) tok.nval);
 			nextToken();
 			if (matchDelim(','))
 				eatDelim(',');

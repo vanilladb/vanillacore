@@ -9,17 +9,26 @@ import org.vanilladb.core.util.ByteHelper;
 import java.util.*;
 
 /**
- * Vector constant stores multiple int32 values as a constant
+ * Vector constant stores multiple float32 values as a constant
  * This would enable vector processing in VanillaCore
  */
 public class VectorConstant extends Constant implements Serializable {
-    private int[] vec;
+    private float[] vec;
     private Type type;
 
     public static VectorConstant zeros(int dimension) {
-        int[] vec = new int[dimension];
+        float[] vec = new float[dimension];
         for (int i = 0; i < dimension; i++) {
             vec[i] = 0;
+        }
+        return new VectorConstant(vec);
+    }
+
+    public static VectorConstant normal(int dimension, float mean, float std) {
+        float[] vec = new float[dimension];
+        Random rvg = new Random();
+        for (int i = 0; i < dimension; i++) {
+            vec[i] = (float) rvg.nextGaussian(mean, std);
         }
         return new VectorConstant(vec);
     }
@@ -31,26 +40,26 @@ public class VectorConstant extends Constant implements Serializable {
     public VectorConstant(int length) {
         type = new VectorType(length);
         Random random = new Random();
-        vec = new int[length];
+        vec = new float[length];
         for (int i = 0; i < length; i++) {
             vec[i] = random.nextInt(9999);
         }
     }
 
-    public VectorConstant(int[] vector) {
+    public VectorConstant(float[] vector) {
         type = new VectorType(vector.length);
-        vec = new int[vector.length];
+        vec = new float[vector.length];
         
         for (int i = 0; i < vector.length; i++) {
             vec[i] = vector[i];
         }
     }
 
-    public VectorConstant(List<Integer> vector) {
+    public VectorConstant(List<Float> vector) {
         int length = vector.size();
         
         type = new VectorType(length);
-        vec = new int[length];
+        vec = new float[length];
         
         for (int i = 0; i < length; i++) {
             vec[i] = vector.get(i);
@@ -58,12 +67,23 @@ public class VectorConstant extends Constant implements Serializable {
     }
 
     public VectorConstant(VectorConstant v) {
-        vec = new int[v.dimension()];
+        vec = new float[v.dimension()];
         int i = 0;
-        for (int e : v.asJavaVal()) {
+        for (float e : v.asJavaVal()) {
             vec[i++] = e;
         }
         type = new VectorType(v.dimension());
+    }
+
+    public VectorConstant(String vectorString) {
+        String[] split = vectorString.split(" ");
+
+        type = new VectorType(split.length);
+        vec = new float[split.length];
+
+        for (int i = 0; i < split.length; i++) {
+            vec[i] = Float.valueOf(split[i]);
+        }
     }
 
     /**
@@ -71,15 +91,15 @@ public class VectorConstant extends Constant implements Serializable {
      * @param bytes bytes to reconstruct
      */
     public VectorConstant(byte[] bytes) {
-        int length = bytes.length / Integer.BYTES;
+        int length = bytes.length / Float.BYTES;
         type = new VectorType(length);
         // vec = new ArrayList<>(length);
-        vec = new int[length];
+        vec = new float[length];
         for (int i = 0; i < length; i++) {
-            byte[] intAsBytes = new byte[Integer.BYTES];
-            int offset = i * Integer.BYTES;
-            System.arraycopy(bytes, offset, intAsBytes, 0, Integer.BYTES);
-            vec[i] = ByteHelper.toInteger(intAsBytes);
+            byte[] floatAsBytes = new byte[Float.BYTES];
+            int offset = i * Float.BYTES;
+            System.arraycopy(bytes, offset, floatAsBytes, 0, Float.BYTES);
+            vec[i] = ByteHelper.toFloat(floatAsBytes);
         }
     }
 
@@ -95,7 +115,7 @@ public class VectorConstant extends Constant implements Serializable {
      * Return the value of the constant
      */
     @Override
-    public int[] asJavaVal() {
+    public float[] asJavaVal() {
         return vec;
     }
 
@@ -103,7 +123,7 @@ public class VectorConstant extends Constant implements Serializable {
      * Return a copy of the vector
      * @return
      */
-    public int[] copy() {
+    public float[] copy() {
         return Arrays.copyOf(vec, vec.length);
     }
 
@@ -117,9 +137,9 @@ public class VectorConstant extends Constant implements Serializable {
         byte[] buf = new byte[bufferSize];
 
         for (int i = 0; i < vec.length; i++) {
-            byte[] intAsBytes = ByteHelper.toBytes(vec[i]);
-            int offset = i * Integer.BYTES;
-            System.arraycopy(intAsBytes, 0, buf, offset, Integer.BYTES);
+            byte[] floatAsBytes = ByteHelper.toBytes(vec[i]);
+            int offset = i * Float.BYTES;
+            System.arraycopy(floatAsBytes, 0, buf, offset, Float.BYTES);
         }
         return buf;
     }
@@ -129,7 +149,7 @@ public class VectorConstant extends Constant implements Serializable {
      */
     @Override
     public int size() {
-        return Integer.BYTES * vec.length;
+        return Float.BYTES * vec.length;
     }
 
     /**
@@ -151,7 +171,7 @@ public class VectorConstant extends Constant implements Serializable {
         throw new IllegalArgumentException("Cannot cast vector to " + type);
     }
 
-    public int get(int idx) {
+    public float get(int idx) {
         return vec[idx];
     }
 
@@ -163,7 +183,7 @@ public class VectorConstant extends Constant implements Serializable {
 
         assert dimension() == ((VectorConstant) c).dimension();
 
-        int[] res = new int[dimension()];
+        float[] res = new float[dimension()];
         for (int i = 0; i < dimension(); i++) {
             res[i] = this.get(i) + ((VectorConstant) c).get(i);
         }
@@ -178,7 +198,7 @@ public class VectorConstant extends Constant implements Serializable {
 
         assert dimension() == ((VectorConstant) c).dimension();
 
-        int[] res = new int[dimension()];
+        float[] res = new float[dimension()];
         for (int i = 0; i < dimension(); i++) {
             res[i] = this.get(i) - ((VectorConstant) c).get(i);
         }
@@ -195,7 +215,7 @@ public class VectorConstant extends Constant implements Serializable {
         if (!(c instanceof IntegerConstant)) {
             throw new UnsupportedOperationException("Vector doesn't support subtraction with other constants");
         }
-        int[] res = new int[dimension()];
+        float[] res = new float[dimension()];
         for (int i = 0; i < dimension(); i++) {
             res[i] = this.get(i) / (Integer) c.asJavaVal();
         }

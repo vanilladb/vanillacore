@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 
+import org.vanilladb.core.query.algebra.LimitPlan;
 import org.vanilladb.core.query.algebra.Plan;
 import org.vanilladb.core.query.algebra.materialize.SortPlan;
 import org.vanilladb.core.query.parse.VectorEmbeddingData;
@@ -14,14 +15,12 @@ import org.vanilladb.core.server.VanillaDb;
 import org.vanilladb.core.query.algebra.Scan;
 import org.vanilladb.core.query.algebra.TablePlan;
 import org.vanilladb.core.query.algebra.index.IndexSelectPlan;
-import org.vanilladb.core.sql.distfn.DistanceFn;
 import org.vanilladb.core.sql.Schema;
 import org.vanilladb.core.storage.metadata.index.IndexInfo;
 import org.vanilladb.core.storage.metadata.statistics.Histogram;
 import org.vanilladb.core.storage.tx.Transaction;
 import org.vanilladb.core.sql.Constant;
 import org.vanilladb.core.sql.ConstantRange;
-import org.vanilladb.core.sql.RecordComparator;
 
 public class NearestNeighborPlan implements Plan {
     private Plan child;
@@ -32,32 +31,9 @@ public class NearestNeighborPlan implements Plan {
 
     public NearestNeighborPlan(TablePlan tp, String tblName, VectorEmbeddingData queryVector, int limit, Transaction tx) {
         this.limit = limit;
-        // if (limit == -1) {
-        //     this.child = new SortPlan(p, distFn, tx);
-        // } else {
-        // //     this.child = p;
-        // //     List<String> sortFlds = new ArrayList<String>();
-        // //     sortFlds.add(distFn.fieldName());
-            
-        // //     List<Integer> sortDirs = new ArrayList<Integer>();
-        // //     sortDirs.add(DIR_ASC);
 
-        // //     assert sortFlds.size() == 1;
-        // //     assert sortDirs.size() == 1;
-
-
-
-        // //     this.comp = new RecordComparator(sortFlds, sortDirs, distFn);
-        // //     this.pq = new PriorityQueue<>(limit, 
-        // //         (Map<String, Constant> r1, Map<String, Constant> r2) -> 
-        // //             -1 * comp.compare(r1.get(sortFlds.get(0)), r2.get(sortFlds.get(0)))
-        // //         );
-        //     // choose an index to use
-        //     List<IndexInfo> ii = VanillaDb.catalogMgr().getIndexInfo(tblName, distFn.fieldName(), tx);
-        //     assert ii.size() == 1; // Assume only one index is created for the embedding field
-        //     IndexInfo idxInfo = ii.get(0);
-        // }
         Plan p = tp;
+        
         List<IndexInfo> idxInfos = VanillaDb.catalogMgr().getIndexInfo(tblName, queryVector.getEmbeddingField(), tx);
         if (idxInfos.size() > 0) {
             assert idxInfos.size() == 1;
@@ -70,26 +46,13 @@ public class NearestNeighborPlan implements Plan {
             ((IndexSelectPlan) p).setEmbeddingField(queryVector);
         } 
 
-        this.child = new SortPlan(p, queryVector, tx);
+        p = new SortPlan(p, queryVector, tx);
+        this.child = new LimitPlan(p, limit);
     }
 
     @Override
     public Scan open() {
         Scan s = child.open();
-        // if (limit > 0) { // if limit is provided
-        //     s.beforeFirst();
-        //     while (s.next()) {
-        //         Map<String, Constant> fldVals = new HashMap<>();
-        //         for (String fldName : child.schema().fields()) {
-        //             fldVals.put(fldName, s.getVal(fldName));
-        //         }
-        //         pq.add(fldVals);
-        //         if (pq.size() > limit)
-        //             pq.poll();
-        //     }
-        //     s.close();
-        //     return new NearestNeighborScan(new PriorityQueueScan(pq));
-        // }
         return new NearestNeighborScan(s);
     }
 

@@ -1,5 +1,7 @@
 package org.vanilladb.core.sql;
 
+import java.util.Arrays;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -16,5 +18,15 @@ public class VectorConstantTest {
         Assert.assertTrue(v1.equals(v1_reconstructed));
         Assert.assertFalse(v1.equals(new VectorConstant(vecSize)));
         Assert.assertFalse(v1.equals(new VectorConstant(256)));
+    }
+
+    @Test
+    public void testAsString() {
+        int vecSize = 128;
+        float[] arr = new float[vecSize];
+
+        VectorConstant v1 = new VectorConstant(arr);
+
+        Assert.assertEquals(Arrays.toString(arr), v1.toString());
     }
 }
