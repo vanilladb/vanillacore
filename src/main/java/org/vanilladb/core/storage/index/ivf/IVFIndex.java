@@ -166,8 +166,6 @@ public class IVFIndex extends Index {
         dataPageSchema.addField(SCHEMA_RID_BLOCK, BIGINT);
         dataPageSchema.addField(SCHEMA_RID_ID, INTEGER);
 
-        // int[] buckets = new int[NUM_CELLS];
-
         ts.beforeFirst();
         while (ts.next()) {
             // Choose the closest centroid
@@ -201,9 +199,6 @@ public class IVFIndex extends Index {
 
             dataRecordFile.close();
         }
-        // for (int a = 0; a < NUM_CELLS; a++) {
-        //     System.out.println(buckets[a]);
-        // }
     }
 
     @Override
@@ -329,16 +324,18 @@ public class IVFIndex extends Index {
     @Override
     public void delete(SearchKey key, RecordId dataRecordId, boolean doLogicalLogging) {
         beforeFirst(new SearchRange(key));
-        // if (doLogicalLogging)
-        //     tx.recoveryMgr().logLogicalStart();
+        if (doLogicalLogging)
+            tx.recoveryMgr().logLogicalStart();
+
         while (next()) {
             if (getDataRecordId().equals(dataRecordId)) {
                 curBuckets.get(bucketIdx).delete();
                 return;
             }
         }
-        // if (doLogicalLogging)
-        //     tx.recoveryMgr().logIndexDeletionEnd(ii.indexName(), key, dataRecordId.block().number(), dataRecordId.id());
+
+        if (doLogicalLogging)
+            tx.recoveryMgr().logIndexDeletionEnd(ii.indexName(), key, dataRecordId.block().number(), dataRecordId.id());
     }
 
     @Override
